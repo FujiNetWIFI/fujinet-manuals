@@ -24,7 +24,7 @@
      inkscape:document-units="mm"
      showgrid="false"
      inkscape:zoom="0.56866485"
-     inkscape:cx="524.0345"
+     inkscape:cx="497.65692"
      inkscape:cy="-82.649737"
      inkscape:window-width="1920"
      inkscape:window-height="1008"
@@ -97,7 +97,10 @@
        style="fill:black;fill-opacity:1;line-height:1.25;stroke:none;font-family:sans-serif;font-style:normal;font-weight:normal;font-size:40px;white-space:pre;shape-inside:url(#rect32276)" />
     <g
        id="g44769"
-       transform="matrix(0.59030058,0,0,0.59030058,16.9944,5.0662127)">
+       transform="matrix(0.59030058,0,0,0.59030058,16.9944,5.0662127)"
+       inkscape:export-filename="/home/thomc/Desktop/fujinet_for_atari_users/figs/virtual_network.png"
+       inkscape:export-xdpi="96"
+       inkscape:export-ydpi="96">
       <g
          id="g42970"
          transform="matrix(0.00203772,0,0,-0.00203772,245.57343,48.851137)">
@@ -997,21 +1000,21 @@
          style="font-style:normal;font-weight:normal;font-size:16px;line-height:1.25;font-family:sans-serif;white-space:pre;shape-inside:url(#rect24760);fill:#000000;fill-opacity:1;stroke:none"><tspan
            x="957.08594"
            y="121.63021"
-           id="tspan45029"><tspan
+           id="tspan45297"><tspan
              style="font-family:'Arcade Normal';-inkscape-font-specification:'Arcade Normal, '"
-             id="tspan45027">ISS POSITION:
+             id="tspan45295">ISS POSITION:
 </tspan></tspan><tspan
            x="957.08594"
            y="143.51628"
-           id="tspan45033"><tspan
+           id="tspan45301"><tspan
              style="font-family:'Arcade Normal';-inkscape-font-specification:'Arcade Normal, '"
-             id="tspan45031">LAT:98.1430
+             id="tspan45299">LAT:98.1430
 </tspan></tspan><tspan
            x="957.08594"
            y="165.40235"
-           id="tspan45037"><tspan
+           id="tspan45305"><tspan
              style="font-family:'Arcade Normal';-inkscape-font-specification:'Arcade Normal, '"
-             id="tspan45035">LON:-12.5879</tspan></tspan></text>
+             id="tspan45303">LON:-12.5879</tspan></tspan></text>
       <path
          style="fill:none;stroke:#000000;stroke-width:1;stroke-linecap:butt;stroke-linejoin:miter;stroke-miterlimit:4;stroke-dasharray:none;stroke-opacity:1;marker-end:url(#Arrow2Lend)"
          d="m 199.68343,43.752894 h 33.89371"

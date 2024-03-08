@@ -121,13 +121,12 @@
   <chapter>
     <title>What is FujiNet?</title>
 
-    <para>Based on the <trademark class="registered">Espressif
-    ESP32</trademark> micro controller, FujiNet provides the <trademark
-    class="registered">ATARI</trademark> computer with a wide range of devices
-    that may all be used simultaneously. These devices include a virtual
-    "disk" drive, a virtual "printer", a virtual "MODEM", and a "Network
-    Adapter" which provides comprehensive access to a wide variety of local
-    and Internet services through the use of protocol adapters.</para>
+    <para>FujiNet provides the <trademark class="registered">ATARI</trademark>
+    computer with a wide range of devices that may all be used simultaneously.
+    These devices include a virtual "disk" drive, a virtual "printer", a
+    virtual "MODEM", and a "Network Adapter" which provides comprehensive
+    access to a wide variety of local and Internet services through the use of
+    protocol adapters.</para>
 
     <para>Each of these virtual devices is described below.</para>
 
@@ -617,41 +616,6 @@ CLOSE #1</screen>
       can be used to provide the requisite terminal program. In addition, the
       CP/M emulation can be accessed by any Atari MODEM program that supports
       the "R:" device.</para>
-    </section>
-
-    <section>
-      <title>S.A.M. Voice "P4:"</title>
-
-      <para>Because the micro controller provides an 8-bit
-      <acronym>DAC</acronym>, and the Atari <acronym>SIO</acronym> connector
-      provides an AUDIO IN pin, it was trivial to add an implementation of
-      Don't Ask Software's Software Automatic Mouth (S.A.M.) directly on the
-      FujiNet device! This has the advantage of not blanking out the display
-      when you wish to use the voice synthesizer. </para>
-
-      <para>Since the P4: device is used, it means that SAM is available to
-      speak at any time, simply by writing to the device.</para>
-
-      <example>
-        <title>Making SAM Talk is Easy!</title>
-
-        <sidebar>
-          <para><screen>READY
-OPEN #1,8,0,"P4:"
-
-READY
-PRINT #1;"HELLO FROM FUJINET!"</screen></para>
-        </sidebar>
-      </example>
-    </section>
-
-    <section>
-      <title>APETIME Compatibility</title>
-
-      <para>FujiNet includes a real-time clock that is synchronized to the
-      Internet via <acronym>SNTP</acronym> (Simple Network Time Protocol),
-      exposed as a device that is compatible with the
-      <filename>APETIME.COM</filename> utility.</para>
     </section>
   </chapter>
 </book>
