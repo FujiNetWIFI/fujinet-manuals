@@ -33,7 +33,7 @@
     multiple platforms. You all have given the FujiNet team the drive and
     determination to make FujiNet a comprehensive</para>
 
-    <para> platform to connect all of our retro-computing and retro-gaming
+    <para>platform to connect all of our retro-computing and retro-gaming
     systems together to do new and fun things.</para>
   </dedication>
 
@@ -95,6 +95,10 @@
       <listitem>
         <para><personname> <firstname>Benjamin</firstname>
         <surname>Krein</surname> </personname></para>
+      </listitem>
+
+      <listitem>
+        <para><personname><firstname>Andy</firstname><surname>Diller</surname></personname></para>
       </listitem>
     </itemizedlist>
   </acknowledgements>
@@ -205,6 +209,379 @@
           </imageobject>
         </mediaobject>
       </figure>
+    </section>
+
+    <section>
+      <title>Virtual Printer "P:"</title>
+
+      <para>FujiNet also provides a virtual printer device, which works
+      exactly the same as a physical printer attached directly to the
+      <trademark class="registered">ATARI</trademark> computer. When a program
+      sends something to the "P:" device, the FujiNet will simulate one of
+      more than a dozen available virtual printers. The end result is rendered
+      into a document which can be read in a viewer, or sent to a modern
+      printer.</para>
+
+      <figure>
+        <title>Virtual Printer</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="figs/virtual_printer.png" scale="75"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The following printers are supported:</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>RAW</term>
+
+          <listitem>
+            <para>The printer data is sent as-is, with no conversion.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>TRIM</term>
+
+          <listitem>
+            <para>Like RAW, but everything after an ATASCII EOL is
+            truncated.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>ASCII</term>
+
+          <listitem>
+            <para>Like RAW, but every non-ASCII character is ignored.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark>
+          <trademark>820</trademark></term>
+
+          <listitem>
+            <para>A 40 column dot matrix impact printer. Used a 5x7 font with
+            ASCII characters. Printed to 3 7/8 inches (98.425mm) width paper.
+            Could also print sideways (vertical). Outputs in
+            <filename>PDF</filename>. Matches the 400/800 systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark>
+          <trademark>822</trademark></term>
+
+          <listitem>
+            <para>A 40 column thermal printer. Used a 5x7 font with ASCII
+            characters. Printed to 4 7/16" (112.7125mm) width thermal paper.
+            Could also print dot graphics. Outputs in
+            <filename>PDF</filename>. Matches the 400/800 systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark><trademark>
+          825</trademark></term>
+
+          <listitem>
+            <para>An 80 column dot matrix impact printer. Supported normal,
+            elongated, and condensed fonts in 10 and 16.7 characters per inch
+            widths. Could also support reverse line feeds (which could be
+            used, e.g. to make multi-column text in AtariWriter), and other
+            advanced features. Outputs in <filename>PDF</filename>. Matches
+            the 400/800 systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark>
+          <trademark>1020</trademark></term>
+
+          <listitem>
+            <para>A plotter which can draw calligraphic graphics using a pen,
+            and one of four colors (red, green, blue, and black). Unlike most
+            of the other printers in this list, this printer outputs in
+            <filename>SVG</filename>. Matches the XL systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark>
+          <trademark>1025</trademark></term>
+
+          <listitem>
+            <para>An 80 column dot matrix impact printer. Uses a 5x7 font with
+            ASCII characters. Printed to either single sheets or fan-fold
+            tractor fed paper anywhere from 4.5 to 8.5 inches (114.3 to
+            215.9mm) wide. Could accept tractor feed or friction fed paper.
+            Could also accept an automatic document feeder attachment. Outputs
+            in <filename>PDF</filename>. Matches the XL systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark>
+          <trademark>1027</trademark></term>
+
+          <listitem>
+            <para>An 80 column letter quality printer. The print font is very
+            close to Prestige Elite. Outputs in <filename>PDF</filename>.
+            Matches the XL systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark>
+          <trademark>1029</trademark></term>
+
+          <listitem>
+            <para>An 80 column dot matrix impact printer. Used a 5x7 font,
+            with only ASCII characters. Released in limited quantities in
+            Europe. Outputs in <filename>PDF</filename>. Matches the XL
+            systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark>
+          <trademark>XMM801</trademark></term>
+
+          <listitem>
+            <para>An 80 column dot matrix impact printer. Epson MX80 and FX80
+            compatible. Contains many font widths. Can handle NLQ
+            (near-letter-quality) mode. Outputs in <filename>PDF</filename>.
+            Matches the XE systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">ATARI</trademark>
+          <trademark>XDM121</trademark></term>
+
+          <listitem>
+            <para>An 80 column letter quality daisy wheel printer. Produced
+            letter quality output. Outputs in <filename>PDF</filename>.
+            Matches the XE systems.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">EPSON</trademark>
+          <trademark>MX80</trademark></term>
+
+          <listitem>
+            <para>An 80 column dot matrix impact printer with graphics
+            printing capability, as well as configurable font widths. Widely
+            considered the standard for dot matrix printers in the 1980s.
+            Outputs in <filename>PDF</filename>. This is the printer to use
+            with <trademark>The Print Shop.</trademark></para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term><trademark class="registered">OKI Data</trademark>
+          <trademark>OkiMate 10</trademark></term>
+
+          <listitem>
+            <para>A thermal wax printer capable of printing vivid color
+            graphics. Outputs in <filename>PDF</filename>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>GRANTIC</term>
+
+          <listitem>
+            <para>An implementation of Claus Buchholz's "PRANTIC" screen
+            capture to printer device. Outputs in
+            <filename>PNG</filename>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>HTML Printer</term>
+
+          <listitem>
+            <para>Useful for printing out program listings, as it embeds the
+            ATASCII font.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+    </section>
+
+    <section>
+      <title>Virtual MODEM "R:"</title>
+
+      <para>FujiNet also provides a virtual MODEM device by combining
+      emulation for an <trademark class="registered">ATARI</trademark>
+      <trademark>850</trademark> interface, and a <trademark
+      class="registered">Hayes</trademark> compatible modem with AT
+      instruction set. The resulting virtual device is compatible with
+      existing communications programs that use the "R:" device, and can be
+      used to dial hobbyist Bulletin Board Systems (BBS) hosts over raw or
+      TELNET connections.</para>
+
+      <para>The following terminal emulator programs have been tested with
+      FujiNet:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>ICE-T</para>
+        </listitem>
+
+        <listitem>
+          <para>BobTerm</para>
+        </listitem>
+
+        <listitem>
+          <para>Express!</para>
+        </listitem>
+
+        <listitem>
+          <para>AMODEM Plus</para>
+        </listitem>
+
+        <listitem>
+          <para><trademark class="registered">ATARI</trademark> Telelink
+          I</para>
+        </listitem>
+      </itemizedlist>
+
+      <para>The MODEM emulation also supports opening a listening socket that
+      can accept a single incoming connection. This allows existing BBS
+      programs to be used as-is to accept TELNET or raw connections from
+      potential "callers."</para>
+
+      <para>The following BBS programs have been tested with FujiNet:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>AMIS BBS</para>
+        </listitem>
+
+        <listitem>
+          <para>BBS Express 1.0, 2.0, 5.0</para>
+        </listitem>
+
+        <listitem>
+          <para>FoReM-26M, FoReM XE Professional 5.4</para>
+        </listitem>
+      </itemizedlist>
+    </section>
+
+    <section>
+      <title>Network Adapter "N:"</title>
+
+      <para>Finally, FujiNet provides a totally new <filename>N:</filename>
+      device for your <trademark class="registered">ATARI</trademark>
+      computer. This device brings not only any local network; the wider
+      Internet, accessible from any program or programming language that
+      accepts a devicespec, such as <trademark
+      class="registered">ATARI</trademark><trademark> BASIC, or
+      AtariWriter</trademark></para>
+
+      <para>This is made possible by the addition of <emphasis>protocol
+      adapters</emphasis> which perform all the heavy lifting for the complex
+      protocols used by the modern Internet. These adapters run on the FujiNet
+      itself, and utilize its increased processing power to create an easy to
+      use I/O channel for the <trademark class="registered">ATARI</trademark>
+      computer.</para>
+
+      <figure>
+        <title>The HTTP Protocol Adapter</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="figs/virtual_network.png" scale="73"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>Once you have loaded a DOS disk with the "N:" handler, you can,
+      for example, load a BASIC program, directly from a web server:</para>
+
+      <sidebar>
+        <example>
+          <title>Loading a BASIC Program from a Web Server</title>
+
+          <screen>READY
+RUN"N:HTTP://FUJINET-TESTING.IRATA.ONLINE/BLACKJACK.BAS"</screen>
+        </example>
+      </sidebar>
+
+      <para>Similarly, opening a connection to a TCP socket to host
+      192.168.0.123 port 1234 is as simple as:</para>
+
+      <sidebar>
+        <example>
+          <title>Opening a TCP socket in BASIC</title>
+
+          <screen>READY
+OPEN #1,12,2,"N:TCP://192.168.0.123:1234/"</screen>
+
+          <itemizedlist>
+            <listitem>
+              <para>12 = READ and WRITE</para>
+            </listitem>
+
+            <listitem>
+              <para>2 = Translate Line-feeds into ATASCII EOL (UNIX line
+              endings)</para>
+            </listitem>
+          </itemizedlist>
+        </example>
+      </sidebar>
+
+      <para>Once a connection is opened, writing to it is equally as
+      simple:</para>
+
+      <sidebar>
+        <example>
+          <title>Writing to a TCP socket in BASIC</title>
+
+          <screen>READY
+PRINT #1;"HELLO FROM THE ATARI"</screen>
+
+          <para>The EOL here is translated into a UNIX line feed, because of
+          how the connection was previously opened.</para>
+        </example>
+      </sidebar>
+
+      <para>Reading from an open connection, is as simple as writing to
+      it:</para>
+
+      <sidebar>
+        <example>
+          <title>Reading from a TCP socket in BASIC</title>
+
+          <screen>READY
+DIM A$(99)
+
+READY
+INPUT #1,A$
+
+READY
+PRINT A$
+Testing from PC.</screen>
+        </example>
+      </sidebar>
+
+      <para>When done with a connection, it can be closed. FujiNet will then
+      disconnect the socket.</para>
+
+      <sidebar>
+        <example>
+          <title>Closing the previously opened TCP socket</title>
+
+          <screen>READY
+CLOSE #1</screen>
+        </example>
+      </sidebar>
     </section>
   </chapter>
 </book>
