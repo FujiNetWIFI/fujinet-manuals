@@ -10,7 +10,6 @@
       xmlns:html="http://www.w3.org/1999/xhtml"
       xmlns:db="http://docbook.org/ns/docbook">
 
-
     <info>
 
         <title>Introduction to FujiNet for ATARI® Users</title>
@@ -35,8 +34,6 @@
         <pubdate>2024.03.07</pubdate>
 
     </info>
-
-
 
     <dedication>
         <para>
@@ -129,6 +126,17 @@
                     <personname>
                         <firstname>Jan</firstname>
                         <surname>Krupa</surname>
+                    </personname>
+                </para>
+            </listitem>
+        </itemizedlist>
+
+        <itemizedlist>
+            <listitem>
+                <para>
+                    <personname>
+                        <firstname>Benjamin</firstname>
+                        <surname>Krein</surname>
                     </personname>
                 </para>
             </listitem>
