@@ -1,0 +1,8 @@
+#+title: Introduction to FujiNet for Atari Users (book structure)
+#+author: Thomas Cherryhomes
+#+email: thom.cherryhomes@gmail.com
+
+* Preface
+* What is FujiNet?
+* Unpacking and Connecting Your FujiNet
+*

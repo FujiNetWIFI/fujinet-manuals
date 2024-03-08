@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!-- Arial Unicode only -->
+<fop version="1.0">
+
+  <!-- Base URL for resolving relative URLs -->
+  <base>.</base>
+  
+  <renderers>
+    <renderer mime="application/pdf">
+    </renderer>
+  </renderers>
+
+</fop>
