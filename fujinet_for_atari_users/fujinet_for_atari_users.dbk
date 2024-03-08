@@ -1,5 +1,4 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-
+<?xml version="1.0" encoding="UTF-8"?>
 <book version="5.1" xmlns="http://docbook.org/ns/docbook"
       xmlns:xlink="http://www.w3.org/1999/xlink"
       xmlns:xila="http://www.w3.org/2001/XInclude/local-attributes"
@@ -9,256 +8,203 @@
       xmlns:m="http://www.w3.org/1998/Math/MathML"
       xmlns:html="http://www.w3.org/1999/xhtml"
       xmlns:db="http://docbook.org/ns/docbook">
+  <info>
+    <title>Introduction to FujiNet for ATARI® Users</title>
 
-    <info>
+    <titleabbrev>FujiNet Introduction</titleabbrev>
 
-        <title>Introduction to FujiNet for ATARI® Users</title>
-        <titleabbrev>FujiNet Introduction</titleabbrev>
+    <legalnotice>
+      <para>This Book is licensed under the GNU Public License, Version 3.0.
+      See: <link
+      xlink:href="https://www.gnu.org/licenses/gpl-3.0-standalone.html"/> for
+      details.</para>
+    </legalnotice>
 
-        <legalnotice>
-            <para>
-                This Book is licensed under the GNU Public License,
-                Version 3.0. See:
-                <link xlink:href="https://www.gnu.org/licenses/gpl-3.0-standalone.html" />
-                for details.
-            </para>
-        </legalnotice>
+    <author>
+      <personname><firstname>Thomas</firstname>
+      <surname>Cherryhomes</surname></personname>
+    </author>
 
-        <author>
-            <personname>
-                <firstname>Thomas</firstname>
-                <surname>Cherryhomes</surname>
-            </personname>
-        </author>
+    <pubdate>2024.03.07</pubdate>
+  </info>
 
-        <pubdate>2024.03.07</pubdate>
+  <dedication>
+    <para>This book is dedicated to the thousands of FujiNet users, now across
+    multiple platforms. You all have given the FujiNet team the drive and
+    determination to make FujiNet a comprehensive</para>
 
-    </info>
+    <para> platform to connect all of our retro-computing and retro-gaming
+    systems together to do new and fun things.</para>
+  </dedication>
 
-    <dedication>
-        <para>
-            This book is dedicated to the thousands of FujiNet users, now across
-            multiple platforms. You all have given the FujiNet team the drive
-            and determination to make FujiNet a comprehensive platform to
-            connect all of our retro-computing and retro-gaming systems
-            together to do new and fun things.
-        </para>
-    </dedication>
+  <acknowledgements>
+    <para>Many thanks to the dozens of contributors to every single aspect of
+    FujiNet, not limited to the hardware, the software, the firmware, or the
+    documentation. But there are people that need to be mentioned:</para>
 
-    <acknowledgements>
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Joe</firstname>
+        <surname>Honold</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
 
-        <para>
-            Many thanks to the dozens of contributors to every single aspect
-            of FujiNet, not limited to the hardware, the software, the
-            firmware, or the documentation. But there are people that need
-            to be mentioned:
-        </para>
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Thomas</firstname>
+        <surname>Cherryhomes</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
 
-        <itemizedlist>
-            <listitem>
-                <para>
-                    <personname>
-                        <firstname>Joe</firstname>
-                        <surname>Honold</surname>
-                    </personname>
-                </para>
-            </listitem>
-        </itemizedlist>
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Jeff</firstname>
+        <surname>Piepmeier</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
 
-        <itemizedlist>
-            <listitem>
-                <para>
-                    <personname>
-                        <firstname>Thomas</firstname>
-                        <surname>Cherryhomes</surname>
-                    </personname>
-                </para>
-            </listitem>
-        </itemizedlist>
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Steve</firstname>
+        <surname>Boswell</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
 
-        <itemizedlist>
-            <listitem>
-                <para>
-                    <personname>
-                        <firstname>Jeff</firstname>
-                        <surname>Piepmeier</surname>
-                    </personname>
-                </para>
-            </listitem>
-        </itemizedlist>
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Oscar</firstname>
+        <surname>Fowler</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
 
-        <itemizedlist>
-            <listitem>
-                <para>
-                    <personname>
-                        <firstname>Steve</firstname>
-                        <surname>Boswell</surname>
-                    </personname>
-                </para>
-            </listitem>
-        </itemizedlist>
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Mark</firstname>
+        <surname>Fisher</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
 
-        <itemizedlist>
-            <listitem>
-                <para>
-                    <personname>
-                        <firstname>Oscar</firstname>
-                        <surname>Fowler</surname>
-                    </personname>
-                </para>
-            </listitem>
-        </itemizedlist>
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Jan</firstname> <surname>Krupa</surname>
+        </personname></para>
+      </listitem>
+    </itemizedlist>
 
-        <itemizedlist>
-            <listitem>
-                <para>
-                    <personname>
-                        <firstname>Mark</firstname>
-                        <surname>Fisher</surname>
-                    </personname>
-                </para>
-            </listitem>
-        </itemizedlist>
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Benjamin</firstname>
+        <surname>Krein</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
+  </acknowledgements>
 
-        <itemizedlist>
-            <listitem>
-                <para>
-                    <personname>
-                        <firstname>Jan</firstname>
-                        <surname>Krupa</surname>
-                    </personname>
-                </para>
-            </listitem>
-        </itemizedlist>
+  <preface>
+    <title>PREFACE</title>
 
-        <itemizedlist>
-            <listitem>
-                <para>
-                    <personname>
-                        <firstname>Benjamin</firstname>
-                        <surname>Krein</surname>
-                    </personname>
-                </para>
-            </listitem>
-        </itemizedlist>
+    <para>Thank you for your purchase of a #FujiNet Wi-Fi Network adapter. We
+    hope that this device will provide you with hours of useful enjoyment, and
+    open your ATARI® computer to the wider world of Internet
+    connectivity.</para>
 
-    </acknowledgements>
+    <para>This manual is for new users of #FujiNet to get a quick grasp on its
+    comprehensive feature set, and can be thought of as both a Getting Started
+    manual, as well as a reference guide.</para>
+  </preface>
 
-    <preface>
-        <title>PREFACE</title>
+  <!-- Chapter 1: What is FujiNet? -->
 
-        <para>
-            Thank you for your purchase of a #FujiNet Wi-Fi Network adapter.
-            We hope that this device will provide you with hours of useful
-            enjoyment, and open your ATARI® computer to the wider world
-            of Internet connectivity.
-        </para>
-        <para>
-            This manual is for new users of #FujiNet to get a quick grasp
-            on its comprehensive feature set, and can be thought of as
-            both a Getting Started manual, as well as a reference guide.
-        </para>
-    </preface>
+  <chapter>
+    <title>What is FujiNet?</title>
 
-    <!-- Chapter 1: What is FujiNet? -->
+    <para>FujiNet provides the <trademark class="registered">ATARI</trademark>
+    computer with a wide range of devices that may all be used simultaneously.
+    These devices include a virtual "disk" drive, a virtual "printer", a
+    virtual "MODEM", and a "Network Adapter" which provides comprehensive
+    access to a wide variety of local and Internet services through the use of
+    protocol adapters.</para>
 
-    <chapter>
+    <para>Each of these virtual devices is described below.</para>
 
-        <title>What is FujiNet?</title>
+    <section>
+      <title>Virtual Disk Drive "D:"</title>
 
-        <para>
-            FujiNet provides the ATARI® computer with a wide range of devices that
-            may all be used simultaneously. These devices include a virtual "disk"
-            drive, a virtual "printer", a virtual "MODEM", and a "Network Adapter"
-            which provides comprehensive access to a wide variety of local and
-            Internet services through the use of protocol adapters.
-        </para>
+      <para>FujiNet provides the virtual disk device, both so that it can
+      automatically load its configuration program, and to provide the ability
+      to load and use software both from the local SD card slot, or from one
+      of many available <acronym>TNFS</acronym> servers that are not only
+      available on the Internet, but can also be run on the local network, as
+      well.</para>
 
-        <para>
-            Each of these virtual devices is described below.
-        </para>
+      <para>The FujiNet provides up to eight (8) virtual "disk" drives. These
+      disk drives can accept a disk or file image in one of several available
+      formats (<filename>ATR</filename>, <filename>ATX</filename>, or
+      <filename>XEX</filename>), which can be provided from one of eight (8)
+      host slots.</para>
 
-        <section>
+      <para>By selecting one of the host slots in the
+      <productname>FujiNet</productname> Configuration program
+      (<productname>CONFIG</productname>), a disk image can be selected, which
+      can then be mounted into one of the eight device slots.</para>
 
-            <title>Virtual Disk Drive "D:"</title>
+      <para>FujiNet can mount one of four different file formats into a device
+      slot:</para>
 
-            <para>
-                FujiNet provides the virtual disk device, both so that it can
-                automatically load its configuration program, and to provide
-                the ability to load and use software both from the local SD
-                card slot, or from one of many available TNFS servers that
-                are not only available on the Internet, but can also be run
-                on the local network, as well.
-            </para>
+      <variablelist>
+        <varlistentry>
+          <term><filename>ATR</filename></term>
 
-            <para>
-                The FujiNet provides up to eight (8) virtual "disk" drives.
-                These disk drives can accept a disk or file image in one of several
-                available formats (ATR, ATX, or XEX), which can be provided from
-                one of eight (8) host slots.
-            </para>
+          <listitem>
+            <para>The most common <trademark
+            class="registered">ATARI</trademark> disk image format, originally
+            specified by the SIO2PC project. It can support unprotected disks
+            up to 65535 sectors long, and can support disk images with sector
+            sizes of 128 (single density), 256 (double density), and 512
+            bytes. FujiNet also uses an unused set of three bytes in this
+            header to specify which sectors are allowed to be written to, when
+            the disk is mounted read only, so that "High Score Enabled"
+            functionality can be supported.</para>
+          </listitem>
+        </varlistentry>
 
-            <para>
-                By selecting one of the host slots in the FujiNet Configuration
-                program, a disk image can be selected, which can then be mounted
-                into one of the eight device slots.
-            </para>
+        <varlistentry>
+          <term><filename>ATX</filename></term>
 
-            <para>
-                FujiNet can mount one of four different file formats into a
-                device slot:
-            </para>
+          <listitem>
+            <para>A disk image format specifically designed to represent the
+            unique requirements for copy protected disks on ATARI® systems, by
+            specifying how each track is laid out and positioned on the disk.
+            This includes the alignment of each track. In addition, for each
+            sector, additional information is represented to specify any
+            errors that need to be properly simulated, such as bad, missing,
+            or weak sectors. This format is currently maintained by the
+            a8preservation project: <link
+            xlink:href="https://www.a8preservation.com/">https://www.a8preservation.com/</link></para>
+          </listitem>
+        </varlistentry>
 
-            <itemizedlist>
+        <varlistentry>
+          <term><filename>CAS</filename></term>
 
-                <listitem>
-                    <para>
-                        <emphasis role="bold">ATR</emphasis> —
-                        Used for standard Atari disks, containing a contiguous
-                        dump of each sector on a disk.
-                    </para>
-                </listitem>
+          <listitem>
+            <para>A cassette image format roughly analogous to
+            <filename>ATR</filename>. It stores each tape block, along with
+            the delay in milliseconds before the next one should be sent.
+            <emphasis role="bold">CAS files can be mounted into device slot
+            8.</emphasis></para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
 
-                <listitem>
-                    <para>
-                        <emphasis role="bold">ATX</emphasis> —
-                        Used for copy-protected Atari disks, containing
-                        not only the data for each sector, but also
-                        its position on the disk, and any "error" mode
-                        that must be replicated.
-                    </para>
-                </listitem>
+      <figure>
+        <title>Virtual Disks</title>
 
-                <listitem>
-                    <para>
-                        <emphasis role="bold">XEX</emphasis> —
-                        The standard Atari DOS Binary Load format. Can
-                        be used to directly load software that would
-                        otherwise need to be loaded in a DOS, with
-                        some exceptions.
-                    </para>
-                </listitem>
-
-                <listitem>
-                    <para>
-                        <emphasis role="bold">CAS</emphasis> —
-                        CAS format can be mounted in device slot 8
-                        to allow for cassette software to be loaded.
-                    </para>
-                </listitem>
-
-                </itemizedlist>
-
-                <figure>
-                    <title>Virtual Disks</title>
-                    <mediaobject>
-                        <imageobject>
-                            <imagedata fileref="figs/virtual_disk.png" scale="25" />
-                        </imageobject>
-                    </mediaobject>
-                </figure>
-        </section>
-
-    </chapter>
-
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="figs/virtual_disk.png" scale="25"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+    </section>
+  </chapter>
 </book>

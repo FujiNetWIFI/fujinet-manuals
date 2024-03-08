@@ -2,7 +2,7 @@ XSLTPROC=xsltproc
 FOP=fop
 FOP_CFG=fop.xml
 SOURCE_FILE=fujinet_for_atari_users
-DOCBOOK_STYLESHEET=/usr/share/xml/docbook/stylesheet/nwalsh/fo/docbook.xsl
+DOCBOOK_STYLESHEET=$(SOURCE_FILE).xsl
 FO=/tmp/tmp.fo
 
 all: pdf

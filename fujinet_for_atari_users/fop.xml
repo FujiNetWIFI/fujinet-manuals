@@ -4,10 +4,20 @@
 
   <!-- Base URL for resolving relative URLs -->
   <base>.</base>
-  
+
   <renderers>
-    <renderer mime="application/pdf">
-    </renderer>
+      <renderer mime="application/pdf">
+
+          <fonts>
+              <font embed-url="fonts/OptimaLTStd-Bold.otf">
+                  <font-triplet name="Optima LT Std" style="normal" weight="bold"/>
+              </font>
+	      <font embed-url="fonts/Optima-LT-Std-Roman.ttf">
+                  <font-triplet name="Optima LT Std" style="normal" weight="normal"/>
+	      </font>
+          </fonts>
+
+      </renderer>
   </renderers>
 
 </fop>
