@@ -1,0 +1,8 @@
+Feedback from users
+1. It might be worth mentioning that the Fujinet plugs into the SIO port and is compatible with (nearly?) all Atari computers.
+2. "TNFS" is mentioned, but not described, on page 1. It may be worth explaining what TNFS is.
+3. I can't make sense of Figure I-1, despite being familiar with how disk images and virtual drive slots work on Fujinet.
+4. It took me a while to figure out what the second item in Figure I.2 is. (It's a Fujinet, but that was totally not obvious at first). There's also a penultimate step, which is to access the file from the Fujinet on a PC before finally sending it to a printer.
+5. In Figure I-3, the arrows between each item should be double-ended, since the Fujinet supports sending as well as receiving data over the WWW.
+6. Figure I-4 looks a little confusing to me as well. I think it's missing a Fujinet running CP/M, between the SD card and the TV.
+7. For Apetime, it might be worthwhile giving a mention to SpartaDOS X, and any Atari OSes besides SpartaDOS X that can make use of it.
