@@ -9,7 +9,8 @@
       xmlns:html="http://www.w3.org/1999/xhtml"
       xmlns:db="http://docbook.org/ns/docbook">
   <info>
-    <title>Introduction to FujiNet for ATARI® Users</title>
+    <title>Introduction to FujiNet for <trademark
+    class="registered">ATARI</trademark> Users</title>
 
     <titleabbrev>FujiNet Introduction</titleabbrev>
 
@@ -29,9 +30,10 @@
   </info>
 
   <dedication>
-    <para>This book is dedicated to the thousands of FujiNet users, now across
-    multiple platforms. You all have given the FujiNet team the drive and
-    determination to make FujiNet a comprehensive</para>
+    <para>This book is dedicated to the thousands of
+    <productname>FujiNet</productname> users, now across multiple platforms.
+    You all have given the FujiNet team the drive and determination to make
+    FujiNet a comprehensive</para>
 
     <para>platform to connect all of our retro-computing and retro-gaming
     systems together to do new and fun things.</para>
@@ -39,8 +41,9 @@
 
   <acknowledgements>
     <para>Many thanks to the dozens of contributors to every single aspect of
-    FujiNet, not limited to the hardware, the software, the firmware, or the
-    documentation. But there are people that need to be mentioned:</para>
+    <productname>FujiNet</productname>, not limited to the hardware, the
+    software, the firmware, or the documentation. But there are people that
+    need to be mentioned:</para>
 
     <itemizedlist>
       <listitem>
@@ -121,6 +124,19 @@
   <chapter>
     <title>What is FujiNet?</title>
 
+    <para>FujiNet is a Wi-Fi Network Adapter that plugs into your <trademark
+    class="registered">ATARI</trademark> "Peripheral" or
+    <acronym>SIO</acronym> port. It provides storage, printing,
+    communications, networking, and more in a single peripheral.<figure>
+        <title>A FujiNet</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="figs/fujinet-by-itself.png"/>
+          </imageobject>
+        </mediaobject>
+      </figure></para>
+
     <para>Based on the <trademark class="registered">Espressif
     ESP32</trademark> micro controller, FujiNet provides the <trademark
     class="registered">ATARI</trademark> computer with a wide range of devices
@@ -140,6 +156,18 @@
       of many available <acronym>TNFS</acronym> servers that are not only
       available on the Internet, but can also be run on the local network, as
       well.</para>
+
+      <formalpara>
+        <title>What is TNFS?</title>
+
+        <para><acronym>TNFS</acronym> is a simple networking protocol that was
+        developed by the Spectranet project, which provides network
+        connectivity to <trademark class="registered">Sinclair</trademark>
+        <trademark>ZX Spectrum</trademark> computers. Because the protocol is
+        open source, and it was deemed useful, the FujiNet project implemented
+        it as the primary method of file sharing for the virtual disk
+        drive.</para>
+      </formalpara>
 
       <para>The FujiNet provides up to eight (8) virtual "disk" drives. These
       disk drives can accept a disk or file image in one of several available
@@ -248,7 +276,7 @@
           <term>TRIM</term>
 
           <listitem>
-            <para>Like RAW, but everything after an ATASCII EOL is
+            <para>Like RAW, but everything after an ATASCII end of line is
             truncated.</para>
           </listitem>
         </varlistentry>
@@ -398,7 +426,8 @@
           <term>GRANTIC</term>
 
           <listitem>
-            <para>An implementation of Claus Buchholz's "PRANTIC" screen
+            <para>An implementation of <personname>Claus
+            Buchholz</personname>'s "<acronym>PRANTIC</acronym>" screen
             capture to printer device. Outputs in
             <filename>PNG</filename>.</para>
           </listitem>
@@ -409,7 +438,7 @@
 
           <listitem>
             <para>Useful for printing out program listings, as it embeds the
-            ATASCII font.</para>
+            <acronym>ATASCII</acronym> font.</para>
           </listitem>
         </varlistentry>
       </variablelist>
@@ -432,24 +461,24 @@
 
       <itemizedlist>
         <listitem>
-          <para>ICE-T</para>
+          <para><productname>ICE-T</productname></para>
         </listitem>
 
         <listitem>
-          <para>BobTerm</para>
+          <para><productname>BobTerm</productname></para>
         </listitem>
 
         <listitem>
-          <para>Express!</para>
+          <para><productname>Express!</productname></para>
         </listitem>
 
         <listitem>
-          <para>AMODEM Plus</para>
+          <para><productname>AMODEM Plus</productname></para>
         </listitem>
 
         <listitem>
-          <para><trademark class="registered">ATARI</trademark> Telelink
-          I</para>
+          <para><trademark class="registered">ATARI</trademark>
+          <productname>Telelink I</productname></para>
         </listitem>
       </itemizedlist>
 
@@ -462,15 +491,23 @@
 
       <itemizedlist>
         <listitem>
-          <para>AMIS BBS</para>
+          <para><productname>AMIS BBS</productname></para>
         </listitem>
 
         <listitem>
-          <para>BBS Express 1.0, 2.0, 5.0</para>
+          <para><productname>BBS Express</productname>
+          <productnumber>1.0</productnumber>,
+          <productnumber>2.0</productnumber>,
+          <productnumber>5.0</productnumber></para>
         </listitem>
 
         <listitem>
-          <para>FoReM-26M, FoReM XE Professional 5.4</para>
+          <para><productname>FoReM-26M</productname>, <productname>FoReM XE
+          Professional</productname> <productnumber>5.4</productnumber></para>
+        </listitem>
+
+        <listitem>
+          <para><productname>Carina BBS</productname></para>
         </listitem>
       </itemizedlist>
     </section>
@@ -612,22 +649,25 @@ CLOSE #1</screen>
           </mediaobject>
         </figure></para>
 
-      <para>The CP/M emulation uses the SWP ATR8000 protocol for connecting
-      the CP/M computer to the Atari. This means that programs such as DT-80
-      can be used to provide the requisite terminal program. In addition, the
-      CP/M emulation can be accessed by any Atari MODEM program that supports
-      the "R:" device.</para>
+      <para>The CP/M emulation uses the <productname>ATR8000</productname>
+      protocol for connecting the CP/M computer to the <trademark
+      class="registered">ATARI</trademark>. This means that programs such as
+      DT-80 can be used to provide the requisite terminal program. In
+      addition, the CP/M emulation can be accessed by any <trademark
+      class="registered">ATARI</trademark> MODEM program that supports the
+      "R:" device.</para>
     </section>
 
     <section>
       <title>S.A.M. Voice "P4:"</title>
 
       <para>Because the micro controller provides an 8-bit
-      <acronym>DAC</acronym>, and the Atari <acronym>SIO</acronym> connector
+      <acronym>DAC</acronym>, and the <trademark
+      class="registered">ATARI</trademark> <acronym>SIO</acronym> connector
       provides an AUDIO IN pin, it was trivial to add an implementation of
       Don't Ask Software's Software Automatic Mouth (S.A.M.) directly on the
       FujiNet device! This has the advantage of not blanking out the display
-      when you wish to use the voice synthesizer. </para>
+      when you wish to use the voice synthesizer.</para>
 
       <para>Since the P4: device is used, it means that SAM is available to
       speak at any time, simply by writing to the device.</para>
@@ -651,7 +691,30 @@ PRINT #1;"HELLO FROM FUJINET!"</screen></para>
       <para>FujiNet includes a real-time clock that is synchronized to the
       Internet via <acronym>SNTP</acronym> (Simple Network Time Protocol),
       exposed as a device that is compatible with the
-      <filename>APETIME.COM</filename> utility.</para>
+      <filename>APETIME.COM</filename> utility. Operating systems like
+      SpartaDOS and SpartaDOS X can make use of this real time clock to
+      provide time-stamps to files. It is also possible for any program to
+      query the FujiNet to ask for the current time.</para>
     </section>
   </chapter>
+
+  <colophon>
+    <para>This book was produced using the DocBook 5.1 XML schema, and XSL
+    style sheets. </para>
+
+    <para>The source material for this book may be found on GitHub at the
+    "fujinet-manuals" repository inside the FujiNet repository group: </para>
+
+    <blockquote>
+      <para><link
+      xlink:href="https://github.com/FujiNetWIFI/fujinet-manuals/tree/main/fujinet_for_atari_users">https://github.com/FujiNetWIFI/fujinet-manuals/tree/main/fujinet_for_atari_users</link></para>
+    </blockquote>
+
+    <para>For the printed format, the xsltproc tool was used to generate the
+    intermediate FO format, and Apache FOP was used to process the
+    intermediate format into PDF.</para>
+
+    <para>The HTML format is processed using OpenJade, and styled with CSS
+    style sheets.</para>
+  </colophon>
 </book>

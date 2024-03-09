@@ -2,7 +2,118 @@
 #+author: Thomas Cherryhomes
 #+email: thom.cherryhomes@gmail.com
 
-* Preface
-* What is FujiNet?
-* Unpacking and Connecting Your FujiNet
-*
+#+begin_note
+Intended Scope: Comprehensive User Guide and Reference
+
+- First level PART
+- Second level CHAPTER
+- Third level and deeper SECTION
+
+#+end_note
+
+* USER'S GUIDE
+
+** Preface
+** What is FujiNet?
+
+*** Virtual Disk Drive "D:"
+*** Virtual Printer "P:"
+*** Virtual MODEM "R:"
+*** Network Adapter "N:"
+*** CP/M Compatibility
+*** S.A.M. Voice "P4:"
+*** APETIME Compatibility
+
+** Unpacking and Connecting Your FujiNet
+** Configuring Your FujiNet
+
+*** Booting into CONFIG
+*** Setting your Wi-Fi Network
+*** Setting Host Slots
+
+** Loading Software
+
+*** Selecting a Host
+*** Selecting Software
+*** Selecting a Device Slot
+*** Read only vs. Read Write
+*** Booting
+
+** Printing
+** Connecting Online via the MODEM
+
+*** Using Existing Comms programs
+*** Answering Incoming Connections
+*** Locking the Baud Rate
+*** Debugging with the MODEM Sniffer
+
+** Using the Network Adapter
+
+*** Loading the N: Handler
+*** Using N: From BASIC
+*** Using N: From DOS
+
+#+begin_note
+While N: is nominally very compatible, the following sections are
+intended to show special concerns for a given DOS.
+#+end_note
+
+**** Atari DOS 2 and MyDOS
+
+***** Using N tools to get around DUP wiping out N: handler
+
+**** Atari DOS 3
+
+***** Using NCD to work around DOS 3's dumb Copy/Append program.
+
+**** OS/A+ and DOS XL
+
+***** Using D and N to set default device
+
+**** SpartaDOS and SpartaDOS X
+**** NOS
+
+***** Using the on-line Help.
+
+* Programming FujiNet
+
+** BASIC
+** FastBASIC
+** Assembler
+** ACTION!
+** FORTH
+** C (via CC65)
+** Pascal (via MAD Pascal)
+
+* Reference
+
+** FujiNet Commands
+
+*** FCONFIG
+*** FEJECT
+*** FHOST
+*** FINFO
+*** FLD
+*** FLH
+*** FLOBBY
+*** FLS
+*** FMALL
+*** FMOUNT
+*** FNET
+*** FNEW
+*** FRESET
+*** FSCAN
+*** NCD
+*** NCOPY
+*** NDEL
+*** NDIR
+*** NLOGIN
+*** NMKDIR
+*** NPWD
+*** NREN
+*** NRMDIR
+*** NTRANS
+*** RAUTOANS
+*** RBAUDLOK
+*** RLISTEN
+*** RSNIFF
