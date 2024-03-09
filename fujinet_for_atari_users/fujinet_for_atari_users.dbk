@@ -119,485 +119,539 @@
     manual, as well as a reference guide.</para>
   </preface>
 
-  <!-- Chapter 1: What is FujiNet? -->
+  <part>
+    <title>USER'S GUIDE</title>
 
-  <chapter>
-    <title>What is FujiNet?</title>
+    <chapter>
+      <title>What is FujiNet?</title>
 
-    <para>FujiNet is a Wi-Fi Network Adapter that plugs into your <trademark
-    class="registered">ATARI</trademark> "Peripheral" or
-    <acronym>SIO</acronym> port. It provides storage, printing,
-    communications, networking, and more in a single peripheral.<figure>
-        <title>A FujiNet</title>
+      <para>FujiNet is a Wi-Fi Network Adapter that plugs into your <trademark
+      class="registered">ATARI</trademark> "Peripheral" or
+      <acronym>SIO</acronym> port. It provides storage, printing,
+      communications, networking, and more in a single peripheral.<figure>
+          <title>A FujiNet</title>
 
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="figs/fujinet-by-itself.png"/>
-          </imageobject>
-        </mediaobject>
-      </figure></para>
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="figs/fujinet-by-itself.png"/>
+            </imageobject>
+          </mediaobject>
+        </figure></para>
 
-    <para>Based on the <trademark class="registered">Espressif
-    ESP32</trademark> micro controller, FujiNet provides the <trademark
-    class="registered">ATARI</trademark> computer with a wide range of devices
-    that may all be used simultaneously. These devices include a virtual
-    "disk" drive, a virtual "printer", a virtual "MODEM", and a "Network
-    Adapter" which provides comprehensive access to a wide variety of local
-    and Internet services through the use of protocol adapters.</para>
+      <para>Based on the <trademark class="registered">Espressif
+      ESP32</trademark> micro controller, FujiNet provides the <trademark
+      class="registered">ATARI</trademark> computer with a wide range of
+      devices that may all be used simultaneously. These devices include a
+      virtual "disk" drive, a virtual "printer", a virtual "MODEM", and a
+      "Network Adapter" which provides comprehensive access to a wide variety
+      of local and Internet services through the use of protocol
+      adapters.</para>
 
-    <para>Each of these virtual devices is described below.</para>
+      <para>Each of these virtual devices is described below.</para>
 
-    <section>
-      <title>Virtual Disk Drive "D:"</title>
+      <section>
+        <title>Virtual Disk Drive "D:"</title>
 
-      <para>FujiNet provides the virtual disk device, both so that it can
-      automatically load its configuration program, and to provide the ability
-      to load and use software both from the local SD card slot, or from one
-      of many available <acronym>TNFS</acronym> servers that are not only
-      available on the Internet, but can also be run on the local network, as
-      well.</para>
+        <para>FujiNet provides the virtual disk device, both so that it can
+        automatically load its configuration program, and to provide the
+        ability to load and use software both from the local SD card slot, or
+        from one of many available <acronym>TNFS</acronym> servers that are
+        not only available on the Internet, but can also be run on the local
+        network, as well.</para>
 
-      <formalpara>
-        <title>What is TNFS?</title>
+        <formalpara>
+          <title>What is TNFS?</title>
 
-        <para><acronym>TNFS</acronym> is a simple networking protocol that was
-        developed by the Spectranet project, which provides network
-        connectivity to <trademark class="registered">Sinclair</trademark>
-        <trademark>ZX Spectrum</trademark> computers. Because the protocol is
-        open source, and it was deemed useful, the FujiNet project implemented
-        it as the primary method of file sharing for the virtual disk
-        drive.</para>
-      </formalpara>
+          <indexterm>
+            <primary>TNFS</primary>
+          </indexterm>
 
-      <para>The FujiNet provides up to eight (8) virtual "disk" drives. These
-      disk drives can accept a disk or file image in one of several available
-      formats (<filename>ATR</filename>, <filename>ATX</filename>, or
-      <filename>XEX</filename>), which can be provided from one of eight (8)
-      host slots.</para>
+          <para><acronym>TNFS</acronym> is a simple networking protocol that
+          was developed by the Spectranet project, which provides network
+          connectivity to <trademark class="registered">Sinclair</trademark>
+          <trademark>ZX Spectrum</trademark> computers. Because the protocol
+          is open source, and it was deemed useful, the FujiNet project
+          implemented it as the primary method of file sharing for the virtual
+          disk drive.</para>
+        </formalpara>
 
-      <para>By selecting one of the host slots in the
-      <productname>FujiNet</productname> Configuration program
-      (<productname>CONFIG</productname>), a disk image can be selected, which
-      can then be mounted into one of the eight device slots.</para>
+        <para>The FujiNet provides up to eight (8) virtual "disk" drives.
+        These disk drives can accept a disk or file image in one of several
+        available formats (<filename>ATR</filename>, <filename>ATX</filename>,
+        or <filename>XEX</filename>), which can be provided from one of eight
+        (8) host slots.</para>
 
-      <para>FujiNet can mount one of four different file formats into a device
-      slot:</para>
+        <para>By selecting one of the host slots in the
+        <productname>FujiNet</productname> Configuration program
+        (<productname>CONFIG</productname>), a disk image can be selected,
+        which can then be mounted into one of the eight device slots.</para>
 
-      <variablelist>
-        <varlistentry>
-          <term><filename>ATR</filename></term>
+        <para>FujiNet can mount one of four different file formats into a
+        device slot:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term><filename>ATR</filename><indexterm>
+                <primary>ATR</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>The most common <trademark
+              class="registered">ATARI</trademark> disk image format,
+              originally specified by the SIO2PC project. It can support
+              unprotected disks up to 65535 sectors long, and can support disk
+              images with sector sizes of 128 (single density), 256 (double
+              density), and 512 bytes. FujiNet also uses an unused set of
+              three bytes in this header to specify which sectors are allowed
+              to be written to, when the disk is mounted read only, so that
+              "High Score Enabled" functionality can be supported.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><filename>ATX</filename><indexterm>
+                <primary>ATX</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>A disk image format specifically designed to represent the
+              unique requirements for copy protected disks on ATARI® systems,
+              by specifying how each track is laid out and positioned on the
+              disk. This includes the alignment of each track. In addition,
+              for each sector, additional information is represented to
+              specify any errors that need to be properly simulated, such as
+              bad, missing, or weak sectors. This format is currently
+              maintained by the a8preservation project: <link
+              xlink:href="https://www.a8preservation.com/">https://www.a8preservation.com/</link></para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><filename>CAS</filename><indexterm>
+                <primary>CAS</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>A cassette image format roughly analogous to
+              <filename>ATR</filename>. It stores each tape block, along with
+              the delay in milliseconds before the next one should be sent.
+              <emphasis role="bold">CAS files can be mounted into device slot
+              8.</emphasis></para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <figure>
+          <title>Virtual Disks</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="figs/virtual_disk.png" scale="25"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+      </section>
+
+      <section>
+        <title>Virtual Printer "P:"</title>
+
+        <para>FujiNet also provides a virtual printer device, which works
+        exactly the same as a physical printer attached directly to the
+        <trademark class="registered">ATARI</trademark> computer. When a
+        program sends something to the "P:" device, the FujiNet will simulate
+        one of more than a dozen available virtual printers. The end result is
+        rendered into a document which can be read in a viewer, or sent to a
+        modern printer.</para>
+
+        <figure>
+          <title>Virtual Printer</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="figs/virtual_printer.png" scale="75"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <para>The following printers are supported:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>RAW<indexterm>
+                <primary>RAW</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>The printer data is sent as-is, with no conversion.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>TRIM<indexterm>
+                <primary>TRIM</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>Like RAW, but everything after an ATASCII end of line is
+              truncated.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>ASCII<indexterm>
+                <primary>ASCII</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>Like RAW, but every non-ASCII character is ignored.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark>
+            <trademark>820</trademark><indexterm>
+                <primary>ATARI 820</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>A 40 column dot matrix impact printer. Used a 5x7 font
+              with ASCII characters. Printed to 3 7/8 inches (98.425mm) width
+              paper. Could also print sideways (vertical). Outputs in
+              <filename>PDF</filename>. Matches the 400/800 systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark>
+            <trademark>822</trademark><indexterm>
+                <primary>ATARI 822</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>A 40 column thermal printer. Used a 5x7 font with ASCII
+              characters. Printed to 4 7/16" (112.7125mm) width thermal paper.
+              Could also print dot graphics. Outputs in
+              <filename>PDF</filename>. Matches the 400/800 systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark><trademark>
+            825</trademark><indexterm>
+                <primary>ATARI 825</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>An 80 column dot matrix impact printer. Supported normal,
+              elongated, and condensed fonts in 10 and 16.7 characters per
+              inch widths. Could also support reverse line feeds (which could
+              be used, e.g. to make multi-column text in AtariWriter), and
+              other advanced features. Outputs in <filename>PDF</filename>.
+              Matches the 400/800 systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark>
+            <trademark>1020</trademark><indexterm>
+                <primary>ATARI 820</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>A plotter which can draw calligraphic graphics using a
+              pen, and one of four colors (red, green, blue, and black).
+              Unlike most of the other printers in this list, this printer
+              outputs in <filename>SVG</filename>. Matches the XL
+              systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark>
+            <trademark>1025</trademark><indexterm>
+                <primary>ATARI 1025</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>An 80 column dot matrix impact printer. Uses a 5x7 font
+              with ASCII characters. Printed to either single sheets or
+              fan-fold tractor fed paper anywhere from 4.5 to 8.5 inches
+              (114.3 to 215.9mm) wide. Could accept tractor feed or friction
+              fed paper. Could also accept an automatic document feeder
+              attachment. Outputs in <filename>PDF</filename>. Matches the XL
+              systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark>
+            <trademark>1027</trademark><indexterm>
+                <primary>ATARI 1027</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>An 80 column letter quality printer. The print font is
+              very close to Prestige Elite. Outputs in
+              <filename>PDF</filename>. Matches the XL systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark>
+            <trademark>1029</trademark><indexterm>
+                <primary>ATARI 1029</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>An 80 column dot matrix impact printer. Used a 5x7 font,
+              with only ASCII characters. Released in limited quantities in
+              Europe. Outputs in <filename>PDF</filename>. Matches the XL
+              systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark>
+            <trademark>XMM801</trademark><indexterm>
+                <primary>ATARI XMM801</primary>
+
+                <secondary>XMM801</secondary>
+              </indexterm></term>
+
+            <listitem>
+              <para>An 80 column dot matrix impact printer. Epson MX80 and
+              FX80 compatible. Contains many font widths. Can handle NLQ
+              (near-letter-quality) mode. Outputs in <filename>PDF</filename>.
+              Matches the XE systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">ATARI</trademark>
+            <trademark>XDM121</trademark><indexterm>
+                <primary>ATR</primary>
+
+                <secondary>XDM121</secondary>
+              </indexterm></term>
+
+            <listitem>
+              <para>An 80 column letter quality daisy wheel printer. Produced
+              letter quality output. Outputs in <filename>PDF</filename>.
+              Matches the XE systems.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">EPSON</trademark>
+            <trademark>MX80</trademark><indexterm>
+                <primary>EPSON MX80</primary>
+
+                <secondary>MX80</secondary>
+              </indexterm></term>
+
+            <listitem>
+              <para>An 80 column dot matrix impact printer with graphics
+              printing capability, as well as configurable font widths. Widely
+              considered the standard for dot matrix printers in the 1980s.
+              Outputs in <filename>PDF</filename>. This is the printer to use
+              with <trademark>The Print Shop.</trademark></para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term><trademark class="registered">OKI Data</trademark>
+            <trademark>OkiMate 10</trademark><indexterm>
+                <primary>OkiMate 10</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>A thermal wax printer capable of printing vivid color
+              graphics. Outputs in <filename>PDF</filename>.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>GRANTIC<indexterm>
+                <primary>GRANTIC</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>An implementation of <personname>Claus
+              Buchholz</personname>'s "<acronym>PRANTIC</acronym>" <indexterm>
+                  <primary>PRANTIC</primary>
+                </indexterm>screen capture to printer device. Outputs in
+              <filename>PNG</filename>.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>HTML Printer<indexterm>
+                <primary>HTML Printer</primary>
+              </indexterm></term>
+
+            <listitem>
+              <para>Useful for printing out program listings, as it embeds the
+              <acronym>ATASCII</acronym> font.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </section>
+
+      <section>
+        <title>Virtual MODEM "R:"</title>
+
+        <para>FujiNet also provides a virtual MODEM device by combining
+        emulation for an <trademark class="registered">ATARI</trademark>
+        <trademark>850</trademark> interface, and a <trademark
+        class="registered">Hayes</trademark> compatible modem with AT
+        instruction set. The resulting virtual device is compatible with
+        existing communications programs that use the "R:" device, and can be
+        used to dial hobbyist Bulletin Board Systems (BBS) hosts over raw or
+        TELNET connections.</para>
+
+        <para>The following terminal emulator programs have been tested with
+        FujiNet:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><productname>ICE-T</productname></para>
+          </listitem>
 
           <listitem>
-            <para>The most common <trademark
-            class="registered">ATARI</trademark> disk image format, originally
-            specified by the SIO2PC project. It can support unprotected disks
-            up to 65535 sectors long, and can support disk images with sector
-            sizes of 128 (single density), 256 (double density), and 512
-            bytes. FujiNet also uses an unused set of three bytes in this
-            header to specify which sectors are allowed to be written to, when
-            the disk is mounted read only, so that "High Score Enabled"
-            functionality can be supported.</para>
+            <para><productname>BobTerm</productname></para>
           </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><filename>ATX</filename></term>
 
           <listitem>
-            <para>A disk image format specifically designed to represent the
-            unique requirements for copy protected disks on ATARI® systems, by
-            specifying how each track is laid out and positioned on the disk.
-            This includes the alignment of each track. In addition, for each
-            sector, additional information is represented to specify any
-            errors that need to be properly simulated, such as bad, missing,
-            or weak sectors. This format is currently maintained by the
-            a8preservation project: <link
-            xlink:href="https://www.a8preservation.com/">https://www.a8preservation.com/</link></para>
+            <para><productname>Express!</productname></para>
           </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><filename>CAS</filename></term>
 
           <listitem>
-            <para>A cassette image format roughly analogous to
-            <filename>ATR</filename>. It stores each tape block, along with
-            the delay in milliseconds before the next one should be sent.
-            <emphasis role="bold">CAS files can be mounted into device slot
-            8.</emphasis></para>
+            <para><productname>AMODEM Plus</productname></para>
           </listitem>
-        </varlistentry>
-      </variablelist>
-
-      <figure>
-        <title>Virtual Disks</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="figs/virtual_disk.png" scale="25"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-    </section>
-
-    <section>
-      <title>Virtual Printer "P:"</title>
-
-      <para>FujiNet also provides a virtual printer device, which works
-      exactly the same as a physical printer attached directly to the
-      <trademark class="registered">ATARI</trademark> computer. When a program
-      sends something to the "P:" device, the FujiNet will simulate one of
-      more than a dozen available virtual printers. The end result is rendered
-      into a document which can be read in a viewer, or sent to a modern
-      printer.</para>
-
-      <figure>
-        <title>Virtual Printer</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="figs/virtual_printer.png" scale="75"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-
-      <para>The following printers are supported:</para>
-
-      <variablelist>
-        <varlistentry>
-          <term>RAW</term>
 
           <listitem>
-            <para>The printer data is sent as-is, with no conversion.</para>
+            <para><trademark class="registered">ATARI</trademark>
+            <productname>Telelink I</productname></para>
           </listitem>
-        </varlistentry>
+        </itemizedlist>
 
-        <varlistentry>
-          <term>TRIM</term>
+        <para>The MODEM emulation also supports opening a listening socket
+        that can accept a single incoming connection. This allows existing BBS
+        programs to be used as-is to accept TELNET or raw connections from
+        potential "callers."</para>
+
+        <para>The following BBS programs have been tested with FujiNet:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para><productname>AMIS BBS</productname></para>
+          </listitem>
 
           <listitem>
-            <para>Like RAW, but everything after an ATASCII end of line is
-            truncated.</para>
+            <para><productname>BBS Express</productname>
+            <productnumber>1.0</productnumber>,
+            <productnumber>2.0</productnumber>,
+            <productnumber>5.0</productnumber></para>
           </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term>ASCII</term>
 
           <listitem>
-            <para>Like RAW, but every non-ASCII character is ignored.</para>
+            <para><productname>FoReM-26M</productname>, <productname>FoReM XE
+            Professional</productname>
+            <productnumber>5.4</productnumber></para>
           </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark>
-          <trademark>820</trademark></term>
 
           <listitem>
-            <para>A 40 column dot matrix impact printer. Used a 5x7 font with
-            ASCII characters. Printed to 3 7/8 inches (98.425mm) width paper.
-            Could also print sideways (vertical). Outputs in
-            <filename>PDF</filename>. Matches the 400/800 systems.</para>
+            <para><productname>Carina BBS</productname></para>
           </listitem>
-        </varlistentry>
+        </itemizedlist>
+      </section>
 
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark>
-          <trademark>822</trademark></term>
+      <section>
+        <title>Network Adapter "N:"</title>
 
-          <listitem>
-            <para>A 40 column thermal printer. Used a 5x7 font with ASCII
-            characters. Printed to 4 7/16" (112.7125mm) width thermal paper.
-            Could also print dot graphics. Outputs in
-            <filename>PDF</filename>. Matches the 400/800 systems.</para>
-          </listitem>
-        </varlistentry>
+        <para>Finally, FujiNet provides a totally new <filename>N:</filename>
+        device for your <trademark class="registered">ATARI</trademark>
+        computer. This device brings not only any local network; the wider
+        Internet, accessible from any program or programming language that
+        accepts a devicespec, such as <trademark
+        class="registered">ATARI</trademark><trademark> BASIC, or
+        AtariWriter</trademark></para>
 
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark><trademark>
-          825</trademark></term>
+        <para>This is made possible by the addition of <emphasis>protocol
+        adapters</emphasis> which perform all the heavy lifting for the
+        complex protocols used by the modern Internet. These adapters run on
+        the FujiNet itself, and utilize its increased processing power to
+        create an easy to use I/O channel for the <trademark
+        class="registered">ATARI</trademark> computer.</para>
 
-          <listitem>
-            <para>An 80 column dot matrix impact printer. Supported normal,
-            elongated, and condensed fonts in 10 and 16.7 characters per inch
-            widths. Could also support reverse line feeds (which could be
-            used, e.g. to make multi-column text in AtariWriter), and other
-            advanced features. Outputs in <filename>PDF</filename>. Matches
-            the 400/800 systems.</para>
-          </listitem>
-        </varlistentry>
+        <figure>
+          <title>The HTTP Protocol Adapter</title>
 
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark>
-          <trademark>1020</trademark></term>
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="figs/virtual_network.png" scale="73"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
 
-          <listitem>
-            <para>A plotter which can draw calligraphic graphics using a pen,
-            and one of four colors (red, green, blue, and black). Unlike most
-            of the other printers in this list, this printer outputs in
-            <filename>SVG</filename>. Matches the XL systems.</para>
-          </listitem>
-        </varlistentry>
+        <para>Once you have loaded a DOS disk with the "N:" handler, you can,
+        for example, load a BASIC program, directly from a web server:</para>
 
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark>
-          <trademark>1025</trademark></term>
+        <sidebar>
+          <example>
+            <title>Loading a BASIC Program from a Web Server</title>
 
-          <listitem>
-            <para>An 80 column dot matrix impact printer. Uses a 5x7 font with
-            ASCII characters. Printed to either single sheets or fan-fold
-            tractor fed paper anywhere from 4.5 to 8.5 inches (114.3 to
-            215.9mm) wide. Could accept tractor feed or friction fed paper.
-            Could also accept an automatic document feeder attachment. Outputs
-            in <filename>PDF</filename>. Matches the XL systems.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark>
-          <trademark>1027</trademark></term>
-
-          <listitem>
-            <para>An 80 column letter quality printer. The print font is very
-            close to Prestige Elite. Outputs in <filename>PDF</filename>.
-            Matches the XL systems.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark>
-          <trademark>1029</trademark></term>
-
-          <listitem>
-            <para>An 80 column dot matrix impact printer. Used a 5x7 font,
-            with only ASCII characters. Released in limited quantities in
-            Europe. Outputs in <filename>PDF</filename>. Matches the XL
-            systems.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark>
-          <trademark>XMM801</trademark></term>
-
-          <listitem>
-            <para>An 80 column dot matrix impact printer. Epson MX80 and FX80
-            compatible. Contains many font widths. Can handle NLQ
-            (near-letter-quality) mode. Outputs in <filename>PDF</filename>.
-            Matches the XE systems.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><trademark class="registered">ATARI</trademark>
-          <trademark>XDM121</trademark></term>
-
-          <listitem>
-            <para>An 80 column letter quality daisy wheel printer. Produced
-            letter quality output. Outputs in <filename>PDF</filename>.
-            Matches the XE systems.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><trademark class="registered">EPSON</trademark>
-          <trademark>MX80</trademark></term>
-
-          <listitem>
-            <para>An 80 column dot matrix impact printer with graphics
-            printing capability, as well as configurable font widths. Widely
-            considered the standard for dot matrix printers in the 1980s.
-            Outputs in <filename>PDF</filename>. This is the printer to use
-            with <trademark>The Print Shop.</trademark></para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term><trademark class="registered">OKI Data</trademark>
-          <trademark>OkiMate 10</trademark></term>
-
-          <listitem>
-            <para>A thermal wax printer capable of printing vivid color
-            graphics. Outputs in <filename>PDF</filename>.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term>GRANTIC</term>
-
-          <listitem>
-            <para>An implementation of <personname>Claus
-            Buchholz</personname>'s "<acronym>PRANTIC</acronym>" screen
-            capture to printer device. Outputs in
-            <filename>PNG</filename>.</para>
-          </listitem>
-        </varlistentry>
-
-        <varlistentry>
-          <term>HTML Printer</term>
-
-          <listitem>
-            <para>Useful for printing out program listings, as it embeds the
-            <acronym>ATASCII</acronym> font.</para>
-          </listitem>
-        </varlistentry>
-      </variablelist>
-    </section>
-
-    <section>
-      <title>Virtual MODEM "R:"</title>
-
-      <para>FujiNet also provides a virtual MODEM device by combining
-      emulation for an <trademark class="registered">ATARI</trademark>
-      <trademark>850</trademark> interface, and a <trademark
-      class="registered">Hayes</trademark> compatible modem with AT
-      instruction set. The resulting virtual device is compatible with
-      existing communications programs that use the "R:" device, and can be
-      used to dial hobbyist Bulletin Board Systems (BBS) hosts over raw or
-      TELNET connections.</para>
-
-      <para>The following terminal emulator programs have been tested with
-      FujiNet:</para>
-
-      <itemizedlist>
-        <listitem>
-          <para><productname>ICE-T</productname></para>
-        </listitem>
-
-        <listitem>
-          <para><productname>BobTerm</productname></para>
-        </listitem>
-
-        <listitem>
-          <para><productname>Express!</productname></para>
-        </listitem>
-
-        <listitem>
-          <para><productname>AMODEM Plus</productname></para>
-        </listitem>
-
-        <listitem>
-          <para><trademark class="registered">ATARI</trademark>
-          <productname>Telelink I</productname></para>
-        </listitem>
-      </itemizedlist>
-
-      <para>The MODEM emulation also supports opening a listening socket that
-      can accept a single incoming connection. This allows existing BBS
-      programs to be used as-is to accept TELNET or raw connections from
-      potential "callers."</para>
-
-      <para>The following BBS programs have been tested with FujiNet:</para>
-
-      <itemizedlist>
-        <listitem>
-          <para><productname>AMIS BBS</productname></para>
-        </listitem>
-
-        <listitem>
-          <para><productname>BBS Express</productname>
-          <productnumber>1.0</productnumber>,
-          <productnumber>2.0</productnumber>,
-          <productnumber>5.0</productnumber></para>
-        </listitem>
-
-        <listitem>
-          <para><productname>FoReM-26M</productname>, <productname>FoReM XE
-          Professional</productname> <productnumber>5.4</productnumber></para>
-        </listitem>
-
-        <listitem>
-          <para><productname>Carina BBS</productname></para>
-        </listitem>
-      </itemizedlist>
-    </section>
-
-    <section>
-      <title>Network Adapter "N:"</title>
-
-      <para>Finally, FujiNet provides a totally new <filename>N:</filename>
-      device for your <trademark class="registered">ATARI</trademark>
-      computer. This device brings not only any local network; the wider
-      Internet, accessible from any program or programming language that
-      accepts a devicespec, such as <trademark
-      class="registered">ATARI</trademark><trademark> BASIC, or
-      AtariWriter</trademark></para>
-
-      <para>This is made possible by the addition of <emphasis>protocol
-      adapters</emphasis> which perform all the heavy lifting for the complex
-      protocols used by the modern Internet. These adapters run on the FujiNet
-      itself, and utilize its increased processing power to create an easy to
-      use I/O channel for the <trademark class="registered">ATARI</trademark>
-      computer.</para>
-
-      <figure>
-        <title>The HTTP Protocol Adapter</title>
-
-        <mediaobject>
-          <imageobject>
-            <imagedata fileref="figs/virtual_network.png" scale="73"/>
-          </imageobject>
-        </mediaobject>
-      </figure>
-
-      <para>Once you have loaded a DOS disk with the "N:" handler, you can,
-      for example, load a BASIC program, directly from a web server:</para>
-
-      <sidebar>
-        <example>
-          <title>Loading a BASIC Program from a Web Server</title>
-
-          <screen>READY
+            <screen>READY
 RUN"N:HTTP://FUJINET-TESTING.IRATA.ONLINE/BLACKJACK.BAS"</screen>
-        </example>
-      </sidebar>
+          </example>
+        </sidebar>
 
-      <para>Similarly, opening a connection to a TCP socket to host
-      192.168.0.123 port 1234 is as simple as:</para>
+        <para>Similarly, opening a connection to a TCP socket to host
+        192.168.0.123 port 1234 is as simple as:</para>
 
-      <sidebar>
-        <example>
-          <title>Opening a TCP socket in BASIC</title>
+        <sidebar>
+          <example>
+            <title>Opening a TCP socket in BASIC</title>
 
-          <screen>READY
+            <screen>READY
 OPEN #1,12,2,"N:TCP://192.168.0.123:1234/"</screen>
 
-          <itemizedlist>
-            <listitem>
-              <para>12 = READ and WRITE</para>
-            </listitem>
+            <itemizedlist>
+              <listitem>
+                <para>12 = READ and WRITE</para>
+              </listitem>
 
-            <listitem>
-              <para>2 = Translate Line-feeds into ATASCII EOL (UNIX line
-              endings)</para>
-            </listitem>
-          </itemizedlist>
-        </example>
-      </sidebar>
+              <listitem>
+                <para>2 = Translate Line-feeds into ATASCII EOL (UNIX line
+                endings)</para>
+              </listitem>
+            </itemizedlist>
+          </example>
+        </sidebar>
 
-      <para>Once a connection is opened, writing to it is equally as
-      simple:</para>
+        <para>Once a connection is opened, writing to it is equally as
+        simple:</para>
 
-      <sidebar>
-        <example>
-          <title>Writing to a TCP socket in BASIC</title>
+        <sidebar>
+          <example>
+            <title>Writing to a TCP socket in BASIC</title>
 
-          <screen>READY
+            <screen>READY
 PRINT #1;"HELLO FROM THE ATARI"</screen>
 
-          <para>The EOL here is translated into a UNIX line feed, because of
-          how the connection was previously opened.</para>
-        </example>
-      </sidebar>
+            <para>The EOL here is translated into a UNIX line feed, because of
+            how the connection was previously opened.</para>
+          </example>
+        </sidebar>
 
-      <para>Reading from an open connection, is as simple as writing to
-      it:</para>
+        <para>Reading from an open connection, is as simple as writing to
+        it:</para>
 
-      <sidebar>
-        <example>
-          <title>Reading from a TCP socket in BASIC</title>
+        <sidebar>
+          <example>
+            <title>Reading from a TCP socket in BASIC</title>
 
-          <screen>READY
+            <screen>READY
 DIM A$(99)
 
 READY
@@ -606,104 +660,196 @@ INPUT #1,A$
 READY
 PRINT A$
 Testing from PC.</screen>
-        </example>
-      </sidebar>
+          </example>
+        </sidebar>
 
-      <para>When done with a connection, it can be closed. FujiNet will then
-      disconnect the socket.</para>
-
-      <sidebar>
-        <example>
-          <title>Closing the previously opened TCP socket</title>
-
-          <screen>READY
-CLOSE #1</screen>
-        </example>
-      </sidebar>
-
-      <para>We hope that the addition of the Network device, a whole new class
-      of Internet connected applications can be made, easily and affectively,
-      by anyone in their spare time, using the tools of their choice.</para>
-    </section>
-
-    <section>
-      <title>CP/M Compatibility</title>
-
-      <para>FujiNet adds a complete Z80 computer emulation that runs a copy of
-      RunCPM. This provides complete <trademark
-      class="registered">CP/M</trademark> 2.2 compatibility, being able to run
-      thousands of additional programs, such as <trademark
-      class="registered">WordStar</trademark> and <trademark
-      class="registered">dBASE II</trademark>.</para>
-
-      <para>To make this easier for most users, CP/M files are stored directly
-      on the SD card, without needing to deal with floppy disk image formats.
-      Any CP/M program or data file in question can be copied to your local SD
-      card, placed inside the CPM/ folder, and used.<figure>
-          <title>CP/M Compatibility</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="figs/virtual_cpm.png" scale="73"/>
-            </imageobject>
-          </mediaobject>
-        </figure></para>
-
-      <para>The CP/M emulation uses the <productname>ATR8000</productname>
-      protocol for connecting the CP/M computer to the <trademark
-      class="registered">ATARI</trademark>. This means that programs such as
-      DT-80 can be used to provide the requisite terminal program. In
-      addition, the CP/M emulation can be accessed by any <trademark
-      class="registered">ATARI</trademark> MODEM program that supports the
-      "R:" device.</para>
-    </section>
-
-    <section>
-      <title>S.A.M. Voice "P4:"</title>
-
-      <para>Because the micro controller provides an 8-bit
-      <acronym>DAC</acronym>, and the <trademark
-      class="registered">ATARI</trademark> <acronym>SIO</acronym> connector
-      provides an AUDIO IN pin, it was trivial to add an implementation of
-      Don't Ask Software's Software Automatic Mouth (S.A.M.) directly on the
-      FujiNet device! This has the advantage of not blanking out the display
-      when you wish to use the voice synthesizer.</para>
-
-      <para>Since the P4: device is used, it means that SAM is available to
-      speak at any time, simply by writing to the device.</para>
-
-      <example>
-        <title>Making SAM Talk is Easy!</title>
+        <para>When done with a connection, it can be closed. FujiNet will then
+        disconnect the socket.</para>
 
         <sidebar>
-          <para><screen>READY
+          <example>
+            <title>Closing the previously opened TCP socket</title>
+
+            <screen>READY
+CLOSE #1</screen>
+          </example>
+        </sidebar>
+
+        <para>We hope that the addition of the Network device, a whole new
+        class of Internet connected applications can be made, easily and
+        affectively, by anyone in their spare time, using the tools of their
+        choice.</para>
+      </section>
+
+      <section>
+        <title>CP/M Compatibility</title>
+
+        <para>FujiNet adds a complete Z80 computer emulation that runs a copy
+        of RunCPM. This provides complete <trademark
+        class="registered">CP/M</trademark> 2.2 compatibility, being able to
+        run thousands of additional programs, such as <trademark
+        class="registered">WordStar</trademark> and <trademark
+        class="registered">dBASE II</trademark>.</para>
+
+        <para>To make this easier for most users, CP/M files are stored
+        directly on the SD card, without needing to deal with floppy disk
+        image formats. Any CP/M program or data file in question can be copied
+        to your local SD card, placed inside the CPM/ folder, and used.<figure>
+            <title>CP/M Compatibility</title>
+
+            <mediaobject>
+              <imageobject>
+                <imagedata fileref="figs/virtual_cpm.png" scale="73"/>
+              </imageobject>
+            </mediaobject>
+          </figure></para>
+
+        <para>The CP/M emulation uses the <productname>ATR8000</productname>
+        protocol for connecting the CP/M computer to the <trademark
+        class="registered">ATARI</trademark>. This means that programs such as
+        DT-80 can be used to provide the requisite terminal program. In
+        addition, the CP/M emulation can be accessed by any <trademark
+        class="registered">ATARI</trademark> MODEM program that supports the
+        "R:" device.</para>
+      </section>
+
+      <section>
+        <title>S.A.M. Voice "P4:"</title>
+
+        <para>Because the micro controller provides an 8-bit
+        <acronym>DAC</acronym>, and the <trademark
+        class="registered">ATARI</trademark> <acronym>SIO</acronym> connector
+        provides an AUDIO IN pin, it was trivial to add an implementation of
+        Don't Ask Software's Software Automatic Mouth (S.A.M.) directly on the
+        FujiNet device! This has the advantage of not blanking out the display
+        when you wish to use the voice synthesizer.</para>
+
+        <para>Since the P4: device is used, it means that SAM is available to
+        speak at any time, simply by writing to the device.</para>
+
+        <example>
+          <title>Making SAM Talk is Easy!</title>
+
+          <sidebar>
+            <para><screen>READY
 OPEN #1,8,0,"P4:"
 
 READY
 PRINT #1;"HELLO FROM FUJINET!"</screen></para>
-        </sidebar>
-      </example>
-    </section>
+          </sidebar>
+        </example>
+      </section>
 
-    <section>
-      <title>APETIME Compatibility</title>
+      <section>
+        <title>APETIME Compatibility</title>
 
-      <para>FujiNet includes a real-time clock that is synchronized to the
-      Internet via <acronym>SNTP</acronym> (Simple Network Time Protocol),
-      exposed as a device that is compatible with the
-      <filename>APETIME.COM</filename> utility. Operating systems like
-      SpartaDOS and SpartaDOS X can make use of this real time clock to
-      provide time-stamps to files. It is also possible for any program to
-      query the FujiNet to ask for the current time.</para>
-    </section>
-  </chapter>
+        <para>FujiNet includes a real-time clock that is synchronized to the
+        Internet via <acronym>SNTP</acronym> (Simple Network Time Protocol),
+        exposed as a device that is compatible with the
+        <filename>APETIME.COM</filename> utility. Operating systems like
+        SpartaDOS and SpartaDOS X can make use of this real time clock to
+        provide time-stamps to files. It is also possible for any program to
+        query the FujiNet to ask for the current time.</para>
+      </section>
+    </chapter>
+
+    <chapter>
+      <title>Unpacking and Connecting</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>Configuring your FujiNet</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>Loading Software</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>Using the Virtual Printer</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>Connecting On-Line via the MODEM</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>Using the Network Adapter</title>
+
+      <para/>
+    </chapter>
+  </part>
+
+  <part>
+    <title>PROGRAMMER'S GUIDE</title>
+
+    <chapter>
+      <title>Atari BASIC</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>FastBASIC</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>Assembler</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>ACTION!</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>FORTH</title>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>C</title>
+
+      <subtitle>(using CC65)</subtitle>
+
+      <para/>
+    </chapter>
+
+    <chapter>
+      <title>Pascal</title>
+
+      <subtitle>(using Mad Pascal)</subtitle>
+
+      <para/>
+    </chapter>
+  </part>
+
+  <part>
+    <title>REFERENCE</title>
+  </part>
 
   <colophon>
     <para>This book was produced using the DocBook 5.1 XML schema, and XSL
-    style sheets. </para>
+    style sheets.</para>
 
     <para>The source material for this book may be found on GitHub at the
-    "fujinet-manuals" repository inside the FujiNet repository group: </para>
+    "fujinet-manuals" repository inside the FujiNet repository group:</para>
 
     <blockquote>
       <para><link
@@ -717,4 +863,6 @@ PRINT #1;"HELLO FROM FUJINET!"</screen></para>
     <para>The HTML format is processed using OpenJade, and styled with CSS
     style sheets.</para>
   </colophon>
+
+  <index/>
 </book>
