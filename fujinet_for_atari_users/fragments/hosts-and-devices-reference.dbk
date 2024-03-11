@@ -1,0 +1,127 @@
+      <para>Once CONFIG is loaded, the Hosts and Devices screen will
+      appear.</para>
+
+      <figure>
+        <title>Host and Device List</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="figs/host-list-drive-slots.png" scale="25"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>The screen is divided into the following areas:</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>HOST LIST</term>
+
+          <listitem>
+            <para>Specifies a source for software or data disk images. A
+            special host slot called <filename>SD</filename> specifies that
+            the given host slot will point to the local SD card storage. Up to
+            eight (8) hosts can be specified. Any unused host slots will show
+            <filename>Empty</filename>.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>DRIVE SLOTS</term>
+
+          <listitem>
+            <para>Shows the currently mounted disks, and their corresponding
+            drive numbers. Each of these eight (8) drive slots correspond to
+            device names D1: to D8:</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>
+
+      <para>A selection bar is also present, indicating the current selection.
+      Pressing the <keycap>RETURN</keycap> key will confirm the current
+      selection.</para>
+
+      <formalpara>
+        <title>RED or GREEN Bar</title>
+
+        <para>The color of the selection bar will indicate whether there is a
+        network connection present. RED indicates there is no network
+        connection, while GREEN indicates a successful network
+        connection.</para>
+      </formalpara>
+
+      <para>A menu is present at the bottom of the screen. This menu will
+      change depending on whether the <command>HOST LIST</command> or the
+      <command>DRIVE SLOTS</command> are active, along with the corresponding
+      change in the selection bar.</para>
+
+      <para>If <command>HOST LIST</command> is selected, the following
+      commands are present:</para>
+
+      <variablelist>
+        <varlistentry>
+          <term>1-8</term>
+
+          <listitem>
+            <para>Pressing the number keys will quickly select a given host
+            slot.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>E</term>
+
+          <listitem>
+            <para>Pressing <keycap>E</keycap> will edit the current host slot.
+            <keycap>RETURN</keycap> will confirm the change to the host
+            slot.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>RETURN</term>
+
+          <listitem>
+            <para>Pressing <keycap>RETURN</keycap> selects a host slot,
+            connects to the host, and displays the root directory of that
+            host.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>L</term>
+
+          <listitem>
+            <para>Pressing <keycap>L</keycap> loads the FujiNet Game Lobby,
+            after asking for a yes/no confirmation.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>C</term>
+
+          <listitem>
+            <para>Pressing <keycap>C</keycap> shows the configuration screen,
+            which allows you to also change the Wi-Fi network.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>TAB</term>
+
+          <listitem>
+            <para>Pressing <keycap>TAB</keycap> will move the selection bar to
+            the <command>DRIVE SLOTS</command>. The menu will also change to
+            reflect <command>DRIVE SLOTS</command> commands.</para>
+          </listitem>
+        </varlistentry>
+
+        <varlistentry>
+          <term>OPTION</term>
+
+          <listitem>
+            <para>Pressing <keycap>OPTION</keycap> will mount all drive slots
+            that are not empty, and re-boot the computer.</para>
+          </listitem>
+        </varlistentry>
+      </variablelist>

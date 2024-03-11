@@ -756,19 +756,261 @@ PRINT #1;"HELLO FROM FUJINET!"</screen></para>
     <chapter>
       <title>Unpacking and Connecting</title>
 
-      <para/>
+      <para>Your Fujinet comes with the following:</para>
+
+      <itemizedlist>
+        <listitem>
+          <para>A FujiNet</para>
+        </listitem>
+
+        <listitem>
+          <para>A USB Cable</para>
+        </listitem>
+
+        <listitem>
+          <para>An SD flash card for local storage.</para>
+        </listitem>
+
+        <listitem>
+          <para>This User's Guide</para>
+        </listitem>
+
+        <listitem>
+          <para>A Getting Started Guide</para>
+        </listitem>
+      </itemizedlist>
     </chapter>
 
     <chapter>
       <title>Configuring your FujiNet</title>
 
-      <para/>
+      <para>Once the FujiNet has been connected to the ATARI computer, the
+      Wi-Fi Network needs to be configured.</para>
+
+      <para><procedure>
+          <step>
+            <para>Turn on your monitor.</para>
+          </step>
+
+          <step>
+            <para>Turn on any peripherals you wish to also use.</para>
+          </step>
+
+          <step>
+            <para>Ensure the power switch on your FujiNet is switched
+            ON.</para>
+          </step>
+
+          <step>
+            <para>Power on your <trademark
+            class="registered">ATARI</trademark> computer.</para>
+          </step>
+        </procedure></para>
+
+      <note>
+        <para>If a disk drive is configured as drive 1, and is switched on,
+        the FujiNet will defer to the disk drive.</para>
+      </note>
+
+      <para>While the FujiNet is responding to the Atari, the yellow activity
+      light will blink.</para>
+
+      <figure pgwide="1">
+        <title>Top of FujiNet, with Yellow Activity Light</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="figs/fujinet-diagram-top-activity.png"
+                       scale="100" scalefit="1"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <para>When the FujiNet is first powered on, the
+      <productname>CONFIG</productname> program will boot. This will allow you
+      to not only set up your wireless network information, but it will also
+      allow you to boot other software from either the SD card, or from the
+      network.</para>
+
+      <para>While <productname>CONFIG</productname> loads, a splash screen is
+      shown with a progress bar:</para>
+
+      <figure pgwide="1">
+        <title>FujiNet Loading Screen</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="figs/fujinet-splash.png" scale="75"
+                       scalefit="1"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <section>
+        <title>Selecting Wi-Fi Network</title>
+
+        <para>If FujiNet can not connect to a Wi-Fi Network, it will scan for
+        any nearby networks, and present a selection screen so that the
+        desired network access point, also known as an
+        <acronym>SSID</acronym>, may be selected. Each entry will show the
+        name of the network, and the signal strength for each network. More
+        bars indicate a stronger signal. Use the arrow keys, or a joystick
+        connected in port 1 to move the selection bar to the desired network.
+        Press <keycap>RETURN</keycap> to confirm the selection.</para>
+
+        <para>Once a wireless network (SSID) has been confirmed, and
+        successfully connected, <acronym>CONFIG</acronym> will proceed to the
+        Host List / Device Slots Screen.</para>
+
+        <para>If the network connection is not successful, FujiNet will ask
+        again for a network.</para>
+
+        <tip>
+          <para>For best performance, choose the network that is closest to
+          you. This is usually indicated with a high signal strength.</para>
+        </tip>
+
+        <figure>
+          <title>Selecting Wi-Fi Network</title>
+
+          <mediaobject>
+            <imageobject>
+              <imagedata fileref="figs/welcome-to-fujinet.png" scale="75"/>
+            </imageobject>
+          </mediaobject>
+        </figure>
+
+        <formalpara>
+          <title>Entering a specific SSID</title>
+
+          <para>If the desired network is not broadcasting its
+          <acronym>SSID</acronym>, it may be explicitly entered by selecting
+          <command>&lt;Enter a specific SSID&gt;</command> and entering the
+          desired <acronym>SSID</acronym>, followed by pressing
+          <keycap>RETURN</keycap>.</para>
+        </formalpara>
+
+        <formalpara>
+          <title>Skipping Network Configuration</title>
+
+          <para>If the desired network is not available, or only local storage
+          is desired, the network configuration may be skipped by pressing
+          <keycap>S</keycap>.</para>
+        </formalpara>
+
+        <formalpara>
+          <title>Re-Scanning For Networks</title>
+
+          <para>Pressing the <keycap>ESC</keycap> key, will cause FujiNet to
+          re-scan for available networks.</para>
+        </formalpara>
+
+        <note>
+          <para>Successful network configurations are saved, and remembered
+          for future use. FujiNet stores the configurations of networks and
+          passwords on both the internal flash memory, and on the SD
+          card.</para>
+        </note>
+
+        <note>
+          <para>Network configuration can be quickly moved from one FujiNet to
+          another by physically moving the SD card from one unit, to
+          another.</para>
+        </note>
+      </section>
     </chapter>
 
     <chapter>
       <title>Loading Software</title>
 
-      <para/>
+      <para>Once the network is successfully configured, or network
+      configuration is skipped, the <command>HOST LIST / DRIVE SLOTS</command>
+      screen is shown.</para>
+
+      <figure pgwide="1">
+        <title>HOST LIST / DRIVE SLOTS</title>
+
+        <mediaobject>
+          <imageobject>
+            <imagedata fileref="figs/host-list-drive-slots.png" scale="75"
+                       scalefit="1"/>
+          </imageobject>
+        </mediaobject>
+      </figure>
+
+      <section>
+        <title>is HOST LIST Empty?</title>
+
+        <para>If your host slots are empty. They may be re-entered using the
+        <command>Edit</command> command using the following procedure:</para>
+
+        <procedure>
+          <title>Re-Populating Host Slots</title>
+
+          <step>
+            <para>Use arrow keys, or numbers
+            <keycap>1</keycap>-<keycap>8</keycap> to select a host
+            slot.</para>
+          </step>
+
+          <step>
+            <para>Press <keycap>E</keycap> to edit the host slot.</para>
+          </step>
+
+          <step>
+            <para>Enter the host slot name.</para>
+          </step>
+
+          <step>
+            <para>Press <keycap>RETURN</keycap></para>
+          </step>
+
+          <step>
+            <para>Repeat the above steps for as many host slots as
+            desired.</para>
+          </step>
+        </procedure>
+
+        <section>
+          <title>Example Host Slots</title>
+
+          <orderedlist>
+            <listitem>
+              <para><filename>SD</filename></para>
+            </listitem>
+
+            <listitem>
+              <para><filename>FUJINET.ONLINE</filename></para>
+            </listitem>
+
+            <listitem>
+              <para><filename>APPS.IRATA.ONLINE</filename></para>
+            </listitem>
+
+            <listitem>
+              <para><filename>FUJINET.DILLER.ORG</filename></para>
+            </listitem>
+
+            <listitem>
+              <para><filename>FUJINET.PL</filename></para>
+            </listitem>
+
+            <listitem>
+              <para><filename>TNFS.ABBUC.SOCIAL</filename></para>
+            </listitem>
+          </orderedlist>
+        </section>
+      </section>
+
+      <section>
+        <title>HOST LIST</title>
+      </section>
+
+      <section>
+        <title>DRIVE SLOTS</title>
+
+        <para/>
+      </section>
     </chapter>
 
     <chapter>
