@@ -1004,6 +1004,74 @@ PRINT #1;"HELLO FROM FUJINET!"</screen></para>
 
       <section>
         <title>HOST LIST</title>
+
+        <para>The Host list contains 8 host slots, which specify the source of
+        a disk image. As of current writing, this can be one of two
+        types</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>SD</term>
+
+            <listitem>
+              <para>Naming a host slot SD indicates that this host slot will
+              point to files on the local SD card.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>TNFS</term>
+
+            <listitem>
+              <para>Naming a host slot anything else indicates that this host
+              slot points to a TNFS server with the given host name.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <section>
+          <title>Selecting a Host Slot</title>
+
+          <para>Host slots can be selected by one of three methods:</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>Arrows</term>
+
+              <listitem>
+                <para>The Up and Down arrow keys can move the selection bar by
+                one entry.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>Joystick</term>
+
+              <listitem>
+                <para>A joystick plugged into port 1 can move the selection
+                bar by one entry.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>1-8</term>
+
+              <listitem>
+                <para>The number keys <keycap>1</keycap>-<keycap>8</keycap>
+                can be used to quickly select an entry.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </section>
+
+        <section>
+          <title>Opening a Host Slot</title>
+
+          <para>Pressing RETURN on a selected host slot, will attempt a
+          connection to the host slot, and if successful, will show the files
+          available on the given host slot, starting with the root
+          directory.</para>
+        </section>
       </section>
 
       <section>
@@ -1038,13 +1106,955 @@ PRINT #1;"HELLO FROM FUJINET!"</screen></para>
     <chapter>
       <title>Atari BASIC</title>
 
-      <para/>
+      <para>Using the FujiNet Network Adapter under BASIC is possible by
+      booting either a DOS with the NDEV (N:) handler, or by using the FujiNet
+      NOS. Once loaded, an additional device <filename>N:</filename> will be
+      available to open connections to network resources, and to use
+      them.</para>
+
+      <section>
+        <title>Loading BASIC Programs from the Network</title>
+
+        <para>Any BASIC program stored on the network (on a web server, for
+        example), can be loaded using the <command>RUN</command>,
+        <command>LOAD</command>, or <command>ENTER</command> commands.</para>
+
+        <screen>READY
+RUN"N:HTTP://FUJINET-TESTING.IRATA.ONLINE/BLACKJACK.BAS"</screen>
+      </section>
+
+      <section>
+        <title>Opening a Connection</title>
+
+        <para>BASIC's OPEN statement can be used to open a connection to a
+        network endpoint. It has the following format:</para>
+
+        <screen>READY
+OPEN #iocb,aux1,aux2,"N:PROTO://HOSTNAME:PORT/PATH/TO/FILE"</screen>
+
+        <para>Where:</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>iocb</term>
+
+            <listitem>
+              <para>an IO Control Block number from 1 to 7.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>aux1</term>
+
+            <listitem>
+              <para>4 = read (HTTP GET), 6 = directory (PROPFIND), 8 = write
+              (or POST), 9 = append, 12 = read/write (HTTP GET), 13 =
+              POST</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>aux2</term>
+
+            <listitem>
+              <para>Translation mode. 0 = none, 1 = CR&lt;-&gt;EOL (old
+              MacOS), 2 = LF&lt;-&gt;EOL (UNIX), 3 = CR/LF&lt;-&gt;EOL
+              (Windows PC)</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>PROTO</term>
+
+            <listitem>
+              <para>The Network protocol to use, examples include TCP, UDP,
+              HTTP(S), FTP, TNFS, SMB</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>HOSTNAME</term>
+
+            <listitem>
+              <para>The host name or IP address to connect to.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>PORT</term>
+
+            <listitem>
+              <para>Optional. Specify the numbered port for a service
+              (1-65535)</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>PATH/TO/FILE</term>
+
+            <listitem>
+              <para>Some protocols specify file systems; so a path can be
+              specified here.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para><example>
+            <title>OPENing a web server document in BASIC</title>
+
+            <screen>OPEN #1,4,0,"N:HTTPS://WWW.ICANHAZIP.COM"</screen>
+          </example></para>
+
+        <simplesect>
+          <title>Common OPEN Errors</title>
+
+          <para>The following errors can be emitted if there is a problem
+          opening the connection:</para>
+
+          <variablelist>
+            <varlistentry>
+              <term>ERROR- 129</term>
+
+              <listitem>
+                <para>The <acronym>IOCB</acronym> you attempted to open, is
+                already in use. The <command>CLOSE</command> statement can
+                close the connection.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>ERROR- 200</term>
+
+              <listitem>
+                <para>The connection you've attempted has been explicitly
+                refused by the endpoint.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>ERROR- 201</term>
+
+              <listitem>
+                <para>The endpoint you attempted to open is not able to be
+                routed.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>ERROR- 202</term>
+
+              <listitem>
+                <para>The socket you've attempted to use didn't finish opening
+                the connection. <emphasis role="bold">This is most common for
+                non-existent services.</emphasis></para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </simplesect>
+      </section>
+
+      <section>
+        <title>Reading from Connection</title>
+
+        <para>Once the connection is opened, both the <command>INPUT</command>
+        and <command>GET</command> statements can be used to read from a
+        network endpoint. They operate exactly as expected, where INPUT will
+        read one line at a time, broken up by the appropriate end of line
+        character (specified by the <emphasis role="bold">aux2</emphasis> in
+        the <command>OPEN</command> statement), and <command>GET</command>
+        will retrieve one byte at a time from the input channel.</para>
+
+        <note>
+          <para>A connection must be opened with an aux1 of 4, 6, 12, or 13 in
+          order to read from it.</para>
+        </note>
+
+        <example>
+          <title>Reading One Line at a time in BASIC.</title>
+
+          <para>Reading one line at a time can be accomplished via
+          <command>INPUT</command> :</para>
+        </example>
+
+        <screen>READY
+DIM A$(99)
+
+READY
+INPUT #1,A$
+
+READY
+PRINT A$
+96.112.44.63
+</screen>
+
+        <example>
+          <title>Reading One byte at a time in BASIC</title>
+
+          <para>Reading one byte at a time can be accomplished via
+          <command>GET</command> :</para>
+        </example>
+
+        <screen>READY
+GET #1,A
+
+READY
+PRINT A,CHR$(A)
+57        9</screen>
+
+        <important>
+          <para><emphasis role="bold">INPUT and GET will block, meaning that
+          they will wait until something is ready to be received.</emphasis>
+          You can check for bytes waiting ahead of time by using the
+          <command>STATUS</command> statement, and subsequently reading
+          PEEK(746) and PEEK(747) for number of bytes waiting.</para>
+        </important>
+      </section>
+
+      <section>
+        <title>Writing to Connection</title>
+
+        <para>With an open connection, the PRINT and PUT statements can be
+        used to write to an open network connection. They operate exactly as
+        expected, where PRINT will send one line at a time to the network
+        connection, and PUT will send one byte at a time to the network
+        connection.</para>
+
+        <note>
+          <para>A connection must be opened with an aux1 of 8, 12, or 13 in
+          order to write to it.</para>
+        </note>
+
+        <example>
+          <title>Writing One Line at a time, in BASIC.</title>
+
+          <para><command>PRINT</command> can write one line of data at a time
+          to a network endpoint.<screen>READY
+PRINT #1;"HELLO FROM ATARI"</screen></para>
+        </example>
+
+        <example>
+          <title>Writing One Byte at a time, in BASIC.</title>
+
+          <para><command>PUT</command> can write one line of data at a time to
+          a network endpoint.<screen>READY
+REM PUT A CR AND A LF
+PUT #1,13:PUT #1,10</screen></para>
+        </example>
+
+        <section>
+          <title>Flushing Connection Output</title>
+
+          <para>FujiNet will automatically flush the output to a connection if
+          either of the following two conditions are met:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>If an ATASCII end of line character (155 decimal, $9B
+              hexadecimal) is sent, or...</para>
+            </listitem>
+
+            <listitem>
+              <para>If more than 127 non end of line characters are
+              sent.</para>
+            </listitem>
+          </itemizedlist>
+
+          <para>If you need to send data through the channel, and neither of
+          these two conditions are met, the following <command>XIO</command>
+          command can be used to force a flush of the buffer:</para>
+
+          <example>
+            <title>Forcing a Flush of the Output Channel, in BASIC.</title>
+
+            <screen>XIO 15,#1,12,2,"N:"</screen>
+
+            <note>
+              <para><acronym>aux1</acronym> and <acronym>aux2</acronym> values
+              should match the values you specified during
+              <command>OPEN</command>.</para>
+            </note>
+          </example>
+        </section>
+      </section>
+
+      <section>
+        <title>Getting Connection Status</title>
+
+        <para>A STATUS statement can be used to determine the current status
+        of an open connection. While STATUS requires that a variable be used,
+        this currently returns the last error experienced on the connection,
+        while the four bytes of <acronym>DVSTAT</acronym> indicate the current
+        connection status.</para>
+
+        <table>
+          <title>PEEKable Status Values</title>
+
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry align="center">PEEK ADDRESS</entry>
+
+                <entry align="center">DESCRIPTION</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>PEEK(746)</entry>
+
+                <entry># of bytes waiting (LO)</entry>
+              </row>
+
+              <row>
+                <entry>PEEK(747)</entry>
+
+                <entry># of bytes waiting (HI)</entry>
+              </row>
+
+              <row>
+                <entry>PEEK(748)</entry>
+
+                <entry>0=Disconnected, 1=Connected</entry>
+              </row>
+
+              <row>
+                <entry>PEEK(749)</entry>
+
+                <entry>Last error returned.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </table>
+
+        <simplesect>
+          <title># of Bytes Waiting</title>
+
+          <para>The number of bytes waiting is expressed as a 16-bit number,
+          with the least significant 8 bits first, followed by the most
+          significant 8 bits. This means that the FujiNet will actively report
+          up to 65535 bytes waiting, even though there may be more in the
+          receive buffer.</para>
+
+          <para>The following variable assignment can be used to get the total
+          number of bytes waiting.</para>
+
+          <example>
+            <title>Getting # of bytes waiting</title>
+
+            <screen>STATUS #1,A:BW=PEEK(747)*256+PEEK(746)</screen>
+          </example>
+        </simplesect>
+      </section>
+
+      <section>
+        <title>Closing a Connection</title>
+
+        <para>The CLOSE statement can close a connection that has been opened
+        by OPEN. This has the effect of disconnecting the socket.<screen>READY
+CLOSE #1</screen></para>
+      </section>
+
+      <section>
+        <title>Opening a Server (Listening) Connection</title>
+
+        <para>In addition to creating client connections, FujiNet can also
+        listen for incoming connections on a given port, and hand them off to
+        the <trademark class="registered">ATARI</trademark> for subsequent
+        communication. This is done by opening a connection without a host
+        name, but with a port number. Once opened, the FujiNet will listen for
+        connections on the specified port, and the STATUS statement can be
+        used to check for any incoming connections. Once an incoming
+        connection is found, an XIO command may be sent to accept the
+        connection and subsequently communicate with it.</para>
+
+        <example>
+          <title>Opening a Listening Connection in BASIC</title>
+
+          <para>This example opens a TCP connection on port 6502, using IOCB
+          #1, making the socket read and write with aux1 = 12, and translating
+          to and from UNIX line endings with aux2 = 2.</para>
+
+          <screen>READY
+OPEN #1,12,2,"TCP://:6502"</screen>
+        </example>
+
+        <note>
+          <para>As of 2024-03-13, TCP is the only protocol that currently
+          supports creating a listening socket.</para>
+        </note>
+      </section>
+
+      <section>
+        <title>Checking for a Server Connection</title>
+
+        <para>A STATUS statement can be used to check for an incoming
+        connection. For listening sockets, the only appropriate
+        <acronym>DVSTAT</acronym> byte is PEEK(748), which can be repeatedly
+        checked via the following BASIC statement, which creates a loop that
+        only breaks when there is a connection waiting:</para>
+
+        <programlisting>30 STATUS #1,A:IF NOT PEEK(748) THEN 30</programlisting>
+      </section>
+
+      <section>
+        <title>Accepting a Client Connection</title>
+
+        <para>If PEEK(748) from a previous STATUS statement returns a 1, a
+        connection is waiting to be accepted. Sending the following XIO
+        command will accept the connection, and allow it to be used just like
+        a client connection.<example>
+            <title>Accepting a Client Connection, in BASIC.</title>
+
+            <screen>XIO ASC("A"),#1,12,2,"N:"</screen>
+          </example></para>
+
+        <para>Once a connection is accepted, any subsequent STATUS statements
+        will return the same information according to the "PEEKable Status
+        Values" table. This status should periodically be checked to ensure
+        that the connection is still connected. If the client disconnects,
+        then it is the responsibility of the server program to close the
+        client connection using the XIO command in the next section.</para>
+      </section>
+
+      <section>
+        <title>Closing an Accepted Connection</title>
+
+        <para>A server can choose to disconnect an accepted connection. This
+        turns the channel back into a Listening Connection, so that another
+        connection may be subsequently accepted.</para>
+
+        <example>
+          <title>Closing an Accepted Connection, in BASIC.</title>
+
+          <screen>XIO ASC("c"),#1,12,2,"N:"</screen>
+        </example>
+      </section>
+
+      <section>
+        <title>Closing the Server (Listening) Connection</title>
+
+        <para>When a program chooses to shut down, it is a good idea to close
+        the listening socket, so that it may be subsequently used for other
+        tasks. A CLOSE statement is sufficient for this. As a side-effect, any
+        connected client will also be disconnected.</para>
+
+        <example>
+          <title>Closing the Listening Connection, in BASIC.</title>
+
+          <screen>CLOSE #1</screen>
+        </example>
+      </section>
+
+      <section>
+        <title>Example Programs</title>
+
+        <para>This section provides listings of example programs that use the
+        N: device.</para>
+
+        <section>
+          <title>NETCAT: A Simple Terminal Emulator</title>
+
+          <para>NETCAT is a program which acts like a simple dumb terminal
+          emulator. It will read and display any information that appears on
+          the network channel, while also checking for key presses and sending
+          them out the same network channel. This will continue until either
+          the host disconnects, or a network error occurs. In either case, the
+          network channel is closed, and the program ends.</para>
+
+          <para><example>
+              <title>NETCAT Program Listing, in BASIC.</title>
+
+              <programlisting>10 REM THE SIMPLEST DUMB TERMINAL
+20 REM POSSIBLE, WITH THE N: DEVICE
+100 OPEN #1,12,2,"N:TCP://BBS.FOZZTEXX.NET/"
+101 OPEN #2,4,0,"K:"
+102 TRAP 140
+110 IF PEEK(764)=255 THEN 120
+111 GET #2,K
+112 PUT #1,K
+113 XIO 15,#1,12,2,"N:"
+120 STATUS #1,A
+121 BW=PEEK(747)*256+PEEK(746)
+122 IF BW=0 THEN 110
+130 FOR M=1 TO BW
+131 GET #1,C
+132 PUT #16,C
+133 NEXT M
+134 GOTO 110
+140 CLOSE #1
+150 PRINT "DISCONNECTED"
+160 END</programlisting>
+            </example>Lines 10 and 20 are simple remarks indicating the
+          program and its function.</para>
+
+          <para>Line 100 opens a TCP connection to BBS.FOZZTEXX.COM. This can
+          be changed to point to something else, even a different
+          protocol.</para>
+
+          <para>Line 101 opens the Keyboard device for subsequent
+          input.</para>
+
+          <para>Line 102 sets a TRAP for line 140, which will close the
+          connection, e.g. if the host disconnects, or there is an
+          error.</para>
+
+          <para>Line 110 Checks for a pressed key, and jumps to line 120 if no
+          key is pressed.</para>
+
+          <para>Line 111 If a key is pressed, read it into variable K.</para>
+
+          <para>Line 112 Put the resulting key press into the network
+          channel.</para>
+
+          <para>Line 113 Flush the resulting character out to the network
+          channel.</para>
+
+          <para>Line 120 Get the status of the network channel.</para>
+
+          <para>Line 121 Set <emphasis role="bold">BW</emphasis> to the number
+          of bytes waiting by combining the bytes in PEEK(746) and
+          PEEK(747).</para>
+
+          <para>Line 122 If there are no bytes waiting, jump back to line
+          110.</para>
+
+          <para>Line 130 Start a loop, based on the number of bytes waiting,
+          for each byte:</para>
+
+          <para>Line 131 Retrieve the byte from the network channel.</para>
+
+          <para>Line 132 Put the byte to the screen (channel #16 becomes
+          channel #0, which is the E: device)</para>
+
+          <para>Line 133 Close the loop</para>
+
+          <para>Line 134 Return to line 110, so we can check for a key press,
+          again, and repeat the whole process.</para>
+
+          <para>Line 140 Any error will trap to this line, which closes the
+          network channel.</para>
+
+          <para>Line 150 Print "DISCONNECTED" to the screen.</para>
+
+          <para>Line 160 End the program. This closes the Keyboard device,
+          too.</para>
+        </section>
+
+        <section>
+          <title>MASTODON: Show the newest Mastodon post</title>
+
+          <para>MASTODON is an example program that demonstrates not only the
+          <acronym>HTTPS</acronym> protocol adapter, but also the built-in
+          <acronym>JSON</acronym> parser. A connection to
+          <emphasis>oldbytes.space</emphasis>, a Mastodon server dedicated to
+          retro computing, is opened. Once opened, the newest public post is
+          retrieved. The resulting post is then parsed and queried for the
+          poster's name, the date of the post, and the post's content. All
+          three of these pieces of information are displayed as they're being
+          queried. Once done, the network connection closes, and the program
+          waits approximately 3 minutes, before looping back to the start of
+          the program. The program repeats until the <keycap>BREAK</keycap>
+          key is pressed.</para>
+
+          <para>Another unique aspect of this program is the simplification of
+          not needing to use <command>STATUS</command> to get the # of bytes
+          waiting, relying instead on an end-of-file (<acronym>EOF</acronym>)
+          error to stop reading data during the loop at line 90.</para>
+
+          <example>
+            <title>MASTODON Program Listing, in BASIC.</title>
+
+            <programlisting>0 DIM A$(256)
+1 TRAP 91
+2 POKE 756,204
+10 OPEN #1,12,0,"N:HTTPS://OLDBYTES.SPACE/api/v1/timelines/public?limit=1"
+20 XIO 252,#1,12,1,"N:"
+30 XIO ASC("P"),#1,12,0,"N:"
+40 XIO ASC("Q"),#1,12,3,"N:/0/account/display_name"
+50 INPUT #1,A$:? A$
+60 XIO ASC("Q"),#1,12,3,"N:/0/created_at"
+70 INPUT #1,A$:? A$
+80 XIO ASC("Q"),#1,12,3,"N:/0/content"
+90 GET #1,A:? CHR$(A);:GOTO 90
+91 CLOSE #1:? :?
+100 POKE 18,0:POKE 19,0:POKE 20,0
+110 IF PEEK(19)&lt;30 THEN 110
+120 GOTO 1</programlisting>
+          </example>
+
+          <para>Line 0 dimensions a 256 byte string variable A$.</para>
+
+          <para>Line 1 sets 91 as an error trap.</para>
+
+          <para>Line 2 changes the character set base to the International
+          Character set. This line may be omitted on <trademark
+          class="registered">ATARI</trademark> <trademark>400/800</trademark>
+          systems, which do not have this character set.</para>
+
+          <para>Line 10 opens a connection to the
+          <emphasis>oldbytes.space</emphasis> Mastodon server using the
+          <acronym>HTTPS</acronym> protocol. The path points to an API call
+          that fetches posts from the public time line. The "?" Indicates a
+          GET query parameter, and in this case limit=1 ensures that the
+          server only sends a single post.</para>
+
+          <para>Line 20 uses <command>XIO</command> to send a SET CHANNEL MODE
+          command. This changes the channel to allow the
+          '<command>P</command>'arse and '<command>Q</command>'uery commands
+          that will be used on the proceeding lines.</para>
+
+          <para>Line 30 uses <command>XIO</command> to send a PARSE command.
+          This reads the network channel until there is no more data. The
+          channel is subsequently passed through the JSON parser, with the
+          results of the parse sitting in FujiNet memory, to be queried using
+          the '<command>Q</command>'uery command.</para>
+
+          <para>Line 40 uses <command>XIO</command> to send a
+          '<command>Q</command>'uery command. This particular
+          <acronym>JSON</acronym> Query asks for the display name of a given
+          poster. However, it is inside an array, so we have to ask for the
+          first element of the array as part of the query, hence the
+          "/0/"</para>
+
+          <para>Line 50 calls INPUT to read the queried result into variable
+          A$, and subsequently display it on screen with the
+          '<command>?</command>' statement.</para>
+
+          <para>Line 60 uses <command>XIO</command> to send a
+          '<command>Q</command>'uery command which asks for the created_at key
+          for the very first returned post.</para>
+
+          <para>Line 70 calls <command>INPUT</command> to read the queried
+          result into variable A$, and subsequently display it.</para>
+
+          <para>Line 80 uses <command>XIO</command> to send a final
+          '<command>Q</command>'uery command, which asks for the content for
+          the very first returned post.</para>
+
+          <para>Line 90 Sets up an infinite loop which <command>GET</command>s
+          and displays one byte at a time, because <command>INPUT</command>
+          can only fetch single lines up to 127 bytes long. The end of the
+          content will generate an end of file (<acronym>EOF</acronym>) error,
+          so the <command>TRAP</command> will cause the loop to exit.</para>
+
+          <para>Line 91 is the destination of the <command>TRAP</command>
+          statement, which closes the network connection, while printing two
+          blank lines.</para>
+
+          <para>Line 100 resets the real time clock.</para>
+
+          <para>Line 110 sets up a loop which exits when
+          <function>PEEK</function>(19) is equal to 30, which is approximately
+          3 minutes.</para>
+
+          <para>Line 120 jumps back to the TRAP statement on line 1, which
+          re-starts the program, while taking care not to re-dimension the A$
+          variable.</para>
+        </section>
+
+        <section>
+          <title>WEBSRVR: A Simple Web Server</title>
+
+          <para>This example uses the TCP protocol to open a simple web server
+          on port 8080. It does the absolute bare minimum of answering a
+          connection, accepting a command, and then sending back a response to
+          a browser, and should only be used as a minimal starting point, as a
+          real HTTP server requires a lot more work, and is beyond the scope
+          of this manual.</para>
+
+          <para>Once the program is waiting for a connection, you can connect
+          with a browser to the IP address or host name of your FujiNet, and
+          you should see the message "Hello from my Atari!" in a large bold
+          font.</para>
+
+          <example>
+            <title>WEBSRVR Program Listing, in BASIC.</title>
+
+            <programlisting>100 REM SIMPLE WEB SERVER
+101 DIM A$(127)
+110 OPEN #1,12,3,"N:TCP://:8080"
+120 PRINT "WAITING..."
+121 TRAP 250
+130 STATUS #1,A
+140 IF  NOT PEEK(748) THEN 130
+150 PRINT "ACCEPTING..."
+160 XIO ASC("A"),#1,12,3,"N:"
+170 PRINT "READING HTTP COMMAND..."
+171 STATUS #1,A
+172 BW=PEEK(746)+256*PEEK(747)
+173 IF NOT BW THEN 198
+180 INPUT #1,A$
+190 GOTO 171
+199 PRINT "SENDING DOCUMENT..."
+200 PRINT #1;"HTTP/1.1 200 OK"
+210 PRINT #1;"Content-Type: text/html"
+230 PRINT #1;""
+240 PRINT #1;"&lt;html&gt;"
+241 PRINT #1;"&lt;head&gt;"
+242 PRINT #1;"&lt;title&gt;Atari Web Server&lt;/title&gt;"
+243 PRINT #1;"&lt;/head&gt;"
+244 PRINT #1;"&lt;body&gt;"
+245 PRINT #1;" &lt;h1&gt;Hello from my Atari!&lt;/h1&gt;"
+246 PRINT #1;"&lt;/body&gt;"
+247 PRINT #1;"&lt;/html&gt;"
+250 XIO ASC("c"),#1,12,3,"N:"
+260 GOTO 120</programlisting>
+          </example>
+
+          <para>Line 100 is a simple remark indicating the program's
+          function.</para>
+
+          <para>Line 101 defines a single string variable A$ which is 127
+          bytes long.</para>
+
+          <para>Line 110 opens a TCP listening port, at port 8080. Aux1 is set
+          to 12, which means read/write, and aux2 is set to 3, which means to
+          convert ATASCII EOL to and from an ASCII CR/LF pair.</para>
+
+          <para>Line 120 prints "WAITING..."</para>
+
+          <para>Line 121 sets a TRAP to line 250.</para>
+
+          <para>Line 130 Asks for the network channel status</para>
+
+          <para>Line 140 checks if the CONNECTED byte is set to 1, if so, we
+          fall through, otherwise we loop back.</para>
+
+          <para>Line 150 prints "ACCEPTING..."</para>
+
+          <para>Line 160 uses XIO command "A" on the N: device, to accept the
+          connection, taking care to use the same aux1 and aux2 parameters
+          specified in OPEN.</para>
+
+          <para>Line 170 prints "READING HTTP COMMAND..."</para>
+
+          <para>Line 171 asks for network channel status</para>
+
+          <para>Line 172 sets BW to # of bytes waiting</para>
+
+          <para>Line 173 breaks out of the loop if no bytes waiting, to send
+          the document.</para>
+
+          <para>Line 180 Reads the next line from the PC, we ignore it.</para>
+
+          <para>Line 190 loops back to 171, unless there isn't any data
+          waiting.</para>
+
+          <para>Line 199 prints "SENDING DOCUMENT"</para>
+
+          <para>Lines 200-247 sends the HTTP response, and the
+          document.</para>
+
+          <para>Line 250 closes the client connection</para>
+
+          <para>Line 260 returns to line 120</para>
+        </section>
+      </section>
     </chapter>
 
     <chapter>
       <title>FastBASIC</title>
 
-      <para/>
+      <para>DMSC's FastBASIC is a very fast BASIC interpreter and compiler,
+      able to not only leverage the unique hardware capabilities of the ATARI
+      computers, but comes with FujiNet commands built into the language.
+      These commands are implemented using the SIO interface, so the N: device
+      handler is not required. </para>
+
+      <para>The FastBASIC package comes with an interpreter and compiler that
+      run both on the native ATARI computer, but also cross-compilers which
+      can run on any Windows or POSIX (e.g. MacOS and Linux) compliant system,
+      making development fast and convenient.</para>
+
+      <para>The latest copy of FastBasic may be downloaded from GitHub: <link
+      xlink:href="https://github.com/dmsc/fastbasic">https://github.com/dmsc/fastbasic</link></para>
+
+      <section>
+        <title>Opening a Connection</title>
+
+        <para>The NOPEN statement is used to open a network connection.</para>
+
+        <screen>NOPEN unit, aux1, aux2, url$</screen>
+
+        <variablelist>
+          <varlistentry>
+            <term>unit</term>
+
+            <listitem>
+              <para>Selects the N: device to use, which can be from 1 to
+              8.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>aux1</term>
+
+            <listitem>
+              <para>Sets the mode of the channel, 4 = read only (GET), 6 =
+              directory (PROPFIND), 8 = write (PUT), 9 = append, 12 =
+              read/write (GET), 13 = POST</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>aux2</term>
+
+            <listitem>
+              <para>Sets the translation mode, 0 = no translation, 1 =
+              CR&lt;-&gt;EOL, 2 = LF&lt;-&gt;EOL, 3 = CR/LF&lt;-&gt;EOL</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>url$</term>
+
+            <listitem>
+              <para>A string specifying the URL of the form:
+              N:PROTOCOL://HOSTNAME:PORT/PATH...</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <example>
+          <title>Opening a Network Connection, in FastBASIC.</title>
+
+          <screen>NOPEN 1,12,2,"N:TELNET://BBS.FOZZTEXX.COM/"</screen>
+        </example>
+      </section>
+
+      <section>
+        <title>Reading from Connection</title>
+
+        <para>The NGET statement can be used to read bytes from a connection,
+        of a specified number of bytes, into a byte array. </para>
+
+        <para>NGET unit, adr, len</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>unit</term>
+
+            <listitem>
+              <para>Selects the N: device to use, which can be from 1 to
+              8.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>adr</term>
+
+            <listitem>
+              <para>The address of the destination buffer in memory. Most
+              commonly pointing to a byte array by way of the &amp;
+              operator.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>len</term>
+
+            <listitem>
+              <para>The exact number of bytes to read (1-65535)</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <tip>
+          <para><varname>len</varname> must be less than or equal to the
+          number of bytes available in the receive buffer. Use
+          <command>NSTATUS</command> followed by
+          <function>DPEEK($02EA)</function> to get the number of bytes
+          available.</para>
+        </tip>
+
+        <example>
+          <title>Reading from a Connection in FastBASIC</title>
+
+          <programlisting>DIM BUF(256) BYTE
+
+NSTATUS 1
+BW = DPEEK($02EA)
+
+' BECAUSE INTS ARE SIGNED, MUST
+' TAKE VALUES &gt; 32767 INTO 
+' ACCOUNT
+
+IF BW &gt; 256 OR BW &lt; 000
+  LN = 256
+ELSE
+  LN = BW
+
+NGET 1,&amp;BUF,LN</programlisting>
+        </example>
+      </section>
+
+      <section>
+        <title>Writing to Connection</title>
+
+        <section>
+          <title>Flushing Connection Output</title>
+
+          <para/>
+        </section>
+      </section>
+
+      <section>
+        <title>Getting Connection Status</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Closing a Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Opening a Server (Listening) Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Checking for a Server Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Accepting a Client Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Closing an Accepted Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Closing the Server (Listening) Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Example Programs</title>
+
+        <section>
+          <title>NETCAT: A Simple Terminal Emulator</title>
+
+          <para/>
+        </section>
+
+        <section>
+          <title>MASTODON: Show the newest Mastodon post</title>
+
+          <para/>
+        </section>
+      </section>
     </chapter>
 
     <chapter>
