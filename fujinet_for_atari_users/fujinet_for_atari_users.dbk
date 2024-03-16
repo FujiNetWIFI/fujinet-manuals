@@ -1859,7 +1859,7 @@ OPEN #1,12,2,"TCP://:6502"</screen>
       able to not only leverage the unique hardware capabilities of the ATARI
       computers, but comes with FujiNet commands built into the language.
       These commands are implemented using the SIO interface, so the N: device
-      handler is not required. </para>
+      handler is not required.</para>
 
       <para>The FastBASIC package comes with an interpreter and compiler that
       run both on the native ATARI computer, but also cross-compilers which
@@ -1926,9 +1926,9 @@ OPEN #1,12,2,"TCP://:6502"</screen>
         <title>Reading from Connection</title>
 
         <para>The NGET statement can be used to read bytes from a connection,
-        of a specified number of bytes, into a byte array. </para>
+        of a specified number of bytes, into a byte array.</para>
 
-        <para>NGET unit, adr, len</para>
+        <screen>NGET unit, adr, len</screen>
 
         <variablelist>
           <varlistentry>
@@ -1991,17 +1991,93 @@ NGET 1,&amp;BUF,LN</programlisting>
       <section>
         <title>Writing to Connection</title>
 
-        <section>
-          <title>Flushing Connection Output</title>
+        <para>The NPUT statement can be used to write a length of bytes from a
+        specific buffer to a network channel.</para>
 
-          <para/>
-        </section>
+        <para>NPUT unit, adr, len</para>
+
+        <variablelist>
+          <varlistentry>
+            <term>unit</term>
+
+            <listitem>
+              <para>Selects the N: device to use, which can be from 1 to
+              8</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>adr</term>
+
+            <listitem>
+              <para>The address of the source buffer in memory. Most commonly
+              pointing to a byte array by way of the &amp; operator.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>len</term>
+
+            <listitem>
+              <para>The exact number of bytes to write (1-65535)</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <example>
+          <title>Writing to a connection, in FastBASIC</title>
+
+          <programlisting>' GET KEY FROM KEYBOARD
+' THEN SEND IT TO NETWORK CONNECTION
+
+GET K
+NPUT 1,&amp;K,1</programlisting>
+        </example>
       </section>
 
       <section>
         <title>Getting Connection Status</title>
 
-        <para/>
+        <para>The NSTATUS statement can be used to get the current status of a
+        specific unit. The result is placed into the DVSTAT.</para>
+
+        <para>The following table shows the contents of DVSTAT and what
+        function should be used to read it.</para>
+
+        <table>
+          <title>Contents of DVSTAT, in FastBASIC</title>
+
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry align="center">Offset</entry>
+
+                <entry align="center">Description</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry><function>DPEEK($02EA)</function></entry>
+
+                <entry>Returns the number of bytes waiting in the receive
+                buffer (1-65535)</entry>
+              </row>
+
+              <row>
+                <entry><function>PEEK($02EC)</function></entry>
+
+                <entry>1 = Channel connected, 0 = Disconnected</entry>
+              </row>
+
+              <row>
+                <entry><function>PEEK($02ED)</function></entry>
+
+                <entry>Returns the error code of the last operation.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </table>
       </section>
 
       <section>
