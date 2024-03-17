@@ -1485,7 +1485,7 @@ OPEN #1,12,2,"TCP://:6502"</screen>
       </section>
 
       <section>
-        <title>Checking for a Server Connection</title>
+        <title>Checking for a Client Connection</title>
 
         <para>A STATUS statement can be used to check for an incoming
         connection. For listening sockets, the only appropriate
@@ -1881,7 +1881,7 @@ OPEN #1,12,2,"TCP://:6502"</screen>
             <term>unit</term>
 
             <listitem>
-              <para>Selects the N: device to use, which can be from 1 to
+              <para>Selects the N: device to open, which can be from 1 to
               8.</para>
             </listitem>
           </varlistentry>
@@ -1935,7 +1935,7 @@ OPEN #1,12,2,"TCP://:6502"</screen>
             <term>unit</term>
 
             <listitem>
-              <para>Selects the N: device to use, which can be from 1 to
+              <para>Selects the N: device to input, which can be from 1 to
               8.</para>
             </listitem>
           </varlistentry>
@@ -1972,36 +1972,36 @@ OPEN #1,12,2,"TCP://:6502"</screen>
 
           <programlisting>DIM BUF(256) BYTE
 
-NSTATUS 1
-BW = DPEEK($02EA)
+<command>NSTATUS</command> 1
+<command>BW</command> = <function>DPEEK</function>($02EA)
 
 ' BECAUSE INTS ARE SIGNED, MUST
 ' TAKE VALUES &gt; 32767 INTO 
 ' ACCOUNT
 
-IF BW &gt; 256 OR BW &lt; 000
-  LN = 256
+IF <varname>BW</varname> &gt; 256 OR <varname>BW</varname> &lt; 000
+  <varname>LN</varname> = 256
 ELSE
-  LN = BW
+  <varname>LN</varname> = BW
 
-NGET 1,&amp;BUF,LN</programlisting>
+<command>NGET</command> 1,&amp;BUF,LN</programlisting>
         </example>
       </section>
 
       <section>
         <title>Writing to Connection</title>
 
-        <para>The NPUT statement can be used to write a length of bytes from a
-        specific buffer to a network channel.</para>
+        <para>The <command>NPUT</command> statement can be used to write a
+        length of bytes from a specific buffer to a network channel.</para>
 
-        <para>NPUT unit, adr, len</para>
+        <screen><command>NPUT</command> unit, adr, len</screen>
 
         <variablelist>
           <varlistentry>
             <term>unit</term>
 
             <listitem>
-              <para>Selects the N: device to use, which can be from 1 to
+              <para>Selects the N: device to output, which can be from 1 to
               8</para>
             </listitem>
           </varlistentry>
@@ -2030,19 +2030,34 @@ NGET 1,&amp;BUF,LN</programlisting>
           <programlisting>' GET KEY FROM KEYBOARD
 ' THEN SEND IT TO NETWORK CONNECTION
 
-GET K
-NPUT 1,&amp;K,1</programlisting>
+<command>GET</command> K
+<command>NPUT</command> 1,&amp;K,1</programlisting>
         </example>
       </section>
 
       <section>
         <title>Getting Connection Status</title>
 
-        <para>The NSTATUS statement can be used to get the current status of a
-        specific unit. The result is placed into the DVSTAT.</para>
+        <para>The <command>NSTATUS</command> statement can be used to get the
+        current status of a specific unit. The result is placed into the
+        <varname>DVSTAT</varname>.</para>
 
-        <para>The following table shows the contents of DVSTAT and what
-        function should be used to read it.</para>
+        <screen><command>NSTATUS</command> unit</screen>
+
+        <variablelist>
+          <varlistentry>
+            <term>unit</term>
+
+            <listitem>
+              <para>Selects the N: device to acquire status, which can be from
+              1 to 8</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>The following table shows the contents of
+        <varname>DVSTAT</varname> and what function should be used to read
+        it.</para>
 
         <table>
           <title>Contents of DVSTAT, in FastBASIC</title>
@@ -2078,6 +2093,445 @@ NPUT 1,&amp;K,1</programlisting>
             </tbody>
           </tgroup>
         </table>
+
+        <example>
+          <title>Obtaining Status, in FastBASIC</title>
+
+          <programlisting>' Get current status
+NSTATUS 1
+
+' Put into useful variables
+BW=DPEEK($02EA)
+CONNECTED=DPEEK($02EC)
+ERR=PEEK($02ED)</programlisting>
+        </example>
+      </section>
+
+      <section>
+        <title>Closing a Connection</title>
+
+        <para>The <command>NCLOSE</command> statement will close a connection
+        attached to a specific unit. If the given unit doesn't have an open
+        connection, the NCLOSE statement will simply return to the main
+        program.</para>
+
+        <screen><command>NCLOSE</command> unit</screen>
+
+        <variablelist>
+          <varlistentry>
+            <term>unit</term>
+
+            <listitem>
+              <para>Selects the N: device to close, which can be from 1 to
+              8.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <example>
+          <title>Closing a connection, in FastBASIC</title>
+
+          <programlisting>' Close connection on N: unit 1
+<command>NCLOSE</command> 1</programlisting>
+        </example>
+
+        <caution>
+          <para>When a unit is opened as a listening socket,
+          <command>NCLOSE</command> will close the listening socket. A delay
+          of 2 minutes is imposed for any closed listening sockets, before
+          they are available again for use. If you intend to re-use the
+          listening socket to accept another connection, please refer to
+          "<emphasis role="bold">Closing the Server (Listening)
+          Connection</emphasis>"</para>
+        </caution>
+      </section>
+
+      <section>
+        <title>Opening a Server (Listening) Connection</title>
+
+        <para>NOPEN can be used to create a listening socket on a specified
+        port. This is used to accept connections from another computer.</para>
+
+        <example>
+          <title>Opening a Server (Listening) Connection, in FastBASIC</title>
+
+          <programlisting>' Open a TCP listening (server) socket on port 6502
+' 0 = No Translation (e.g. Atari-to-Atari)
+
+NOPEN 1,12,0,"N:TCP://:6502/"</programlisting>
+        </example>
+      </section>
+
+      <section>
+        <title>Checking for a Client Connection</title>
+
+        <para>NSTATUS can be used to check the listening connection for a
+        connection. PEEK($02EC) will return a 0 if there is no connection
+        waiting, or a 1 if there is a connection waiting.</para>
+
+        <example>
+          <title>Checking for a Server Connection, in FastBASIC</title>
+
+          <programlisting>' NSTATUS must be run each connected check.
+NSTATUS 1
+CONNECTED=PEEK($02EC)
+IF CONNECTED THEN
+   ' ...</programlisting>
+        </example>
+      </section>
+
+      <section>
+        <title>Accepting a Client Connection</title>
+
+        <para>Connections can be accepted by sending an 'A' command to the
+        appropriate N: unit. The SIO command can be used to do this, and for
+        convenience, can be wrapped into the following PROCedure:</para>
+
+        <programlisting>PROC naccept unit, mode, trans
+ SIO $71, unit, $41, $00, 0, $1f, 0, mode, trans
+ENDPROC</programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>unit</term>
+
+            <listitem>
+              <para>Accept connection for unit #1-8</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>mode</term>
+
+            <listitem>
+              <para>The channel mode to set, usually should match what was
+              passed to NOPEN</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>trans</term>
+
+            <listitem>
+              <para>The translation mode to set, usually should match what was
+              passed to NOPEN</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <example>
+          <title>Accepting a Client Connection in FastBASIC</title>
+
+          <programlisting>naccept 1</programlisting>
+        </example>
+      </section>
+
+      <section>
+        <title>Closing an Accepted Connection</title>
+
+        <para>The correct way to disconnect an accepted client connection is
+        to use the following PROCedure, which sends a 'c' command to the
+        appropriate network unit:</para>
+
+        <programlisting>PROC ncloseclient unit
+ SIO $71, unit, $63, $00, 0, $1f, 0, 0, 0
+ENDPROC</programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>unit</term>
+
+            <listitem>
+              <para>Close any client connection for unit #1-8</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+      </section>
+
+      <section>
+        <title>Closing the Server (Listening) Connection</title>
+
+        <para>If a program is done with a listening socket, it should be
+        closed with an NCLOSE statement. The example closes the server
+        (listening) connection on unit 1:</para>
+
+        <example>
+          <title>Closing the Server (Listening) Connection, in
+          FastBASIC</title>
+
+          <programlisting>NCLOSE 1</programlisting>
+        </example>
+      </section>
+
+      <section>
+        <title>Example Programs</title>
+
+        <note>
+          <para>The programs listed here, can be found in the FastBASIC
+          samples/ directory.</para>
+        </note>
+
+        <section>
+          <title>NETCAT: A Simple Terminal Emulator</title>
+
+          <para>NETCAT is a program which acts like a simple dumb terminal
+          emulator. It will read and display any information that appears on
+          the network channel, while also checking for key presses and sending
+          them out the same network channel. This will continue until either
+          the host disconnects, or a network error occurs. In either case, the
+          network channel is closed, and the program ends.</para>
+
+          <programlistingco>
+            <areaspec>
+              <area coords="2" xml:id="ex.fb.nc.1"/>
+            </areaspec>
+
+            <programlisting linenumbering="numbered">' -- #FUJINET NETCAT Example --
+
+' Default unit # for connection
+CONN=2
+MODE=12
+TRANS=0
+
+' RX Buffer
+DIM BUF(8192) BYTE
+
+' Procedures '''''''''''''''''''''''''
+PROC BANNER
+ PRINT "** NETCAT IN FASTBASIC **"
+ PRINT
+ENDPROC
+
+PROC GETCONN
+ URL$="N:"
+ INPUT "URL: ", C$
+ URL$=+C$
+ INPUT "TRANS (0=none, 1=CR, 2=LF, 3=CR/LF): ", TRANS
+ENDPROC
+
+PROC INTCLR
+ POKE $D302, PEEK($D302) &amp; 127
+ENDPROC
+
+PROC CONNECT
+ PRINT "Connecting to:"
+ PRINT URL$
+ NOPEN CONN,MODE,TRANS,URL$
+ NSTATUS CONN
+ENDPROC
+
+PROC IN
+ ' Clear interrupt and get status
+ @INTCLR
+ NSTATUS CONN
+
+ ' Check if we need to read data
+ BW = DPEEK($02EA)
+ WHILE BW
+  ' Needs to handle the case where
+  ' BW &gt; 32767, giving negative.
+  IF BW &gt; 8192 OR BW &lt; 000
+   LN = 8192
+  ELSE
+   LN = BW
+  ENDIF
+
+  NGET CONN,&amp;BUF, LN
+  BPUT #0, &amp;BUF, LN
+  BW = BW - LN
+ WEND
+ENDPROC
+
+PROC OUT
+ GET K
+ NPUT CONN, &amp;K, 1
+ENDPROC
+
+PROC NC
+ DO
+  IF PEEK($D302) &amp; 128
+   @IN
+  ENDIF
+
+  IF PEEK($02EC) = 0
+   PRINT "Disconnected."
+   NCLOSE CONN
+   EXIT
+  ENDIF
+
+  IF KEY() THEN @OUT
+ LOOP
+ENDPROC
+
+''''''''''''''''''''''''
+' Main Program
+
+POKE 65,0 ' quiet SIO
+
+@BANNER
+@GETCONN
+@CONNECT
+
+IF SErr() &lt;&gt; 1
+  NSTATUS CONN
+  PRINT "Could not Make Connection"
+  PRINT "ERROR- "; PEEK($02ED)
+  NCLOSE CONN
+ELSE
+  PRINT "Connected!"
+  @NC
+ENDIF
+
+POKE 65,3 ' noisy SIO
+</programlisting>
+
+            <calloutlist>
+              <callout arearefs="ex.fb.nc.1">
+                <para>Variable definitions.</para>
+              </callout>
+            </calloutlist>
+          </programlistingco>
+        </section>
+
+        <section>
+          <title>MASTODON: Show the newest Mastodon post</title>
+
+          <programlisting linenumbering="numbered">' A Mastodon Client in FastBASIC
+
+' N: Unit to use
+unit=8
+
+' URL to Mastodon Server
+url$="N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1"$9B
+
+' QUERY string
+query$=""
+
+' QUERY result
+DIM result(1024) BYTE
+
+' JSON channel mode
+JSON_MODE=1
+
+' PROCEDURES '''''''''''''''''''''''''
+PROC nprinterror
+ NSTATUS unit
+ PRINT "ERROR- "; PEEK($02ED)
+ENDPROC
+
+PROC nsetchannelmode mode
+ SIO $71, unit, $FC, $00, 0, $1F, 0, 12, JSON_MODE
+ENDPROC
+
+PROC nparsejson
+ SIO $71, unit, $50, $00, 0, $1f, 0, 12, 0
+ENDPROC
+
+PROC njsonquery
+ SIO $71, unit, $51, $80, &amp;query$+1, $1f, 256, 12, 0
+ENDPROC
+
+PROC showresult
+ @njsonquery
+ NSTATUS unit
+
+ IF PEEK($02ED) &gt; 
+  PRINT "Could not fetch query:"
+  PRINT query$
+  EXIT
+ ENDIF
+
+ BW=DPEEK($02EA)
+ NGET unit, &amp;result, BW
+ BPUT #0, &amp;result, BW
+ENDPROC
+
+PROC mastodon
+ ' Open connection
+ NOPEN unit, 12, 0, url$
+
+ ' If not successful, then exit.
+ IF SERR()&lt;&gt;1
+  PRINT "Could not open connection."
+  @nprinterror
+  EXIT
+ ENDIF
+
+ ' Change channel mode to JSON
+ @nsetchannelmode JSON_MODE
+
+ ' Ask FujiNet to parse JSON
+ @nparsejson
+
+ ' If not successful, then exit.
+ IF SErr()&lt;&gt;1
+  PRINT "Could not parse JSON."
+  @nprinterror
+  EXIT
+ ENDIF
+
+ ' Show latest post
+ query$="N:/0/account/display_name"$9B
+ @showresult
+ query$="N:/0/created_at"$9B
+ @showresult
+ query$="N:/0/content"$9B
+ @showresult
+
+ NCLOSE unit
+
+ PRINT
+ PRINT " ---- "
+ PRINT
+
+ENDPROC
+
+' MAIN PROGRAM '''''''''''''''''''''''
+DO
+ @mastodon
+ PAUSE 1800
+LOOP
+</programlisting>
+        </section>
+      </section>
+    </chapter>
+
+    <chapter>
+      <title>ACTION!</title>
+
+      <para>ACTION! programs can access the FujiNet directly, via SIO,
+      allowing for FujiNet programs to be used even when there is no N:
+      handler loaded.</para>
+
+      <para>To make usage of FujiNet easier, a library called NIO.ACT is
+      provided. It provides functions for opening, closing, reading, writing,
+      and a few special features (such as JSON parsing and querying), and can
+      be easily patterned to send any FujiNet command over SIO. The following
+      sections show how to use the individual functions found in
+      NIO.ACT.</para>
+
+      <section>
+        <title>Opening a Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Reading From a Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Writing To a Connection</title>
+
+        <para/>
+      </section>
+
+      <section>
+        <title>Getting Connection Status</title>
+
+        <para/>
       </section>
 
       <section>
@@ -2093,7 +2547,7 @@ NPUT 1,&amp;K,1</programlisting>
       </section>
 
       <section>
-        <title>Checking for a Server Connection</title>
+        <title>Checking for a Client Connection</title>
 
         <para/>
       </section>
@@ -2105,7 +2559,7 @@ NPUT 1,&amp;K,1</programlisting>
       </section>
 
       <section>
-        <title>Closing an Accepted Connection</title>
+        <title>Closing an Accepted Client Connection</title>
 
         <para/>
       </section>
@@ -2117,30 +2571,581 @@ NPUT 1,&amp;K,1</programlisting>
       </section>
 
       <section>
+        <title>NIO.ACT Library Listing</title>
+
+        <para>NIO.ACT is an ACTION! library that exposes FujiNet functions via
+        SIO calls. It also provides an interrupt handler routine that improves
+        performance by minimizing status polling.</para>
+
+        <para>This library may be fetched directly on-line via the URL: <link
+        xlink:href="https://raw.githubusercontent.com/FujiNetWIFI/fujinet-apps/master/netcat-action/NIO.ACT">https://raw.githubusercontent.com/FujiNetWIFI/fujinet-apps/master/netcat-action/NIO.ACT</link></para>
+
+        <programlisting>;
+; #FujiNet Network I/O Library    
+; For ACTION!
+;
+; Author: Thomas Cherryhomes
+;  &lt;thom.cherryhomes@gmail.com&gt;
+;
+; These routines call the #Fujinet
+; directly from SIO, and thus do
+; not need the N: handler (NDEV)
+;
+
+MODULE
+
+;
+; PROCEED interrupt vars
+;
+CARD VPRCEDSAVE     ; Save vector for vprced
+CARD VPRCED = $0202 ; Proceed vector
+BYTE PACTL  = $D302 ; PIA Control for Proceed
+BYTE trip           ; Trip FLAG.
+
+;
+; DVSTAT (Status)
+;
+BYTE DVSTAT = $02EA ; PTR TO DVSTAT
+BYTE EXTERR = $02ED ; DVSTAT+3
+
+;
+; DEVICE CONTROL BLOCK (DCB)
+;
+BYTE DDEVIC = $0300 ; Device #
+BYTE DUNIT  = $0301 ; Unit #
+BYTE DCOMND = $0302 ; Command
+BYTE DSTATS = $0303 ; &lt;-&gt; and error
+CARD DBUF   = $0304 ; buffer
+BYTE DTIMLO = $0306 ; timeout secs
+BYTE DUNUSE = $0307 ; reserved
+CARD DBYT   = $0308 ; pyld byte len
+CARD DAUX   = $030A ; daux1/daux2
+BYTE DAUX1  = $030A ; daux1
+BYTE DAUX2  = $030B ; daux2
+
+;
+; Interrupt handler
+;
+; A9 01    LDA #$01
+; 8D XX XX STA trip
+; 68       PLA
+; 40       RTI
+; 
+PROC ninterrupt_handler=*()
+[$A9$01$8D trip $68$40]
+
+;
+; Enable Interrupt handler.
+;
+PROC nenableproc()
+
+    trip=0
+    VPRCEDSAVE=VPRCED
+    VPRCED=ninterrupt_handler
+    PACTL = PACTL % 1
+
+RETURN
+
+;
+; Disable Interrupt handler.
+;
+PROC ndisableproc()
+
+    trip=0
+    VPRCED=VPRCEDSAVE
+
+RETURN
+
+;
+; PROC to call SIO Vector (SIOV)
+;
+PROC siov=$E459()
+
+;
+; Get the unit number from devicespec
+;
+BYTE FUNC ngetunit(BYTE ARRAY ds)
+    BYTE unit=1
+                   
+    IF ds(2)=': THEN
+        unit=1
+    ELSEIF ds(3)=': THEN
+        unit=ds(2)-$30
+    ELSE
+        unit=1
+    FI
+
+RETURN (unit)
+
+;
+; Get status of last NIO operation,
+; Return in DVSTAT
+; 
+; @param devicespec N: devicespec
+;
+PROC nstatus(BYTE ARRAY ds)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'S     ; STATUS
+  DSTATS = $40    ; Payload to Atari
+  DBUF   = $02EA  ; status buffer
+  DTIMLO = $1F    ; 32 second timeout
+  DBYT   = 4      ; 4 byte payload
+  DAUX1  = 0      ; R/W
+  DAUX2  = 0      ; translation
+  siov()   
+
+RETURN
+
+;
+; Return error of last NIO operation.
+; If SIO error = 144, then a status
+; is done, and the extended err is 
+; returned.
+;
+; @param devicespec N: devicespec
+; @return error 1=successful
+;
+BYTE FUNC geterror(BYTE ARRAY ds)
+  BYTE errno
+
+  IF DSTATS=144 THEN
+    nstatus(ds)
+    errno=EXTERR
+  ELSE
+    errno=DSTATS
+  FI
+
+RETURN (errno)
+
+;
+; Open the N: device pointed to by
+; devicespec.
+; 
+; @param devicespec N: devicespec
+; @param trans - translation mode
+;   0=NONE, 1=CR, 2=LF, 3=CR/LF
+; @return error, 1=successful.
+;
+BYTE FUNC nopen(BYTE ARRAY ds, BYTE t)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'O    ; OPEN
+  DSTATS = $80   ; Write to fujinet
+  DBUF   = ds    ; send devicespec
+  DTIMLO = $1F   ; 32 second timeout
+  DBYT   = 256   ; 256 byte payload
+  DAUX1  = 12    ; R/W
+  DAUX2  = t     ; translation
+  siov();  
+
+  IF DSTATS=1 THEN
+      nenableproc()
+  FI
+
+RETURN (geterror(ds))
+
+;
+; Close the N: device pointed to by
+; devicespec.
+; 
+; @param devicespec N: devicespec
+; @return error, 1=successful.
+;
+BYTE FUNC nclose(BYTE ARRAY ds)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'C    ; CLOSE
+  DSTATS = $00   ; No Payload
+  DBUF   = 0     ; send devicespec
+  DTIMLO = $1F   ; 32 second timeout
+  DBYT   = 0     ; No payload
+  DAUX1  = 0
+  DAUX2  = 0
+  siov();  
+
+  ndisableproc()
+
+RETURN (geterror(ds))
+
+;
+; Read len bytes from N: device 
+; pointed to by devicespec.
+;
+; @param devicespec N: devicespec
+; @param buf The dest buffer
+; @param len # of bytes to read
+; @return error 1=successful
+;
+BYTE FUNC nread(BYTE ARRAY ds, BYTE ARRAY buf, CARD len)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'R    ; READ
+  DSTATS = $40   ; Atari&lt;-Payload
+  DBUF   = buf   ; send devicespec
+  DTIMLO = $1F   ; 32 second timeout
+  DBYT   = len   ; No payload
+  DAUX   = len
+  siov();  
+
+RETURN (geterror(ds))
+
+;
+; Write len bytes to N: device 
+; pointed to by devicespec.
+;
+; @param devicespec N: devicespec
+; @param buf The src buffer
+; @param len # of bytes to read
+; @return error 1=successful
+;
+BYTE FUNC nwrite(BYTE ARRAY ds, BYTE ARRAY buf, CARD len)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'W    ; WRITE
+  DSTATS = $80   ; Payload-&gt;FujiNet
+  DBUF   = buf   ; send devicespec
+  DTIMLO = $1F   ; 32 second timeout
+  DBYT   = len   ; No payload
+  DAUX   = len
+  siov();  
+
+RETURN (geterror(ds))
+
+; Get FujiNet Status
+;
+; Author: Michael Goroll
+;  &lt;atari@goroll.net&gt;
+;
+PROC fstatus(BYTE ARRAY buf)
+
+DDEVIC = $70
+DUNIT  = $01
+DCOMND = $E8
+DSTATS = $40    ; Payload to Atari
+DBUF   = buf    ; status buffer
+DTIMLO = $0F    ; 8 second timeout
+DBYT   = $88    ; 139 byte payload
+DAUX1  = 0      ; R/W
+DAUX2  = 0      ; translation
+siov()
+
+RETURN</programlisting>
+      </section>
+
+      <section>
         <title>Example Programs</title>
+
+        <para/>
 
         <section>
           <title>NETCAT: A Simple Terminal Emulator</title>
 
-          <para/>
+          <para>NETCAT is a program which acts like a simple dumb terminal
+          emulator. It will read and display any information that appears on
+          the network channel, while also checking for key presses and sending
+          them out the same network channel. This will continue until either
+          the host disconnects, or a network error occurs. In either case, the
+          network channel is closed, and the program ends.</para>
+
+          <example>
+            <title>NETCAT ACTION! Listing</title>
+
+            <programlisting>; 
+; A simple netcat program
+; to show how to do basic network
+; input and output.
+;
+; Author: Thomas Cherryhomes
+;  &lt;thom.cherryhomes@gmail.com&gt;
+;
+
+INCLUDE "D2:SYS.ACT"
+INCLUDE "D2:NIO.ACT"
+
+MODULE
+
+CARD BYTESWAITING=$02EA     ; # of bytes waiting
+BYTE KP=$02FC               ; Key pressed?
+BYTE ARRAY devicespec(256)  ; DeviceSpec
+BYTE trans                  ; translation mode
+BYTE localEcho              ; local echo off/on?
+BYTE running                ; is program running?
+BYTE ARRAY rxbuf(8192)      ; receive buffer
+
+DEFINE KEYBOARD_IOCB="2"
+DEFINE TRUE="1"
+DEFINE FALSE="0"
+
+;
+; Prompt for URL
+;
+PROC getURL()
+       PrintE("NETCAT--ENTER DEVICE SPEC?")
+       InputS(devicespec)
+       PutE()
+       
+       PrintE("TRANS--0=NONE, 1=CR, 2=LF, 3=CR/LF?")
+       trans=InputB()
+       PutE()
+
+       PrintE("LOCAL ECHO--0=NO, 1=YES?")
+       localEcho=InputB()
+       PutE()
+RETURN
+
+;
+; Handle nc output
+;
+PROC ncoutput()
+       BYTE ARRAY ch(1)
+       BYTE err
+
+       IF KP=$FF THEN
+           RETURN
+       FI
+
+       ch(0)=GetD(KEYBOARD_IOCB)
+
+       IF localEcho=1 THEN
+           Put(ch(0))
+       FI
+
+       err=nwrite(devicespec,ch,1)
+
+       IF err&lt;&gt;1 THEN
+           Print("Write Error: ")
+           PrintB(err)
+           running=FALSE
+       FI
+
+RETURN
+
+;
+; Handle nc input
+;
+PROC ncinput()
+       BYTE err
+       CARD I
+
+       IF trip=0 THEN
+           RETURN
+       FI
+
+       nstatus()
+
+       IF EXTERR=136 THEN
+          PrintE("Disconnected.")
+          running=FALSE
+          RETURN
+       FI
+
+       IF BYTESWAITING=0 THEN
+          RETURN 
+       FI
+
+       IF BYTESWAITING&gt;8192 THEN
+          BYTESWAITING=8192
+       FI
+
+       ; Do the network read.
+       err=nread(devicespec,rxbuf,BYTESWAITING)
+
+       IF err&lt;&gt;1 THEN
+           Print("Read Error: ")
+           PrintB(err)
+           running=FALSE
+           RETURN
+       FI
+       
+       ; Drain/display rx buffer
+       FOR I=0 TO BYTESWAITING-1
+       DO
+           Put(rxbuf(I))
+       OD
+
+       ; Done, reset interrupt
+       trip=0
+       PACTL=PACTL%1
+
+RETURN
+
+;
+; The main Netcat function
+;
+PROC nc()
+       BYTE err
+
+       err=nopen(deviceSpec,trans)
+
+       IF err&lt;&gt;1 THEN
+           Print("Open Error: ")
+           PrintB(err)
+           RETURN
+       FI
+
+       ; flag program as running.
+       running=1
+               
+       ; Open keyboard
+       Open(KEYBOARD_IOCB,"K:",4,0)
+
+       WHILE running = TRUE  
+         DO
+         ncoutput()
+         ncinput()
+         OD
+
+       PrintE("Bye.")
+
+       ; Clean up
+       Close(KEYBOARD_IOCB) ; close kybd
+       nclose(deviceSpec)
+
+RETURN
+
+;
+; Main entrypoint
+;
+PROC main()
+       getURL()
+       nc()
+RETURN</programlisting>
+          </example>
         </section>
 
         <section>
-          <title>MASTODON: Show the newest Mastodon post</title>
+          <title>MASTODON: Show the Newest Mastodon Post</title>
 
-          <para/>
+          <programlisting>; A SIMPLE MASTODON CLIENT
+; SHOWS THE LATEST POST     
+; FROM OLDBYTES.SPACE
+
+INCLUDE "D1:SYS.ACT"
+INCLUDE "D1:NIO.ACT"
+
+MODULE
+
+BYTE ARRAY URL(256)
+BYTE ARRAY QS(256)
+BYTE CONSOL=$D01F
+BYTE CLOK0=$12
+BYTE CLOK1=$13
+BYTE CLOK2=$14
+CARD BW=$02EA
+
+; PRINT RESULT OF JSON QUERY
+; _qs = Query String
+PROC PRINTJ(BYTE ARRAY _qs)
+    BYTE ERR
+    BYTE ARRAY OUT(4096)
+    CARD X
+
+    SCOPY(QS,_qs)
+
+    ; get length of string
+    ; append EOL
+    X=QS(0)
+    QS(X+1)=155
+
+    ; perform query
+    ERR = NQUERYJSON(URL,QS)
+
+    IF ERR&lt;&gt;1 THEN
+       PRINT("QUERY ERROR: ")
+       PRINTB(ERR)
+       RETURN
+    FI
+
+    ; Get # of bytes waiting...
+    NSTATUS(URL)
+
+    IF ERR&lt;&gt;1 THEN
+       PRINT("STATUS ERROR: ");
+       PRINTBE(ERR)
+       RETURN
+    FI
+
+    ; Read result into OUT
+    ERR = NREAD(URL,OUT,BW)
+
+    IF ERR&lt;&gt;1 THEN
+       PRINT("READ ERROR: ")
+       PRINTBE(ERR)
+       RETURN
+    FI 
+
+    ; Display it, one byte at a time
+    FOR X=0 TO BW-1
+    DO
+        PUT(OUT(X))
+    OD
+        
+RETURN
+
+PROC FOOTER()
+    PRINTE("")
+    PRINTE("-------------------------------------")
+    PRINTE("")
+RETURN
+
+PROC BANNER()
+    FOOTER()
+    PRINTE("LATEST POST FROM:")
+    PRINTE(" OLDBYTES.SPACE ")
+    FOOTER()
+RETURN
+
+PROC SHOW_POST()
+    BYTE ERR    
+
+    SCOPY(URL,"N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1")
+
+    ERR=NOPEN(URL,0)
+
+    IF ERR&lt;&gt;1 THEN
+       PRINT("OPEN ERROR: ")
+       PRINTBE(ERR)
+       RETURN
+    FI
+
+    NCHANNELMODE(URL,1)
+
+    ERR=NPARSEJSON(URL)
+
+    IF ERR&lt;&gt;1 THEN
+       PRINT("PARSE ERROR: ")
+       PRINTBE(ERR)
+       RETURN
+    FI    
+
+    PRINTJ("N:/0/account/display_name")
+    PRINTJ("N:/0/created_at");
+    PRINTJ("N:/0/content");
+
+    NCLOSE(URL)
+
+RETURN                     
+
+PROC MAIN()
+
+    BANNER()
+    SHOW_POST()
+    FOOTER()
+
+RETURN
+</programlisting>
         </section>
       </section>
     </chapter>
 
     <chapter>
       <title>Assembler</title>
-
-      <para/>
-    </chapter>
-
-    <chapter>
-      <title>ACTION!</title>
 
       <para/>
     </chapter>

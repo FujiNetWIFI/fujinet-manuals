@@ -3,6 +3,9 @@
     xmlns:xsl="http://www.w3.org/1999/XSL/Transform"  version="1.0">
   <xsl:import href="file:///usr/share/xml/docbook/stylesheet/docbook-xsl/fo/docbook.xsl" />
 
+
+  <xsl:param name="callout.graphics">0</xsl:param>
+  
   <xsl:param name="body.font.family" select="'Optima LT Std'"/>
   <xsl:param name="title.font.family" select="'Optima LT Std'"/>
   <!-- <xsl:param name="page.width">5in</xsl:param> -->
