@@ -2505,82 +2505,771 @@ LOOP
 
       <para>To make usage of FujiNet easier, a library called NIO.ACT is
       provided. It provides functions for opening, closing, reading, writing,
-      and a few special features (such as JSON parsing and querying), and can
-      be easily patterned to send any FujiNet command over SIO. The following
-      sections show how to use the individual functions found in
-      NIO.ACT.</para>
+      and a few special features (such as <acronym>JSON</acronym> parsing and
+      querying), and can be easily patterned to send any FujiNet command over
+      SIO. The following sections show how to use the individual functions
+      found in NIO.ACT.</para>
+
+      <section>
+        <title>Performing an SIO Operation</title>
+
+        <para>ACTION! can easily communicate directly with the FujiNet via
+        SIO. This is accomplished by calling the operating system routine
+        <function>SIOV</function> which has a known vector address of $E459.
+        This routine reads its parameters from a fixed location in memory,
+        starting at address $0300 called the Device Control Block (DCB). The
+        procedure for using the FujiNet via <function>SIOV</function> is as
+        follows:<procedure>
+            <step>
+              <para>Set <varname>DDEVIC</varname> to $71.</para>
+            </step>
+
+            <step>
+              <para>Set <varname>DUNIT</varname> to the N: device you wish to
+              use. <function>ngetunit()</function> can help set this via a
+              URL.</para>
+            </step>
+
+            <step>
+              <para>Set <varname>DCOMND</varname> to the command you wish to
+              send.</para>
+            </step>
+
+            <step>
+              <para>Set <varname>DSTATS</varname> to indicate the direction of
+              payload during transfer. $00 indicates there is no payload, $40
+              indicates to send from the FujiNet to the <trademark
+              class="registered">ATARI</trademark>, and $80 indicates that the
+              payload goes from <trademark
+              class="registered">ATARI</trademark> to the FujiNet.</para>
+            </step>
+
+            <step>
+              <para>If <varname>DSTATS</varname> is $40 or $80, set
+              <varname>DBUF</varname> to point to the correct buffer,
+              otherwise simply set zero.</para>
+            </step>
+
+            <step>
+              <para>Set <varname>DTIMLO</varname> to a value larger than 0, to
+              indicate # of seconds to wait for operation to complete.</para>
+            </step>
+
+            <step>
+              <para>If <varname>DSTATS</varname> is $40 or $80, set
+              <varname>DBYT</varname> to the number of bytes to transfer from
+              the buffer, otherwise simply set zero.</para>
+            </step>
+
+            <step>
+              <para>Set <varname>DAUX1</varname> to an appropriate
+              value.</para>
+            </step>
+
+            <step>
+              <para>Set <varname>DAUX2</varname> to an appropriate value,
+              or...</para>
+            </step>
+
+            <step>
+              <para>You can also set as a 16-bit value, if you define
+              <varname>DAUX</varname> as a <type>CARD</type>.</para>
+            </step>
+
+            <step>
+              <para>Once everything is set, call
+              <function>SIOV()</function></para>
+            </step>
+
+            <step>
+              <para>Check <varname>DSTATS</varname> for error code.</para>
+            </step>
+
+            <step>
+              <para>If <varname>DSTATS</varname>=144, check
+              <varname>DVSTAT+3</varname> (aka ERR) for error code.</para>
+            </step>
+          </procedure></para>
+
+        <para>The following code snippet defines the locations of the Device
+        Control Block (<acronym>DCB</acronym>) and the function to call
+        <function>SIOV</function>:</para>
+
+        <programlisting>;
+; DEVICE CONTROL BLOCK (DCB)
+;
+BYTE DDEVIC = $0300 ; Device #
+BYTE DUNIT  = $0301 ; Unit #
+BYTE DCOMND = $0302 ; Command
+BYTE DSTATS = $0303 ; &lt;-&gt; and error
+CARD DBUF   = $0304 ; buffer
+BYTE DTIMLO = $0306 ; timeout secs
+BYTE DUNUSE = $0307 ; reserved
+CARD DBYT   = $0308 ; pyld byte len
+CARD DAUX   = $030A ; daux1/daux2
+BYTE DAUX1  = $030A ; daux1
+BYTE DAUX2  = $030B ; daux2
+
+;
+; PROC to call SIO Vector (SIOV)
+;
+PROC siov=$E459()</programlisting>
+      </section>
+
+      <section>
+        <title>Setting DUNIT via a URL</title>
+
+        <para>The function <function>ngetunit()</function> will parse the URL
+        pointed to by <varname>ds</varname> to get the requested unit number.
+        It will parse N: as unit 0:</para>
+
+        <programlisting>;
+; Get the unit number from devicespec
+;
+BYTE FUNC ngetunit(BYTE ARRAY ds)
+    BYTE unit=1
+                   
+    IF ds(2)=': THEN
+        unit=1
+    ELSEIF ds(3)=': THEN
+        unit=ds(2)-$30
+    ELSE
+        unit=1
+    FI
+
+RETURN (unit)</programlisting>
+      </section>
+
+      <section>
+        <title>Getting the error code</title>
+
+        <para>The procedure <function>geterror()</function> can be used to
+        derive the error code of the completed operation. <programlisting>BYTE EXTERR = $02ED
+BYTE DSTATS = $0303
+
+;
+; Return error of last NIO operation.
+; If SIO error = 144, then a status
+; is done, and the extended err is 
+; returned.
+;
+; @param devicespec N: devicespec
+; @return error 1=successful
+;
+BYTE FUNC geterror(BYTE ARRAY ds)
+  BYTE errno
+
+  IF DSTATS=144 THEN
+    nstatus(ds)
+    errno=EXTERR
+  ELSE
+    errno=DSTATS
+  FI
+
+RETURN (errno)</programlisting></para>
+      </section>
 
       <section>
         <title>Opening a Connection</title>
 
-        <para/>
+        <para>The following function <function>nopen()</function> can be used
+        to open a network connection with a given protocol:</para>
+
+        <programlisting>;
+; Open the N: device pointed to by
+; devicespec.
+; 
+; @param devicespec N: devicespec
+; @param trans - translation mode
+;   0=NONE, 1=CR, 2=LF, 3=CR/LF
+; @return error, 1=successful.
+;
+BYTE FUNC nopen(BYTE ARRAY ds, BYTE t)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'O    ; OPEN
+  DSTATS = $80   ; Write to fujinet
+  DBUF   = ds    ; send devicespec
+  DTIMLO = $1F   ; 32 second timeout
+  DBYT   = 256   ; 256 byte payload
+  DAUX1  = 12    ; R/W
+  DAUX2  = t     ; translation
+  siov();  
+
+RETURN (geterror(ds))</programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>ds</term>
+
+            <listitem>
+              <para>A string containing the device spec to open, such
+              as:</para>
+
+              <screen>N:HTTPS://WWW.GNU.ORG/licenses/gpl-3.0.txt</screen>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>t</term>
+
+            <listitem>
+              <para>The translation mode to use where:<table>
+                  <title>nopen Translation Values</title>
+
+                  <tgroup cols="2">
+                    <thead>
+                      <row>
+                        <entry align="center">t</entry>
+
+                        <entry align="center">Description</entry>
+                      </row>
+                    </thead>
+
+                    <tbody>
+                      <row>
+                        <entry>0</entry>
+
+                        <entry>No Translation of end of line
+                        (<acronym>EOL</acronym>) characters.</entry>
+                      </row>
+
+                      <row>
+                        <entry>1</entry>
+
+                        <entry>Translate EOL character to/from CR</entry>
+                      </row>
+
+                      <row>
+                        <entry>2</entry>
+
+                        <entry>Translate EOL character to/from LF</entry>
+                      </row>
+
+                      <row>
+                        <entry>3</entry>
+
+                        <entry>Translate EOL character to/from CR/LF
+                        pair</entry>
+                      </row>
+                    </tbody>
+                  </tgroup>
+                </table></para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <tip>
+          <para>the <function>nenableproc()</function> procedure can be used
+          after <function>nopen()</function> to enable an interrupt which will
+          set the variable trip to TRUE when traffic is available to
+          read.</para>
+        </tip>
+
+        <example>
+          <title>Opening a Connection in ACTION! Using nopen()</title>
+
+          <programlisting>' 2 = use UNIX line endings.
+nopen("N:HTTP://WWW.GNU.ORG/licenses/gpl-3.0",2);</programlisting>
+        </example>
+      </section>
+
+      <section>
+        <title>PROCEED Interrupt Handler</title>
+
+        <para>The FujiNet signals incoming traffic via an interrupt on the
+        <hardware>PROCEED</hardware> pin. This interrupt is edge triggered.
+        The ATARI operating system has an interrupt vector called
+        <varname>VPRCED</varname>, which is called from the operating system's
+        <acronym>IRQ</acronym> handler. Using interrupts can drastically
+        improve performance of interactive network applications by minimizing
+        the number of polls needed to determine how many bytes are waiting in
+        FujiNet's receive buffer.</para>
+
+        <para>Not all programs need this functionality, so it may be omitted
+        in cases where constant polling of the receive buffer isn't required.
+        Such applications include those which use the <acronym>HTTP</acronym>
+        protocol.</para>
+
+        <para>To react to this interrupt, a handler needs to be placed in
+        memory, and VPRCED's address vector needs to point to it. The
+        following is a sample interrupt handler which sets a variable called
+        trip to 1 whenever the PROCEED pin is changed in response to data
+        being in the receive buffer:</para>
+
+        <programlisting>;
+; Interrupt handler
+;
+; A9 01    LDA #$01
+; 8D XX XX STA trip
+; 68       PLA
+; 40       RTI
+; 
+PROC ninterrupt_handler=*()
+[$A9$01$8D trip $68$40]</programlisting>
+
+        <para><emphasis role="bold">The PROCEED interrupt will trigger if any
+        active network devices have data in their respective receive
+        buffers.</emphasis></para>
+      </section>
+
+      <section>
+        <title>Enabling PROCEED Interrupt</title>
+
+        <para>If you choose to use the <hardware>PROCEED</hardware> interrupt
+        functionality, you should use this procedure to enable the interrupt
+        safely and to properly reset the <varname>trip</varname> variable to
+        zero:</para>
+
+        <programlisting>;
+; PROCEED interrupt vars
+;
+CARD VPRCEDSAVE     ; Save vector for vprced
+CARD VPRCED = $0202 ; Proceed vector
+BYTE PACTL  = $D302 ; PIA Control for Proceed
+BYTE trip           ; Trip FLAG.
+
+;
+; Enable Interrupt handler.
+;
+PROC nenableproc()
+
+    trip=0
+    VPRCEDSAVE=VPRCED
+    VPRCED=ninterrupt_handler
+    PACTL = PACTL % 1
+
+RETURN</programlisting>
+
+        <para><important>
+            <para>once <function>nenableproc()</function> is used,
+            <function>ndisableproc()</function> must be called, either on
+            closing of the network connection, or program. Otherwise,
+            unpredictable system behavior may result! See Disabling
+            <hardware>PROCEED</hardware> Interrupt.</para>
+          </important></para>
       </section>
 
       <section>
         <title>Reading From a Connection</title>
 
-        <para/>
+        <para>The following function, called <function>nread()</function>, can
+        read from a network connection that has been opened by the
+        <function>nopen()</function> function:</para>
+
+        <programlisting>;
+; Read len bytes from N: device 
+; pointed to by devicespec.
+;
+; @param devicespec N: devicespec
+; @param buf The dest buffer
+; @param len # of bytes to read
+; @return error 1=successful
+;
+BYTE FUNC nread(BYTE ARRAY ds, BYTE ARRAY buf, CARD len)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'R    ; READ
+  DSTATS = $40   ; Atari&lt;-Payload
+  DBUF   = buf   ; send devicespec
+  DTIMLO = $1F   ; 32 second timeout
+  DBYT   = len   ; No payload
+  DAUX   = len
+  siov();  
+
+RETURN (geterror(ds))
+</programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>ds</term>
+
+            <listitem>
+              <para>The Device specification previously passed to
+              <function>nopen()</function>, used to derive the network device
+              unit number.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>buf</term>
+
+            <listitem>
+              <para>The byte array to place read characters into. Must be able
+              to hold at least <varname>len</varname> number of bytes.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>len</term>
+
+            <listitem>
+              <para>The number of bytes to read (1-65535).</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para><warning>
+            <para><varname>buf</varname> must be able to hold the number of
+            bytes requested by <varname>len</varname>. <varname>Len</varname>
+            must be less than, or equal to the number of bytes available in
+            the receive buffer. Use <function>nstatus()</function> to
+            determine the number of bytes available in the receive
+            buffer.</para>
+          </warning>For example, to read data from an open connection, while
+        making sure to only read as much as is available, but not more than
+        the target buffer can allow:</para>
+
+        <example>
+          <title>Reading from a Connection, in ACTION! using nread()</title>
+
+          <programlisting>CARD bw = $02EA  ; DVSTAT
+BYTE err
+
+err = nstatus(url)
+
+if err &lt;&gt; 1 then
+    return
+fi
+
+if bw = 0 then
+    return
+fi
+
+if bw &gt; 4096 then
+    bw = 4096
+fi
+
+nread(url,buf,bw)
+ </programlisting>
+        </example>
       </section>
 
       <section>
         <title>Writing To a Connection</title>
 
-        <para/>
+        <para>The following function, called <function>nwrite()</function>,
+        can write to a network connection that has been opened by the
+        <function>nopen()</function> function.</para>
+
+        <programlisting>;
+; Write len bytes to N: device 
+; pointed to by devicespec.
+;
+; @param devicespec N: devicespec
+; @param buf The src buffer
+; @param len # of bytes to read
+; @return error 1=successful
+;
+BYTE FUNC nwrite(BYTE ARRAY ds, BYTE ARRAY buf, CARD len)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'W    ; WRITE
+  DSTATS = $80   ; Payload-&gt;FujiNet
+  DBUF   = buf   ; send devicespec
+  DTIMLO = $1F   ; 32 second timeout
+  DBYT   = len   ; No payload
+  DAUX   = len
+  siov();  
+
+RETURN (geterror(ds))</programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>ds</term>
+
+            <listitem>
+              <para>The Device specification previously passed to
+              <function>nopen()</function>, used to derive the network device
+              unit number.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>buf</term>
+
+            <listitem>
+              <para>The byte array to read characters from. Must have at
+              <varname>len</varname> number of bytes.</para>
+            </listitem>
+          </varlistentry>
+
+          <varlistentry>
+            <term>len</term>
+
+            <listitem>
+              <para>The number of bytes to write. (1-65535).</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <warning>
+          <para><varname>buf</varname> must contain at least the number of
+          bytes specified by <varname>len</varname>.</para>
+        </warning>
+
+        <para>For example, to write data to an open connection:<example>
+            <title>Writing to a Connection, in ACTION! using nwrite()</title>
+
+            <programlisting>nwrite("Hello",5);</programlisting>
+          </example></para>
       </section>
 
       <section>
         <title>Getting Connection Status</title>
 
-        <para/>
+        <para>The following function, called nstatus(), can return status
+        information in a connection into the system variable DVSTAT, which
+        exists at location $02EA, which includes:</para>
+
+        <table>
+          <title>Return Values in DVSTAT for nstatus()</title>
+
+          <tgroup cols="2">
+            <thead>
+              <row>
+                <entry align="center">Variable</entry>
+
+                <entry align="center">Description</entry>
+              </row>
+            </thead>
+
+            <tbody>
+              <row>
+                <entry>CARD BW=$02EA</entry>
+
+                <entry>The Number of bytes waiting in a connection's receive
+                buffer.</entry>
+              </row>
+
+              <row>
+                <entry>BYTE CONNECTED=$02EC</entry>
+
+                <entry>Is the connection active? 1 = TRUE, 0 = FALSE</entry>
+              </row>
+
+              <row>
+                <entry>BYTE ERROR=$02ED</entry>
+
+                <entry>The error from the previous network operation.</entry>
+              </row>
+            </tbody>
+          </tgroup>
+        </table>
+
+        <programlisting>CARD BW=$02EA
+BYTE CONNECTED=$02EC
+BYTE ERROR=$02ED
+
+;
+; Get status of last NIO operation,
+; Return in DVSTAT
+; 
+; @param devicespec N: devicespec
+;
+PROC nstatus(BYTE ARRAY ds)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'S     ; STATUS
+  DSTATS = $40    ; Payload to Atari
+  DBUF   = $02EA  ; status buffer
+  DTIMLO = $1F    ; 32 second timeout
+  DBYT   = 4      ; 4 byte payload
+  DAUX1  = 0      ; R/W
+  DAUX2  = 0      ; translation
+  siov()   
+
+RETURN</programlisting>
+
+        <variablelist>
+          <varlistentry>
+            <term>ds</term>
+
+            <listitem>
+              <para>The Device specification previously passed to
+              <function>nopen()</function>, used to derive the network device
+              unit number.</para>
+            </listitem>
+          </varlistentry>
+        </variablelist>
+
+        <para>For example, to check if an open connection has been
+        disconnected:<example>
+            <title>Getting Connection Status in ACTION! using
+            nstatus()</title>
+
+            <programlisting>BYTE CONNECTED=$02EC
+
+nstatus("N:TELNET://BBS.FOZZTEXX.COM")
+
+if (CONNECTED=0)
+    EXIT()
+fi</programlisting>
+          </example></para>
+      </section>
+
+      <section>
+        <title>Disabling PROCEED Interrupt</title>
+
+        <para>If <function>nenableproc()</function> was used after opening a
+        network connection, the following procedure
+        <function>ndisableproc()</function> must be used to disable the
+        interrupt before the program ends. </para>
+
+        <programlisting>CARD VPRCEDSAVE
+
+;
+; Disable Interrupt handler.
+;
+PROC ndisableproc()
+
+    trip=0
+    VPRCED=VPRCEDSAVE
+
+RETURN</programlisting>
+
+        <important>
+          <para>If <function>nenableproc()</function> is used, Failure to call
+          <function>ndisableproc()</function> before program exit will result
+          in unpredictable system operation!</para>
+        </important>
       </section>
 
       <section>
         <title>Closing a Connection</title>
 
-        <para/>
+        <para>The following function, called nclose(), will close a connection
+        previously opened with nopen():<programlisting>;
+; Close the N: device pointed to by
+; devicespec.
+; 
+; @param devicespec N: devicespec
+; @return error, 1=successful.
+;
+BYTE FUNC nclose(BYTE ARRAY ds)
+
+  DDEVIC = $71
+  DUNIT  = ngetunit(ds)
+  DCOMND = 'C    ; CLOSE
+  DSTATS = $00   ; No Payload
+  DBUF   = 0     ; send devicespec
+  DTIMLO = $1F   ; 32 second timeout
+  DBYT   = 0     ; No payload
+  DAUX1  = 0
+  DAUX2  = 0
+  siov();  
+
+RETURN (geterror(ds))</programlisting></para>
       </section>
 
       <section>
         <title>Opening a Server (Listening) Connection</title>
 
-        <para/>
+        <para>If a host name is not specified in the URL passed to
+        <function>nopen()</function>, FujiNet will attempt to open a server
+        connection, which listens for connection attempts to a specific
+        port.</para>
+
+        <programlisting>' Open a TCP listening connection, on port 6502. No translation.
+nopen("N:TCP://:6502/",0)</programlisting>
       </section>
 
       <section>
         <title>Checking for a Client Connection</title>
 
-        <para/>
+        <para>Once a server connection is opened,
+        <function>nstatus()</function> can be used to populate the CONNECTED
+        variable (which is located at DVSTAT+2), to determine if a connection
+        is waiting to be accepted.<programlisting>BYTE CONNECTED=$02EC
+BYTE ARRAY URL="N:TCP://:6502"
+
+nstatus(url)
+
+IF CONNECTED=1 THEN
+    naccept(url); ' See Accepting a Client Connection
+FI</programlisting></para>
       </section>
 
       <section>
         <title>Accepting a Client Connection</title>
 
-        <para/>
+        <para>The following procedure, called <function>naccept()</function>
+        can be used to accept a client connection. The connection can
+        immediately be treated as if it were a client
+        connection:<programlisting>;
+; Accept the Client Connection
+;
+; @param ds devicespec N: devicespec
+;
+BYTE FUNC naccept(BYTE ARRAY ds)
+  DDEVIC=$71
+  DUNIT=ngetunit(ds)
+  DCOMND='A  ; Accept
+  DSTATS=$00 ; No Payload
+  DBUF=0     ; No Payload
+  DTIMLO=$1F ; 32 second timeout
+  DBYT=0     ; No payload
+  DAUX1=0 
+  DAUX2=0
+  siov()
+
+RETURN (geterror(ds))</programlisting></para>
       </section>
 
       <section>
         <title>Closing an Accepted Client Connection</title>
 
-        <para/>
+        <para>The following procedure can be used to close a client
+        connection, while still keeping the listener connection open for
+        another host to connect:</para>
+
+        <programlisting>;
+; Close the Client Connection
+; Free the listening connection
+; For further use.
+;
+; @param ds devicespec N: devicespec
+;
+BYTE FUNC ncloseclient(BYTE ARRAY ds)
+  DDEVIC=$71
+  DUNIT=ngetunit(ds)
+  DCOMND='c  ; client close, lower case c
+  DSTATS=$00 ; No Payload
+  DBUF=0     ; No Payload
+  DTIMLO=$1F ; 32 second timeout
+  DBYT=0     ; No payload
+  DAUX1=0 
+  DAUX2=0
+  siov()
+
+RETURN (geterror(ds))</programlisting>
       </section>
 
       <section>
         <title>Closing the Server (Listening) Connection</title>
 
-        <para/>
+        <para>Closing the server listening connection, should be done when the
+        program no longer needs to listen as a server for remote connections.
+        nclose() is used for this purpose:<programlisting>BYTE ARRAY url="N:TCP://:6502"
+
+nclose(url)</programlisting></para>
       </section>
 
       <section>
         <title>NIO.ACT Library Listing</title>
 
-        <para>NIO.ACT is an ACTION! library that exposes FujiNet functions via
+        <para>NIO.ACT is an ACTION! Library that exposes FujiNet functions via
         SIO calls. It also provides an interrupt handler routine that improves
         performance by minimizing status polling.</para>
 
         <para>This library may be fetched directly on-line via the URL: <link
         xlink:href="https://raw.githubusercontent.com/FujiNetWIFI/fujinet-apps/master/netcat-action/NIO.ACT">https://raw.githubusercontent.com/FujiNetWIFI/fujinet-apps/master/netcat-action/NIO.ACT</link></para>
 
-        <programlisting>;
+        <programlisting linenumbering="numbered">;
 ; #FujiNet Network I/O Library    
 ; For ACTION!
 ;
@@ -2841,7 +3530,21 @@ RETURN</programlisting>
       <section>
         <title>Example Programs</title>
 
-        <para/>
+        <para>The following programs are listed here for easy
+        reference.</para>
+
+        <para>They are loadable via TNFS on apps.irata.online, in the
+        directory: /Atari_8-bit/Internet/ as:</para>
+
+        <itemizedlist>
+          <listitem>
+            <para>Netcat (Action).atr</para>
+          </listitem>
+
+          <listitem>
+            <para>Mastodon (Action).atr</para>
+          </listitem>
+        </itemizedlist>
 
         <section>
           <title>NETCAT: A Simple Terminal Emulator</title>
@@ -2856,7 +3559,7 @@ RETURN</programlisting>
           <example>
             <title>NETCAT ACTION! Listing</title>
 
-            <programlisting>; 
+            <programlisting linenumbering="numbered">; 
 ; A simple netcat program
 ; to show how to do basic network
 ; input and output.
@@ -3022,7 +3725,7 @@ RETURN</programlisting>
         <section>
           <title>MASTODON: Show the Newest Mastodon Post</title>
 
-          <programlisting>; A SIMPLE MASTODON CLIENT
+          <programlisting linenumbering="numbered">; A SIMPLE MASTODON CLIENT
 ; SHOWS THE LATEST POST     
 ; FROM OLDBYTES.SPACE
 
