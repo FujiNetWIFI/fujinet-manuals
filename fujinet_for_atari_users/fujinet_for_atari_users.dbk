@@ -3118,7 +3118,7 @@ fi</programlisting>
         <para>If <function>nenableproc()</function> was used after opening a
         network connection, the following procedure
         <function>ndisableproc()</function> must be used to disable the
-        interrupt before the program ends. </para>
+        interrupt before the program ends.</para>
 
         <programlisting>CARD VPRCEDSAVE
 
@@ -3878,6 +3878,646 @@ RETURN
 
   <part>
     <title>REFERENCE</title>
+
+    <chapter>
+      <title>FujiNet Configuration Tools</title>
+
+      <section>
+        <title><command>FCONFIG</command></title>
+
+        <subtitle>Show Network Configuration</subtitle>
+
+        <synopsis><command>FCONFIG</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para><command>FCONFIG</command> reads the adapter configuration
+          from FujiNet and displays it.</para>
+
+          <para>It currently displays:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Wireless Network <acronym>SSID</acronym></para>
+            </listitem>
+
+            <listitem>
+              <para>Host name</para>
+            </listitem>
+
+            <listitem>
+              <para>Local IP address</para>
+            </listitem>
+
+            <listitem>
+              <para>Gateway IP address</para>
+            </listitem>
+
+            <listitem>
+              <para><acronym>DNS</acronym> IP address</para>
+            </listitem>
+
+            <listitem>
+              <para>Netmask</para>
+            </listitem>
+
+            <listitem>
+              <para>Hardware (<acronym>MAC</acronym>) address</para>
+            </listitem>
+
+            <listitem>
+              <para><acronym>BSSID</acronym></para>
+            </listitem>
+
+            <listitem>
+              <para><command>FCONFIG</command> Version</para>
+            </listitem>
+
+            <listitem>
+              <para>FujiNet Firmware Version</para>
+            </listitem>
+          </itemizedlist>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para>This command has no parameters.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Messages</title>
+
+          <para><command>FCONFIG</command> displays output similar to the
+          following:</para>
+
+          <screen>
+D1:<command>FCONFIG</command>
+
+           SSID: Dummy Cafe
+       Hostname: TMA-2
+     IP Address: 127.0.0.1
+Gateway Address: 0.0.0.0
+    DNS Address: 1.1.1.1
+        Netmask: 255.0.0.0
+    MAC Address: D0:1C:ED:C0:FF:EE
+          BSSID: D0:1C:ED:C0:FF:EE
+FCONFIG Version: 0.1.7643858
+  Fuji Firmware: v1.2
+
+D1:
+
+</screen>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Returns 0 on success. Otherwise the SIO error code is
+          returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FEJECT</command></title>
+
+        <subtitle>Eject disk image in specified slot</subtitle>
+
+        <synopsis><command>FEJECT</command> <parameter>&lt;ds#&gt;</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Ejects the disk image specified by the device slot. A
+          notification is displayed if there is no disk image in the specified
+          slot.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <variablelist>
+            <varlistentry>
+              <term>ds#</term>
+
+              <listitem>
+                <para>The device slot # (1-8)</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </simplesect>
+
+        <simplesect>
+          <title>Messages</title>
+
+          <para>On success, the following is displayed:</para>
+
+          <screen>Disk D3: ejected.</screen>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FHOST</command></title>
+
+        <subtitle>Edit or clear a host slot</subtitle>
+
+        <synopsis><command>FHOST</command> <parameter>&lt;hs#&gt;</parameter><parameter>[,hostname]</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>If a host name is specified, it will change the host name of
+          the specified host slot, otherwise the host slot is cleared.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term>&lt;hs#&gt;</term>
+
+                <listitem>
+                  <para><emphasis>Required.</emphasis> The host slot #
+                  (1-8)</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term>[hostname]</term>
+
+                <listitem>
+                  <para>The host name to set.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Setting Host Slot #4 with FHOST</title>
+
+            <para>To set host slot #4 to 192.168.1.8:</para>
+
+            <screen><command>FHOST</command> <parameter>4</parameter>,<parameter>192.168.1.8</parameter></screen>
+          </example>
+
+          <example>
+            <title>Clearing Host Slot #4 with FHOST</title>
+
+            <para>To clear the host name in slot #4:</para>
+
+            <screen><command>FHOST</command> 4</screen>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Messages:</title>
+
+          <para>If a host entry is changed:</para>
+
+          <screen>Host Slot #4 changed to:
+192.168.1.8</screen>
+
+          <para>If a host entry is cleared:</para>
+
+          <screen>Host slot #4 cleared.</screen>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FINFO</command></title>
+
+        <subtitle>Show disk info for given Device Slot</subtitle>
+
+        <synopsis><command>FINFO</command> <parameter>&lt;ds&gt;</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Shows the disk geometry of a disk image inserted into the
+          specified device slot.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>&lt;ds#&gt;</parameter></term>
+
+                <listitem>
+                  <para><emphasis>Required.</emphasis> The device slot #
+                  (1-8)</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Example</title>
+
+          <example>
+            <title>Showing Disk Info in Slot 1 with FINFO</title>
+
+            <screen>
+D1:<command>FINFO</command> <parameter>1</parameter>
+
+Number of Tracks: 40
+Sectors per Track: 18
+Number of Sides: 1
+Sector Size: 256
+
+Disk Type: 180K SS/DD
+				</screen>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Returns 0 on success. Otherwise the SIO error code is
+          returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FLD</command></title>
+
+        <subtitle>List Device Slots</subtitle>
+
+        <synopsis><command>FLD</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Displays the images mounted in each of the possible device
+          slots D1: to D8:. Each entry shows the following information:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Device Slot</para>
+            </listitem>
+
+            <listitem>
+              <para>Host Slot</para>
+            </listitem>
+
+            <listitem>
+              <para>File Mode (R = Read, W = Write)</para>
+            </listitem>
+
+            <listitem>
+              <para>File Name</para>
+            </listitem>
+          </itemizedlist>
+        </simplesect>
+
+        <simplesect>
+          <title>Example</title>
+
+          <example>
+            <title>FLD Output</title>
+
+            <screen>D1:<command>FLD</command>
+
+D1: (3) (R) OSS DOS XL 2.30p.atr
+D2: (3) (R) fnc-tools-doc.atr
+D3: Empty
+D4: Empty
+D5: Empty
+D6: Empty
+D7: Empty
+D8: Empty</screen>
+
+            <para>This example shows two disk images, D1 and D2. Both disk
+            images are mounted from host slot (3). Both are mounted (R)ead
+            only.</para>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, otherwise the SIO error is
+          returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FLH</command></title>
+
+        <subtitle>List Host Slots</subtitle>
+
+        <synopsis><command>FLH</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Displays the host names in each of the eight host slots.
+          "Empty" is displayed, if a host slot is not being used.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Example</title>
+
+          <example>
+            <title>Listing Host Slots with FLH</title>
+
+            <screen>D1:<command>FLH</command>
+
+1: SD
+2: tnfs.fujinet.online
+3: apps.irata.online
+4: fujinet.atari8bit.net
+5: fujinet.pl
+6: tma-2
+7: Empty
+8: ec.tnfs.io</screen>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0, on success. Otherwise, the SIO error code is
+          returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FLS</command></title>
+
+        <subtitle>List files on a Host Slot</subtitle>
+
+        <synopsis>FLS <parameter>&lt;hs#&gt;</parameter>,<parameter>&lt;path&gt;</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Lists files present on the server at the specified host slot,
+          and path.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <variablelist>
+            <varlistentry>
+              <term><parameter>&lt;hs#&gt;</parameter></term>
+
+              <listitem>
+                <para>Required. The Host Slot to list. (1-8)</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term><parameter>&lt;path&gt;</parameter></term>
+
+              <listitem>
+                <para>Required. The path to list. Use '/' for the root
+                directory.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </simplesect>
+
+        <simplesect>
+          <title>Example</title>
+
+          <example>
+            <title>Listing a server directory, using FLS</title>
+
+            <screen>D1:<command>FLH</command>
+
+1: SD
+2: tnfs.fujinet.online
+3: apps.irata.online
+4: fujinet.atari8bit.net
+5: fujinet.pl
+6: tma-2
+7: Empty
+8: ec.tnfs.io
+
+D1:<command>FLS</command> 2,/
+ADAM/
+APPLEII/
+ATARI/
+CBM/
+TNFS-links/</screen>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FMALL</command></title>
+
+        <subtitle>Mount All Device Slots</subtitle>
+
+        <synopsis><command>FMALL</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para><command>FMALL</command> reads the currently saved device
+          slots and mounts them all.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Returns 0 on success, otherwise the SIO error is
+          returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FMOUNT</command></title>
+
+        <subtitle>Mount a Disk Image</subtitle>
+
+        <synopsis><command>FMOUNT</command> <parameter>&lt;ds#&gt;</parameter>,<parameter>&lt;hs#&gt;</parameter>,<parameter>&lt;R|W&gt;</parameter>,<parameter>&lt;path&gt;</parameter> </synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Mounts a disk image from the server specified by host slot, to
+          the specified device slot, with the appropriate mode (read or
+          write).</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <variablelist>
+            <varlistentry>
+              <term>ds#</term>
+
+              <listitem>
+                <para>The Device Slot # to use (1-8)</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>hs#</term>
+
+              <listitem>
+                <para>The Host Slot # to use (1-8)</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>R|W</term>
+
+              <listitem>
+                <para>The image mode. R = Read Only, W = Read/Write</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </simplesect>
+
+        <simplesect>
+          <title>Example</title>
+
+          <para>To mount <filename>MyDOS 4.53.atr</filename> from host slot 6,
+          into Drive Slot 2:</para>
+
+          <example>
+            <title>Mounting a disk with FMOUNT</title>
+
+            <screen>D1:FLH
+
+1: SD
+2: tnfs.fujinet.online
+3: apps.irata.online
+4: fujinet.atari8bit.net
+5: fujinet.pl
+6: tma-2
+7: Empty
+8: ec.tnfs.io
+
+
+D1:FLS 6,/
+fastbasic.atr
+Mastodon (ACTION!).atr
+MASTODON.ACT
+netcat-action.atr
+NIO.ACT
+Web_Server_example.atr
+
+D1:FMOUNT 2,3,R,netcat-action.atr
+D2: (3) (R) netcat-action.atr</screen>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, else the
+          SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title>FNET</title>
+
+        <subtitle>Connect to SSID with Password</subtitle>
+
+        <synopsis>FNET [ssid] [password]</synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Connects to the specified wireless network, with the specified
+          password. Password is optinal. If SSID isn't specified, then the
+          last successful SSID is used.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <variablelist>
+            <varlistentry>
+              <term>[ssid]</term>
+
+              <listitem>
+                <para><emphasis>Optional</emphasis>. Specifies
+                <acronym>SSID</acronym> to connect FujiNet to.</para>
+              </listitem>
+            </varlistentry>
+
+            <varlistentry>
+              <term>[password]</term>
+
+              <listitem>
+                <para><emphasis>Optional</emphasis>. Specifies password to
+                use.</para>
+              </listitem>
+            </varlistentry>
+          </variablelist>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>...</para>
+        </simplesect>
+      </section>
+
+      <!-- BEGIN Command boiler place -->
+
+      <section>
+        <title>...</title>
+
+        <subtitle>...</subtitle>
+
+        <synopsis>...</synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>...</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para>...</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>...</para>
+        </simplesect>
+      </section>
+
+      <!-- END Command boiler place -->
+    </chapter>
   </part>
 
   <colophon>
