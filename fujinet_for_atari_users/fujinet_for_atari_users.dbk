@@ -4488,31 +4488,483 @@ D2: (3) (R) netcat-action.atr</screen>
         </simplesect>
       </section>
 
-      <!-- BEGIN Command boiler place -->
-
       <section>
-        <title>...</title>
+        <title><command>FNEW</command></title>
 
-        <subtitle>...</subtitle>
+        <subtitle>Create a New Disk Image</subtitle>
 
-        <synopsis>...</synopsis>
+        <synopsis><command>FNEW</command> <parameter>&lt;ds#&gt;</parameter>,<parameter>&lt;hs#&gt;</parameter>,<parameter>&lt;t&gt;</parameter>,<parameter>&lt;filename&gt;</parameter></synopsis>
 
         <simplesect>
           <title>Description</title>
 
-          <para>...</para>
+          <para>Creates a new disk image on the desired host, with the
+          requested geometry and mounts it into the requested device slot, in
+          read/write mode.</para>
+
+          <para>The resulting disk image is blank, and has no file system,
+          therefore it must be formatted by the desired operating system,
+          before use.</para>
         </simplesect>
 
         <simplesect>
           <title>Parameters</title>
 
-          <para>...</para>
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>ds#</parameter></term>
+
+                <listitem>
+                  <para>Device slot # to use (1-8)</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term><parameter>hs#</parameter></term>
+
+                <listitem>
+                  <para>Host Slot # to place new disk image in (1-8)</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term><parameter>t</parameter></term>
+
+                <listitem>
+                  <para>Disk image type, where t can be:</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+
+          <table>
+            <title>FNEW Disk types</title>
+
+            <tgroup cols="2">
+              <thead>
+                <row>
+                  <entry align="center">t</entry>
+
+                  <entry align="center">Description</entry>
+                </row>
+              </thead>
+
+              <tbody>
+                <row>
+                  <entry>1</entry>
+
+                  <entry>90K (SS/SD)</entry>
+                </row>
+
+                <row>
+                  <entry>2</entry>
+
+                  <entry>140K (SS/ED)</entry>
+                </row>
+
+                <row>
+                  <entry>3</entry>
+
+                  <entry>180K (SS/DD)</entry>
+                </row>
+
+                <row>
+                  <entry>4</entry>
+
+                  <entry>360K (DS/DD)</entry>
+                </row>
+
+                <row>
+                  <entry>5</entry>
+
+                  <entry>720K (DS/QD)</entry>
+                </row>
+
+                <row>
+                  <entry>6</entry>
+
+                  <entry>1440K (DS/HD)</entry>
+                </row>
+
+                <row>
+                  <entry>1-65535:128|256</entry>
+
+                  <entry>Custom, specify # of sectors and sector size.</entry>
+                </row>
+              </tbody>
+            </tgroup>
+          </table>
+        </simplesect>
+
+        <simplesect>
+          <title>Messages</title>
+
+          <para>If the disk image is successfully mounted, the new device slot
+          information will be displayed.<screen>D2: (3) (W) newdisk.atr</screen></para>
+
+          <para>Otherwise, an error message will be displayed.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Creating a 90K disk with <command>FNEW</command></title>
+
+            <para>This example places a 90K disk in device slot 3 (D3:), and
+            places the image file on slot 1, which as seen by the output of
+            <command>FLH</command>, is the SD card slot.<screen>D1:<command>FLH</command>
+
+1: SD
+2: tnfs.fujinet.online
+3: apps.irata.online
+4: fujinet.atari8bit.net
+5: fujinet.pl
+6: Empty
+7: Empty
+8: Empty
+
+D1:<command>FNEW</command> <parameter>3</parameter>,<parameter>1</parameter>,<parameter>1</parameter>,<filename>BLAH1.ATR</filename>
+
+CREATING DISK
+D3: (1) (W) <filename>BLAH1.ATR</filename></screen></para>
+          </example>
+
+          <example>
+            <title>Creating a 16MB disk with <command>FNEW</command></title>
+
+            <para>This example places a 16 megabyte disk, made up of 65535
+            sectors, 256 bytes each, in device slot 4 (D4:), and places the
+            image file on slot 1, assuming the same output of FLH as above, is
+            the SD card slot.</para>
+
+            <screen>D1:<command>FNEW</command> <parameter>3</parameter>,<parameter>1</parameter>,<parameter>65535:256</parameter>,<filename>16MEG.ATR</filename></screen>
+          </example>
         </simplesect>
 
         <simplesect>
           <title>Returns</title>
 
-          <para>...</para>
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FRESET</command></title>
+
+        <subtitle>Reset FujiNet and do a Cold Start</subtitle>
+
+        <synopsis><command>FRESET</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>This command tells the FujiNet to reset itself. After waiting
+          a few moments, the <trademark class="registered">ATARI</trademark>
+          is cold started.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>FSCAN</command></title>
+
+        <subtitle>Scan for Wireless Networks</subtitle>
+
+        <synopsis><command>FSCAN</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Tells FujiNet to scan for wireless networks, and display their
+          names. You can use <command>FNET</command> to connect to an SSID
+          returned by <command>FSCAN</command>.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Example run of <command>FSCAN</command></title>
+
+            <para><screen>D1:<command>FSCAN</command>
+
+* Cherryhomes
+* TomsNetwork
+* SomebodyElse
+* AndAnother1234</screen></para>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>NCD</command></title>
+
+        <subtitle>Change N: Prefix</subtitle>
+
+        <synopsis><command>NCD</command> <parameter>[Nx:]</parameter><parameter>&lt;path&gt;</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>This command is used to set a path which is always prepended
+          before user input, such as to change the currently active directory
+          on a network file system, or to set a consistent host name for
+          <acronym>TCP</acronym> or <acronym>UDP</acronym> connections.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>[Nx:]</parameter></term>
+
+                <listitem>
+                  <para>Set the prefix for the specified network device (N1:
+                  to N8:)</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term><parameter>&lt;path&gt;</parameter></term>
+
+                <listitem>
+                  <para>Set the new prefix, according to the following
+                  rules:<itemizedlist>
+                      <listitem>
+                        <para>If <parameter>&lt;path&gt;</parameter> contains
+                        a protocol, such as N:<acronym>HTTP</acronym>:// then
+                        the entire prefix is re-set absolutely.</para>
+                      </listitem>
+
+                      <listitem>
+                        <para>If <parameter>&lt;path&gt;</parameter> is
+                        <parameter>Nx:/</parameter> then the prefix is
+                        truncated to the end of the current host name, so
+                        <filename>N:TNFS://APPS.IRATA.ONLINE/ATARI_8-BIT/Games</filename>
+                        becomes
+                        <filename>N:TNFS://APPS.IRATA.ONLINE/</filename></para>
+                      </listitem>
+
+                      <listitem>
+                        <para>If <parameter>&lt;path&gt;</parameter> is
+                        <parameter>Nx:</parameter> then the prefix is cleared
+                        completely.</para>
+                      </listitem>
+
+                      <listitem>
+                        <para>If <parameter>Nx:</parameter> is not specified,
+                        then <filename>N1:</filename> is assumed.</para>
+                      </listitem>
+
+                      <listitem>
+                        <para>If no protocol is specified, and
+                        <filename>/</filename> is the first character, then
+                        the path after the host name is set to the new value,
+                        so given a current prefix of
+                        <filename>N:TNFS://APPS.IRATA.ONLINE/DOS/</filename>
+                        and <filename>N:/Games</filename> is given, then the
+                        new prefix will be
+                        <filename>N:TNFS://APPS.IRATA.ONLINE/Games/</filename></para>
+                      </listitem>
+
+                      <listitem>
+                        <para>If no protocol is specified, and the first
+                        character is alphanumeric, then the given value is
+                        appended to the current prefix. So, if the prefix is
+                        currently
+                        <filename>N:TNFS://APPS.IRATA.ONLINE/</filename> and
+                        <filename>Games/</filename> is given, the new prefix
+                        will be
+                        <filename>N:TNFS://APPS.IRATA.ONLINE/Games/</filename></para>
+                      </listitem>
+
+                      <listitem>
+                        <para>If two periods are specified, then the prefix
+                        will have one path component removed, usually leading
+                        to the parent directory.</para>
+                      </listitem>
+                    </itemizedlist></para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Setting Network Prefix with <command>NCD</command></title>
+
+            <para><screen>D1:NCD N:TNFS://APPS.IRATA.ONLINE/
+
+D1:NPWD
+TNFS://APPS.IRATA.ONLINE/
+
+D1:NDIR N:
+APPLE_II/                         76
+APPLE_III/                       126
+ATARI_8-BIT/                     604
+COCO/                            268
+COLECO_ADAM/                     164
+commodore/                        46
+Macintosh/                       198
+tmp/                             106
+boot.zx                          934
+plato.tap                        26K
+999+FREE SECTORS</screen></para>
+          </example>
+
+          <example>
+            <title>Adding to Network Prefix with
+            <command>NCD</command></title>
+
+            <screen>D1:NCD N:ATARI_8-BIT
+
+D1:NPWD
+TNFS://APPS.IRATA.ONLINE/ATARI_8-BIT/
+
+D1:NDIR N:
+BBS/                              64
+Comms/                           328
+Databases/                       104
+Demos/                            24
+DOS/                             514
+Educational/                      24
+Games/                           764
+Graphics/                         30
+incoming/                         22
+Internet/                        368
+Languages/                       128
+Mocks/                            80
+Music/                           120
+N-Demos/                          48
+NOS/                              20
+Novelties/                        92
+PrintShop/                        82
+Spreadsheets/                     58
+Tests/                            18
+TimeMgmt/                         48
+Utils/                           178
+WordProc/                        218
+fnc-tools-doc.atr                90K
+fnc-tools.atr                    90K
+fujinet-dosxl-tools.atr          90K
+FujiNetToolsSpartaDOS.atr        90K
+FujiNetToolsSpartaDOSSource.atr
+90K
+n-handler.atr                    90K
+SDX449_ULTIMATE1MB_FUJINET.ATR 1000K
+999+FREE SECTORS</screen>
+          </example>
+
+          <example>
+            <title>Using <command>NCD</command> with '..' for Parent
+            Directory</title>
+
+            <screen>D1:NPWD
+TNFS://APPS.IRATA.ONLINE/ATARI_8-BIT/
+
+D1:NCD N:..
+
+D1:NPWD
+TNFS://APPS.IRATA.ONLINE/</screen>
+          </example>
+
+          <example>
+            <title>Using NCD to Return to Root Directory</title>
+
+            <screen>D1:NPWD
+TNFS://APPS.IRATA.ONLINE/ATARI_8-BIT/Games/Homesoft/A/
+
+D1:NCD N:/
+
+D1:NPWD
+TNFS://APPS.IRATA.ONLINE/</screen>
+          </example>
+
+          <example>
+            <title>Using NCD to reset path relative to Root Directory</title>
+
+            <screen>D1:NPWD
+TNFS://APPS.IRATA.ONLINE/ATARI_8-BIT/Games/Homesoft/A/
+
+D1:NCD N:/ATARI_8-BIT/DOS/
+
+D1:NPWD
+TNFS://APPS.IRATA.ONLINE/ATARI_8-bit/DOS/</screen>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <!-- BEGIN Command boiler place -->
+
+      <section>
+        <title><command>...</command></title>
+
+        <subtitle>...</subtitle>
+
+        <synopsis><command>...</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>This command tells the FujiNet to reset itself. After waiting
+          a few moments, the <trademark class="registered">ATARI</trademark>
+          is cold started.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>...</parameter></term>
+
+                <listitem>
+                  <para>...</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term><parameter>...</parameter></term>
+
+                <listitem>
+                  <para>...</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>...</title>
+
+            <para><screen/></para>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
         </simplesect>
       </section>
 
