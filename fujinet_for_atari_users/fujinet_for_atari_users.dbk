@@ -4911,6 +4911,438 @@ TNFS://APPS.IRATA.ONLINE/ATARI_8-bit/DOS/</screen>
         </simplesect>
       </section>
 
+      <section>
+        <title><command>NCOPY</command></title>
+
+        <subtitle>Copy files to and from disk or network.</subtitle>
+
+        <synopsis><command>NCOPY</command> <parameter>&lt;src&gt;</parameter>,<parameter>&lt;dest&gt;</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Copies files from source to destination.</para>
+
+          <para>Source and destination can be:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para>Any <acronym>CIO</acronym> device like
+              <filename>D:</filename> or <filename>E:</filename></para>
+            </listitem>
+
+            <listitem>
+              <para>Any Network Device <filename>N:</filename></para>
+            </listitem>
+          </itemizedlist>
+
+          <para>If an <filename>N:</filename> device is specified as either a
+          source or a destination, <command>NCOPY</command> will talk to
+          #FujiNet directly over <acronym>SIO</acronym>, otherwise
+          <acronym>CIO</acronym> calls are used.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Devicespec for N: Device:</title>
+
+          <para>The <filename>N:</filename> devicespec is defined as
+          follows:</para>
+
+          <para><filename>N[x]:&lt;proto&gt;://&lt;host&gt;[:port]/[path]</filename></para>
+
+          <para>where:</para>
+
+          <itemizedlist>
+            <listitem>
+              <para><filename>[x]</filename> is an optional device
+              number.</para>
+            </listitem>
+
+            <listitem>
+              <para><filename>&lt;proto&gt;</filename> specifies the
+              protocol.</para>
+            </listitem>
+
+            <listitem>
+              <para><filename>&lt;host&gt;</filename> the host name or
+              address.</para>
+            </listitem>
+
+            <listitem>
+              <para><filename>[:port]</filename> is a : followed by port
+              #.</para>
+            </listitem>
+
+            <listitem>
+              <para><filename>[path]</filename> is an optional path.<important>
+                  <para>Any directory specified by <filename>NCD</filename>
+                  will automatically be prepended to the beginning of the
+                  <filename>N:</filename> devicespec.</para>
+                </important></para>
+            </listitem>
+          </itemizedlist>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>&lt;src&gt;</parameter></term>
+
+                <listitem>
+                  <para>The source devicespec.</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term><parameter>&lt;dst&gt;</parameter></term>
+
+                <listitem>
+                  <para>The destination devicespec</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Copying a file from disk, to the network</title>
+
+            <screen>D1:<command>NCD</command> <parameter>N:TNFS://MYSERVER/WORK/</parameter>
+
+D1:<command>NCOPY</command> <parameter>D1:FOO.TXT,N:BAR.TXT</parameter></screen>
+          </example>
+
+          <example>
+            <title>Copying a file from the network, to disk</title>
+
+            <screen>D1:<command>NCD</command> N:
+
+D1:<command>NTRANS</command> 2
+
+D1:<command>NCOPY</command> <parameter>N:HTTPS://WWW.GNU.ORG/licenses/gpl-3.0.txt</parameter>,<parameter>D1:GPL.TXT</parameter>
+
+D1:<command>NTRANS</command> <parameter>0</parameter></screen>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the <acronym>SIO</acronym> error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>NDEL</command></title>
+
+        <subtitle>Delete File on Network</subtitle>
+
+        <synopsis><command>NDEL</command> <parameter>&lt;n:devicespec&gt;</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Remove a file given the desired <filename>N:</filename>
+          devicespec.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>&lt;n:devicespec&gt;</parameter></term>
+
+                <listitem>
+                  <para>An N: device specification, defined as:</para>
+
+                  <para><filename>N[x]:&lt;proto&gt;://&lt;host&gt;[:port]/[path]</filename></para>
+
+                  <para>where:</para>
+
+                  <itemizedlist>
+                    <listitem>
+                      <para><filename>[x]</filename> is an optional device
+                      number.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para><filename>&lt;proto&gt;</filename> specifies the
+                      protocol.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para><filename>&lt;host&gt;</filename> the host name or
+                      address.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para><filename>[:port]</filename> is a : followed by
+                      port #.</para>
+                    </listitem>
+
+                    <listitem>
+                      <para><filename>[path]</filename> is an optional
+                      path.<important>
+                          <para>Any directory specified by
+                          <filename>NCD</filename> will automatically be
+                          prepended to the beginning of the
+                          <filename>N:</filename> devicespec.</para>
+                        </important></para>
+                    </listitem>
+                  </itemizedlist>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Deleting a network accessed file with NDEL</title>
+
+            <para><screen>D1:<command>NDEL</command> <parameter>N:TNFS://HOMESERVER/TEST.DOC</parameter></screen></para>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>NDEV</command></title>
+
+        <subtitle>The N: Device Handler</subtitle>
+
+        <synopsis><command>NDEV</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Starts the N: device handler, which allows the Atari to
+          perform I/O operations on network resources, such as TCP; UDP
+          sockets, and perform filesystem operations on resources that have
+          paths, such as HTTP, FTP, and TNFS, allowing their use from programs
+          that can utilize a full devicespec, such as a DOS command
+          processor.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>NDIR</command></title>
+
+        <subtitle>Display Network Directory</subtitle>
+
+        <synopsis><command>NDIR </command><parameter>[devicespec]</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Display the directory of a network file system. If no path is
+          specified then N:*.* is used.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>[devicespec]</parameter></term>
+
+                <listitem>
+                  <para>An N: device specification of the type:</para>
+
+                  <para><filename>N[x]:&lt;proto&gt;://&lt;host&gt;[:port]/[path]</filename></para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Displaying the Directory of a TNFS Server using
+            NDIR</title>
+
+            <para><screen>D1:<command>NDIR</command> <parameter>TNFS://APPS.IRATA.ONLINE/</parameter></screen></para>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>NMKDIR</command></title>
+
+        <subtitle>Make Directory on Network</subtitle>
+
+        <synopsis><command>NMKDIR</command> <parameter>&lt;devicespec&gt;</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Make a directory given the desired devicespec and path.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>&lt;devicespec&gt;</parameter></term>
+
+                <listitem>
+                  <para>A N: device specification of the type:</para>
+
+                  <para><filename>N[x]:&lt;proto&gt;://&lt;host&gt;[:port]/[path]</filename></para>
+
+                  <para>Typically ending in the name of a directory to
+                  create.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Creating a directory called "Games" on a TNFS
+            server.</title>
+
+            <para><screen>D1:NMKDIR TNFS://MY-TNFS-SERVER/Games</screen></para>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>NPWD</command></title>
+
+        <subtitle>Show current Nx: Prefix.</subtitle>
+
+        <synopsis><command>NPWD</command></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>Show the current working path for N:. This path can be changed
+          with the complementary <command>NCD</command> command.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>[N:]</parameter></term>
+
+                <listitem>
+                  <para><emphasis>Optional.</emphasis> The N: Device to query.
+                  <filename>N1:</filename> is used if not specified.</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>Showing the current prefix on N1: with NPWD</title>
+
+            <para><screen>D1:NCD N:TNFS://TMA-2/
+
+D1:NPWD
+TNFS://TMA-2/</screen></para>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
+      <section>
+        <title><command>NREN</command></title>
+
+        <subtitle>Rename File on Network</subtitle>
+
+        <synopsis><command>NREN</command> <parameter>&lt;origurl&gt;,&lt;newname&gt;</parameter></synopsis>
+
+        <simplesect>
+          <title>Description</title>
+
+          <para>This command tells the FujiNet to reset itself. After waiting
+          a few moments, the <trademark class="registered">ATARI</trademark>
+          is cold started.</para>
+        </simplesect>
+
+        <simplesect>
+          <title>Parameters</title>
+
+          <para><variablelist>
+              <varlistentry>
+                <term><parameter>...</parameter></term>
+
+                <listitem>
+                  <para>...</para>
+                </listitem>
+              </varlistentry>
+
+              <varlistentry>
+                <term><parameter>...</parameter></term>
+
+                <listitem>
+                  <para>...</para>
+                </listitem>
+              </varlistentry>
+            </variablelist></para>
+        </simplesect>
+
+        <simplesect>
+          <title>Examples</title>
+
+          <example>
+            <title>...</title>
+
+            <para><screen/></para>
+          </example>
+        </simplesect>
+
+        <simplesect>
+          <title>Returns</title>
+
+          <para>Error code of 0 on success, 1 on invalid parameters, otherwise
+          the SIO error code is returned.</para>
+        </simplesect>
+      </section>
+
       <!-- BEGIN Command boiler place -->
 
       <section>
