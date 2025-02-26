@@ -8,6 +8,7 @@
   
   <xsl:param name="body.font.family" select="'Optima LT Std'"/>
   <xsl:param name="title.font.family" select="'Optima LT Std'"/>
+  <xsl:param name="paper.type" select="'A4'"/>
   <!-- <xsl:param name="page.width">5in</xsl:param> -->
   <!-- <xsl:param name="page.height">7in</xsl:param> -->
   <!-- <xsl:param name="page.margin.inner">0.350in</xsl:param> -->

@@ -1628,146 +1628,18 @@ READY
         four color pens, and can select one of them while the pen is not
         pressed to the paper, making it ideal for drawing line based art work
         such as charts or illustrations.</para>
-
-        <simplesect>
-          <title>Output Format</title>
-
-          <para>This printer emulation outputs to an <acronym>SVG</acronym>
-          file.</para>
-        </simplesect>
-
-        <simplesect>
-          <title>Rendering of Text</title>
-
-          <para>Differing from the actual printer, Any text sent to the
-          printer emulation is rendered as literal text in the current text
-          size, in a sans-serif font.</para>
-
-          <example>
-            <title>Example Printout from ATARI 1020</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="figs/atari_1020.png"/>
-              </imageobject>
-            </mediaobject>
-          </example>
-        </simplesect>
       </section>
 
       <section>
         <title>ATARI 1025</title>
 
-        <para>The ATARI 1025 emulation present in FujiNet is an 80 column
-        printer with 10cpi, 16.7cpi and 6cpi fonts. It also has a European
-        character set to complement the European character set added to the XL
-        series of computers, present in the first 32 character codes, after
-        being suitably enabled via its control code.</para>
-
-        <para>Unlike the ATARI 825, the 1025 does not have the ability to do
-        reverse line feeds, so is unable to do double column printing in
-        programs such as AtariWriter. It also lacks a proportional
-        font.</para>
-
-        <note>
-          <para>Printed output is split into 11 inch pages, to fit onto US
-          letter paper.</para>
-        </note>
-
-        <simplesect>
-          <title>Available Fonts</title>
-
-          <para>The following fonts are available on the 1025
-          emulation:</para>
-
-          <itemizedlist>
-            <listitem>
-              <para>A normal sized font, sized at 10 characters per inch,
-              giving a maximum of 80 characters per line.</para>
-            </listitem>
-
-            <listitem>
-              <para>A condensed font, sized at 16.7 characters per inch,
-              giving a maximum of 132 characters per line.</para>
-            </listitem>
-
-            <listitem>
-              <para>An elongated font, sized at 5 characters per inch, giving
-              a maximum of 40 characters per line.</para>
-            </listitem>
-          </itemizedlist>
-
-          <figure>
-            <title>Available fonts on the ATARI 1025 emulation</title>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="figs/atari_1025_fonts.png"/>
-              </imageobject>
-            </mediaobject>
-          </figure>
-        </simplesect>
-
-        <simplesect>
-          <title>Character Set Differences</title>
-
-          <para>The ATARI 1025 was shipped with an ASCII character set.
-          Inverse characters are changed to normal characters, ATASCII symbols
-          are ignored, and ATASCII character codes which overlap with ASCII
-          character codes are printed as ASCII characters.</para>
-
-          <example>
-            <title>ATARI 1025 print-out with ATASCII Characters</title>
-
-            <para>This example shows a listing with a SHIFT-CLEAR character,
-            which maps to ASCII character 125, is replaced with an empty
-            space.</para>
-
-            <mediaobject>
-              <imageobject>
-                <imagedata fileref="figs/atari_1025_clear.png"/>
-              </imageobject>
-            </mediaobject>
-          </example>
-        </simplesect>
+        <para/>
       </section>
 
       <section>
         <title>ATARI 1027</title>
 
-        <para>FujiNet provides an ATARI 1027 printer emulation, simulating the
-        typewriter quality output from this low cost printer, without the
-        mechanical errors present in the original design. The typeface
-        presented is a recreation of the Prestige Elite typeface as recreated
-        from the print head, giving a width of 10 characters per inch, and a
-        total of 80 characters per line.</para>
-
-        <example>
-          <title>Example ATARI 1027 Output from AtariWriter</title>
-
-          <mediaobject>
-            <imageobject>
-              <imagedata fileref="figs/atari_1027.png"/>
-            </imageobject>
-          </mediaobject>
-        </example>
-
-        <para>Like its close sibling the ATARI 1025, the 1027 provides the
-        International Character set, present in the first 32 character codes,
-        after being suitably enabled via its control code.</para>
-
-        <para>Also unlike the ATARI 825, the 1027 is unable to do reverse line
-        feeds, making it unable to do double column text in
-        AtariWriter.</para>
-
-        <para>Unlike the ATARI 825, and 1025, the 1027 only has a single font,
-        and unlike other typewriter quality printers is unable to have its
-        typeface changed.</para>
-
-        <note>
-          <para>Printed output is split into 11 inch pages, to fit onto US
-          letter paper.</para>
-        </note>
+        <para/>
       </section>
 
       <section>
