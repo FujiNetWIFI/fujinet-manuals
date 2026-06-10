@@ -118,7 +118,6 @@
     comprehensive feature set, and can be thought of as both a Getting Started
     manual, as well as a reference guide.</para>
   </preface>
-
   <part>
     <title>USER'S GUIDE</title>
 
@@ -2705,7 +2704,7 @@ OPEN #1,12,2,"TCP://:6502"</screen>
 <command>BW</command> = <function>DPEEK</function>($02EA)
 
 ' BECAUSE INTS ARE SIGNED, MUST
-' TAKE VALUES &gt; 32767 INTO 
+' TAKE VALUES &gt; 32767 INTO
 ' ACCOUNT
 
 IF <varname>BW</varname> &gt; 256 OR <varname>BW</varname> &lt; 000
@@ -3164,7 +3163,7 @@ PROC showresult
  @njsonquery
  NSTATUS unit
 
- IF PEEK($02ED) &gt; 
+ IF PEEK($02ED) &gt;
   PRINT "Could not fetch query:"
   PRINT query$
   EXIT
@@ -3357,7 +3356,7 @@ PROC siov=$E459()</programlisting>
 ;
 BYTE FUNC ngetunit(BYTE ARRAY ds)
     BYTE unit=1
-                   
+
     IF ds(2)=': THEN
         unit=1
     ELSEIF ds(3)=': THEN
@@ -3379,7 +3378,7 @@ BYTE DSTATS = $0303
 ;
 ; Return error of last NIO operation.
 ; If SIO error = 144, then a status
-; is done, and the extended err is 
+; is done, and the extended err is
 ; returned.
 ;
 ; @param devicespec N: devicespec
@@ -3407,7 +3406,7 @@ RETURN (errno)</programlisting></para>
         <programlisting>;
 ; Open the N: device pointed to by
 ; devicespec.
-; 
+;
 ; @param devicespec N: devicespec
 ; @param trans - translation mode
 ;   0=NONE, 1=CR, 2=LF, 3=CR/LF
@@ -3424,7 +3423,7 @@ BYTE FUNC nopen(BYTE ARRAY ds, BYTE t)
   DBYT   = 256   ; 256 byte payload
   DAUX1  = 12    ; R/W
   DAUX2  = t     ; translation
-  siov();  
+  siov();
 
 RETURN (geterror(ds))</programlisting>
 
@@ -3534,7 +3533,7 @@ nopen("N:HTTP://WWW.GNU.ORG/licenses/gpl-3.0",2);</programlisting>
 ; 8D XX XX STA trip
 ; 68       PLA
 ; 40       RTI
-; 
+;
 PROC ninterrupt_handler=*()
 [$A9$01$8D trip $68$40]</programlisting>
 
@@ -3588,7 +3587,7 @@ RETURN</programlisting>
         <function>nopen()</function> function:</para>
 
         <programlisting>;
-; Read len bytes from N: device 
+; Read len bytes from N: device
 ; pointed to by devicespec.
 ;
 ; @param devicespec N: devicespec
@@ -3606,7 +3605,7 @@ BYTE FUNC nread(BYTE ARRAY ds, BYTE ARRAY buf, CARD len)
   DTIMLO = $1F   ; 32 second timeout
   DBYT   = len   ; No payload
   DAUX   = len
-  siov();  
+  siov();
 
 RETURN (geterror(ds))
 </programlisting>
@@ -3684,7 +3683,7 @@ nread(url,buf,bw)
         <function>nopen()</function> function.</para>
 
         <programlisting>;
-; Write len bytes to N: device 
+; Write len bytes to N: device
 ; pointed to by devicespec.
 ;
 ; @param devicespec N: devicespec
@@ -3702,7 +3701,7 @@ BYTE FUNC nwrite(BYTE ARRAY ds, BYTE ARRAY buf, CARD len)
   DTIMLO = $1F   ; 32 second timeout
   DBYT   = len   ; No payload
   DAUX   = len
-  siov();  
+  siov();
 
 RETURN (geterror(ds))</programlisting>
 
@@ -3796,7 +3795,7 @@ BYTE ERROR=$02ED
 ;
 ; Get status of last NIO operation,
 ; Return in DVSTAT
-; 
+;
 ; @param devicespec N: devicespec
 ;
 PROC nstatus(BYTE ARRAY ds)
@@ -3810,7 +3809,7 @@ PROC nstatus(BYTE ARRAY ds)
   DBYT   = 4      ; 4 byte payload
   DAUX1  = 0      ; R/W
   DAUX2  = 0      ; translation
-  siov()   
+  siov()
 
 RETURN</programlisting>
 
@@ -3875,7 +3874,7 @@ RETURN</programlisting>
         previously opened with nopen():<programlisting>;
 ; Close the N: device pointed to by
 ; devicespec.
-; 
+;
 ; @param devicespec N: devicespec
 ; @return error, 1=successful.
 ;
@@ -3890,7 +3889,7 @@ BYTE FUNC nclose(BYTE ARRAY ds)
   DBYT   = 0     ; No payload
   DAUX1  = 0
   DAUX2  = 0
-  siov();  
+  siov();
 
 RETURN (geterror(ds))</programlisting></para>
       </section>
@@ -3942,7 +3941,7 @@ BYTE FUNC naccept(BYTE ARRAY ds)
   DBUF=0     ; No Payload
   DTIMLO=$1F ; 32 second timeout
   DBYT=0     ; No payload
-  DAUX1=0 
+  DAUX1=0
   DAUX2=0
   siov()
 
@@ -3971,7 +3970,7 @@ BYTE FUNC ncloseclient(BYTE ARRAY ds)
   DBUF=0     ; No Payload
   DTIMLO=$1F ; 32 second timeout
   DBYT=0     ; No payload
-  DAUX1=0 
+  DAUX1=0
   DAUX2=0
   siov()
 
@@ -3999,7 +3998,7 @@ nclose(url)</programlisting></para>
         xlink:href="https://raw.githubusercontent.com/FujiNetWIFI/fujinet-apps/master/netcat-action/NIO.ACT">https://raw.githubusercontent.com/FujiNetWIFI/fujinet-apps/master/netcat-action/NIO.ACT</link></para>
 
         <programlisting linenumbering="numbered">;
-; #FujiNet Network I/O Library    
+; #FujiNet Network I/O Library
 ; For ACTION!
 ;
 ; Author: Thomas Cherryhomes
@@ -4048,7 +4047,7 @@ BYTE DAUX2  = $030B ; daux2
 ; 8D XX XX STA trip
 ; 68       PLA
 ; 40       RTI
-; 
+;
 PROC ninterrupt_handler=*()
 [$A9$01$8D trip $68$40]
 
@@ -4084,7 +4083,7 @@ PROC siov=$E459()
 ;
 BYTE FUNC ngetunit(BYTE ARRAY ds)
     BYTE unit=1
-                   
+
     IF ds(2)=': THEN
         unit=1
     ELSEIF ds(3)=': THEN
@@ -4098,7 +4097,7 @@ RETURN (unit)
 ;
 ; Get status of last NIO operation,
 ; Return in DVSTAT
-; 
+;
 ; @param devicespec N: devicespec
 ;
 PROC nstatus(BYTE ARRAY ds)
@@ -4112,14 +4111,14 @@ PROC nstatus(BYTE ARRAY ds)
   DBYT   = 4      ; 4 byte payload
   DAUX1  = 0      ; R/W
   DAUX2  = 0      ; translation
-  siov()   
+  siov()
 
 RETURN
 
 ;
 ; Return error of last NIO operation.
 ; If SIO error = 144, then a status
-; is done, and the extended err is 
+; is done, and the extended err is
 ; returned.
 ;
 ; @param devicespec N: devicespec
@@ -4140,7 +4139,7 @@ RETURN (errno)
 ;
 ; Open the N: device pointed to by
 ; devicespec.
-; 
+;
 ; @param devicespec N: devicespec
 ; @param trans - translation mode
 ;   0=NONE, 1=CR, 2=LF, 3=CR/LF
@@ -4157,7 +4156,7 @@ BYTE FUNC nopen(BYTE ARRAY ds, BYTE t)
   DBYT   = 256   ; 256 byte payload
   DAUX1  = 12    ; R/W
   DAUX2  = t     ; translation
-  siov();  
+  siov();
 
   IF DSTATS=1 THEN
       nenableproc()
@@ -4168,7 +4167,7 @@ RETURN (geterror(ds))
 ;
 ; Close the N: device pointed to by
 ; devicespec.
-; 
+;
 ; @param devicespec N: devicespec
 ; @return error, 1=successful.
 ;
@@ -4183,14 +4182,14 @@ BYTE FUNC nclose(BYTE ARRAY ds)
   DBYT   = 0     ; No payload
   DAUX1  = 0
   DAUX2  = 0
-  siov();  
+  siov();
 
   ndisableproc()
 
 RETURN (geterror(ds))
 
 ;
-; Read len bytes from N: device 
+; Read len bytes from N: device
 ; pointed to by devicespec.
 ;
 ; @param devicespec N: devicespec
@@ -4208,12 +4207,12 @@ BYTE FUNC nread(BYTE ARRAY ds, BYTE ARRAY buf, CARD len)
   DTIMLO = $1F   ; 32 second timeout
   DBYT   = len   ; No payload
   DAUX   = len
-  siov();  
+  siov();
 
 RETURN (geterror(ds))
 
 ;
-; Write len bytes to N: device 
+; Write len bytes to N: device
 ; pointed to by devicespec.
 ;
 ; @param devicespec N: devicespec
@@ -4231,7 +4230,7 @@ BYTE FUNC nwrite(BYTE ARRAY ds, BYTE ARRAY buf, CARD len)
   DTIMLO = $1F   ; 32 second timeout
   DBYT   = len   ; No payload
   DAUX   = len
-  siov();  
+  siov();
 
 RETURN (geterror(ds))
 
@@ -4288,7 +4287,7 @@ RETURN</programlisting>
           <example>
             <title>NETCAT ACTION! Listing</title>
 
-            <programlisting linenumbering="numbered">; 
+            <programlisting linenumbering="numbered">;
 ; A simple netcat program
 ; to show how to do basic network
 ; input and output.
@@ -4321,7 +4320,7 @@ PROC getURL()
        PrintE("NETCAT--ENTER DEVICE SPEC?")
        InputS(devicespec)
        PutE()
-       
+
        PrintE("TRANS--0=NONE, 1=CR, 2=LF, 3=CR/LF?")
        trans=InputB()
        PutE()
@@ -4378,7 +4377,7 @@ PROC ncinput()
        FI
 
        IF BYTESWAITING=0 THEN
-          RETURN 
+          RETURN
        FI
 
        IF BYTESWAITING&gt;8192 THEN
@@ -4394,7 +4393,7 @@ PROC ncinput()
            running=FALSE
            RETURN
        FI
-       
+
        ; Drain/display rx buffer
        FOR I=0 TO BYTESWAITING-1
        DO
@@ -4423,11 +4422,11 @@ PROC nc()
 
        ; flag program as running.
        running=1
-               
+
        ; Open keyboard
        Open(KEYBOARD_IOCB,"K:",4,0)
 
-       WHILE running = TRUE  
+       WHILE running = TRUE
          DO
          ncoutput()
          ncinput()
@@ -4455,7 +4454,7 @@ RETURN</programlisting>
           <title>MASTODON: Show the Newest Mastodon Post</title>
 
           <programlisting linenumbering="numbered">; A SIMPLE MASTODON CLIENT
-; SHOWS THE LATEST POST     
+; SHOWS THE LATEST POST
 ; FROM OLDBYTES.SPACE
 
 INCLUDE "D1:SYS.ACT"
@@ -4510,14 +4509,14 @@ PROC PRINTJ(BYTE ARRAY _qs)
        PRINT("READ ERROR: ")
        PRINTBE(ERR)
        RETURN
-    FI 
+    FI
 
     ; Display it, one byte at a time
     FOR X=0 TO BW-1
     DO
         PUT(OUT(X))
     OD
-        
+
 RETURN
 
 PROC FOOTER()
@@ -4534,7 +4533,7 @@ PROC BANNER()
 RETURN
 
 PROC SHOW_POST()
-    BYTE ERR    
+    BYTE ERR
 
     SCOPY(URL,"N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1")
 
@@ -4554,7 +4553,7 @@ PROC SHOW_POST()
        PRINT("PARSE ERROR: ")
        PRINTBE(ERR)
        RETURN
-    FI    
+    FI
 
     PRINTJ("N:/0/account/display_name")
     PRINTJ("N:/0/created_at");
@@ -4562,7 +4561,7 @@ PROC SHOW_POST()
 
     NCLOSE(URL)
 
-RETURN                     
+RETURN
 
 PROC MAIN()
 
