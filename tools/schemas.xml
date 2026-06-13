@@ -1,0 +1,3 @@
+<locatingRules xmlns="http://thaiopensource.com/ns/locating-rules/1.0">
+<namespace ns="http://docbook.org/ns/docbook" uri="/usr/share/xml/docbook/schema/rng/5.0/docbookxi.rnc"/>
+</locatingRules>

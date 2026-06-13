@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<book version="5.1" xmlns="http://docbook.org/ns/docbook"
+      xmlns:xlink="http://www.w3.org/1999/xlink"
+      xmlns:xila="http://www.w3.org/2001/XInclude/local-attributes"
+      xmlns:xi="http://www.w3.org/2001/XInclude"
+      xmlns:trans="http://docbook.org/ns/transclusion"
+      xmlns:svg="http://www.w3.org/2000/svg"
+      xmlns:m="http://www.w3.org/1998/Math/MathML"
+      xmlns:html="http://www.w3.org/1999/xhtml"
+      xmlns:db="http://docbook.org/ns/docbook">
+  <info>
+    <title>Introduction to FujiNet for <trademark
+    class="registered">ATARI</trademark> Users</title>
+
+    <titleabbrev>FujiNet Introduction</titleabbrev>
+
+    <legalnotice>
+      <para>This Book is licensed under the GNU Public License, Version 3.0.
+      See: <link
+      xlink:href="https://www.gnu.org/licenses/gpl-3.0-standalone.html"/> for
+      details.</para>
+    </legalnotice>
+
+    <author>
+      <personname><firstname>Thomas</firstname>
+      <surname>Cherryhomes</surname></personname>
+    </author>
+
+    <pubdate>2024.03.07</pubdate>
+  </info>
+
+  <dedication>
+    <para>This book is dedicated to the thousands of
+    <productname>FujiNet</productname> users, now across multiple platforms.
+    You all have given the FujiNet team the drive and determination to make
+    FujiNet a comprehensive</para>
+
+    <para>platform to connect all of our retro-computing and retro-gaming
+    systems together to do new and fun things.</para>
+  </dedication>
+
+  <acknowledgements>
+    <para>Many thanks to the dozens of contributors to every single aspect of
+    <productname>FujiNet</productname>, not limited to the hardware, the
+    software, the firmware, or the documentation. But there are people that
+    need to be mentioned:</para>
+
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Joe</firstname>
+        <surname>Honold</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Thomas</firstname>
+        <surname>Cherryhomes</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Jeff</firstname>
+        <surname>Piepmeier</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Steve</firstname>
+        <surname>Boswell</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Oscar</firstname>
+        <surname>Fowler</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Mark</firstname>
+        <surname>Fisher</surname> </personname></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Jan</firstname> <surname>Krupa</surname>
+        </personname></para>
+      </listitem>
+    </itemizedlist>
+
+    <itemizedlist>
+      <listitem>
+        <para><personname> <firstname>Benjamin</firstname>
+        <surname>Krein</surname> </personname></para>
+      </listitem>
+
+      <listitem>
+        <para><personname><firstname>Andy</firstname><surname>Diller</surname></personname></para>
+      </listitem>
+    </itemizedlist>
+  </acknowledgements>
+
+  <preface>
+      <title>PREFACE</title>
+      <para>
+          This is a small book to show how to use a FujiNet in your MS-DOS
+          programs via the INT F5 interface. It is intended as both a reference
+          and as a primer for creating programs which use the various services
+          provided by a FujiNet device, regardless of how it is physically
+          connected to a system.
+      </para>
+      <para>
+          This book is divided into two parts:
+          <itemizedlist>
+              <listitem>
+                  <para>Part 1: Showing example programs and explaining how they
+                  work.</para>
+              </listitem>
+              <listitem>
+                  <para>Part 2: Providing a reference to all INT F5 calls.</para>
+              </listitem>
+          </itemizedlist>
+      </para>
+  </preface>
+</book>
