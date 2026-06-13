@@ -70,7 +70,8 @@
   if not show-folio.get() { return }
   let s = sec-state.get()
   if s.name == "" { return }
-  let p = sec-page.get().first()
+  let cur = counter(page).get().first()
+  let p = cur - s.at("start", default: cur) + 1
   set text(font: f-body, size: 9pt, fill: ink)
   align(right)[#strong(s.name)#h(6pt)#s.num\-#p]
 }
@@ -112,8 +113,9 @@
 // ---------- chapter opener ----------------------------------
 #let chapter(title, num: 0, subs: (), tab: none) = {
   pagebreak(weak: true)
-  sec-state.update((name: title, num: num))
-  sec-page.update(1)
+  context {
+    sec-state.update((name: title, num: num, start: counter(page).get().first()))
+  }
   chmark(title, num, subs)
   if tab != none { bleeder(tab) }
   v(0.15in)
@@ -376,8 +378,7 @@
 // PREFACE
 // ============================================================
 #show-folio.update(true)
-#sec-state.update((name: "Preface", num: 0))
-#sec-page.update(1)
+#context { sec-state.update((name: "Preface", num: 0, start: counter(page).get().first())) }
 
 #v(0.1in)
 #text(font: f-body, weight: 700, size: 16pt)[Preface]
