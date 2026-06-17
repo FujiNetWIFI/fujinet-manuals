@@ -34,6 +34,10 @@ Unlike a tutorial written from memory, every register value, pin assignment,
 packet field, jumper, and source excerpt was transcribed from the live project
 sources in the workspace:
 
+- **fujinet-bringup** — the canonical *first step* (Chris Osborn / FozzTexx):
+  the minimal byte-relay firmware (`esp32/`, `rp2350/`) and the `iotest` host
+  two-way-comms test with per-platform `portio` examples. The guide opens by
+  sending you here before any custom hardware.
 - **fujiversal** — RP2350 bus-interface firmware (PIO state machines, USB-CDC
   bridge, ROM emulation, the `BusSignals` union, the DBC bank-switch path).
 - **fujiversal-pcb-prototype** — the `Universal-proto-v1` board (GPIO↔ISA map,

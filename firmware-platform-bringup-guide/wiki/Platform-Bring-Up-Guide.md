@@ -8,6 +8,7 @@ Every register value, pin assignment, packet field, and source excerpt here was 
 
 | Source | Contents |
 | --- | --- |
+| **`fujinet-bringup`** | **START HERE** — minimal byte relay + `iotest` host test; the bring-up MVP |
 | `fujiversal` | RP2350 bus-interface firmware — PIO, USB-CDC bridge, ROM emulation |
 | `fujiversal-pcb-prototype` | Universal proto board, ISA / CoCo / MSX adapters, footprints |
 | `fujinet-lib-experimental` | Host client — FujiBus framing over the I/O byte pipe |
@@ -50,6 +51,57 @@ Every register value, pin assignment, packet field, and source excerpt here was 
 ## 1. Introduction
 
 FujiNet is a network and storage peripheral for retro computers. To a 1980s machine it looks like a fast disk drive, a printer, an RS-232 modem, a real-time clock, and a handful of other devices; behind that façade it is an ESP32 microcontroller with WiFi, an SD card, and a small army of internet protocol adapters. **Bringing up a platform** means making FujiNet appear as those familiar peripherals on a machine it has never run on before.
+
+### Start at fujinet-bringup
+
+> **Important** — Before anything in this guide, clone and read the **`fujinet-bringup`** repository. It is the project's canonical, deliberately-minimal first step, and it exists so you can prove two-way communication with your machine *before* committing to PCBs, PIO programs, or ROM emulation. This guide is what comes after — the production tandem design — but `fujinet-bringup` is where the work actually begins.
+
+`fujinet-bringup` contains three small pieces and one method:
+
+- **`iotest`** — a tiny host-side program (it runs on your retro machine) that echoes bytes between the keyboard/screen and the bus. You port it by writing a `portio` for your platform.
+- **`esp32` / `rp2350`** — minimal *byte-relay* firmware for the microcontroller; it does nothing but shuttle bytes between the host bus (on GPIO) and a USB serial port. No FujiNet logic at all.
+- **The method** — get those two talking, then point the relay's USB port at the FujiNet firmware running as a *PC build* and run a "Hello World" that asks FujiNet for its version. Only once that works do you graduate to the on-board, ROM-emulating design this guide details.
+
+This inverts the risk. The hard, scary part of a bring-up is the electrical and timing layer; `fujinet-bringup` lets you nail that with a breadboard, a relay, and a terminal loop before a single custom board is fabricated.
+
+#### The host-side contract: `portio`
+
+Whichever path you take, the host always talks to FujiNet through five routines — the same contract `iotest`, this guide's client library ([Chapter 16](#16-the-client-library)), and the production firmware all share:
+
+```c
+// the portio contract (fujinet-bringup iotest/src/<platform>/portio.*)
+void     port_init(void);
+bool     port_available(void);                 // is a byte waiting?
+int      port_getc(void);                      // read one byte, or -1
+int      port_getc_timeout(uint16_t ticks);
+uint16_t port_getbuf(void *buf, uint16_t len, uint16_t timeout);
+void     port_putc(uint8_t c);                 // write one byte
+uint16_t port_putbuf(void *buf, uint16_t len);
+```
+
+`iotest` already ships working `portio` examples and build makefiles for roughly a dozen platforms — `adam`, `apple2`, `atari`, `c64`, `coco`, `dragon`, `h89-cpm`, `msdos`, `msx`, `vic20`, and more — so for many machines you are adapting an example, not starting blank. The host loop itself is just:
+
+```c
+// iotest/src/main.c  (the entire two-way test)
+port_init();
+while (1) {
+    if (kbhit())          port_putc(cgetc());   // key  -> bus -> relay -> USB
+    if (port_available()) putchar(port_getc()); // USB -> relay -> bus -> screen
+}
+```
+
+### Choosing the interface: ESP32 or RP2350
+
+The first design decision `fujinet-bringup` asks you to make is *which microcontroller sits on the bus*, and it turns on one number: how many bus signal lines you must manage.
+
+| Bus width | Interface | Why |
+| --- | --- | --- |
+| **≤ 8 signal lines** | ESP32 can do it | Few enough lines to bit-bang from the ESP32's GPIO. The ESP32 is **not** 5 V tolerant, so it needs a level translator (the `fujinet-bringup` H89 example drives a `74LVC245` via `OE`/`DIR`). The H89 reaches FujiNet through an i8255 PPI this way. |
+| **> 8 signal lines** | use an RP2350 | Enough GPIO for a wide address/data/control bus, *and* — per `fujinet-bringup` — the RP2350 can interface to 5 V signal lines **directly, without a level shifter**. That capability is the main reason to reach for it. |
+
+ISA, with 20 address + 8 data + several control lines, is firmly in RP2350 territory — which is why this guide's worked example uses one.
+
+> **Important** — Note the 5 V point, because it corrects a natural assumption (and an error in this guide's first edition): the RP2350's direct connection to a 5 V bus is *intentional and supported*, not a hazard to be buffered away. Level shifting in this design is an **ESP32** concern, not an RP2350 one. See [Chapter 6](#6-building-the-isa-adapter).
 
 ### Three ways to bring up a platform
 
@@ -301,7 +353,7 @@ The board is `fujiversal-pcb-prototype/Bus-proto` (`Universal-proto-v1`).
 | `U1` / `U2` | modules | WaveShare Core2350B / Freenove ESP32-S3-CAM. |
 | `D1` | diode | Power-rail protection. |
 
-> **⚠️ Magic Smoke** — There are **no buffer ICs** on this board. The RP2350's GPIO connect to the 5 V ISA bus **directly**, through solder jumpers. RP2350 GPIO are not 5 V tolerant. The prototype gets away with it for careful, powered-down, one-signal-at-a-time bring-up; a card left in a running PC this way is living on borrowed time. [Chapter 6](#6-building-the-isa-adapter) covers the buffering you add to make it safe. The board even ships with a `MagicSmoke.svg`.
+> **Note** — There are **no buffer ICs** on this board, and the RP2350's GPIO connect to the 5 V ISA bus **directly** through the solder jumpers. Per the `fujinet-bringup` guidance this is *intentional and supported*: the RP2350 can interface to 5 V signal lines directly without a level shifter, which is precisely why it — and not the ESP32 — is the right chip for a wide 5 V bus like ISA ([Chapter 1](#choosing-the-interface-esp32-or-rp2350)). Level shifting in this design is an **ESP32** concern ([Chapter 6](#6-building-the-isa-adapter)), not an RP2350 one. The solder jumpers are your per-signal isolation control during bring-up — that is their job, not damage control.
 
 ### The solder-jumper farm
 
@@ -320,7 +372,7 @@ The board can take power from the ISA bus (`+5V`, with `±12V`/`-5V` on the edge
 
 ## 6. Building the ISA adapter
 
-Because the universal board's bus header is already an 8-bit ISA edge, the ISA adapter is the simplest of the family — but "simplest" is not "trivial", because this is where the 5 V problem gets solved.
+Because the universal board's bus header is already an 8-bit ISA edge — and because the RP2350 takes the 5 V bus directly ([Chapter 1](#choosing-the-interface-esp32-or-rp2350)) — the ISA adapter is the simplest of the family: mostly a card edge, power, and optional signal-integrity buffering.
 
 | Adapter | Machine edge | Universal side |
 | --- | --- | --- |
@@ -337,15 +389,19 @@ Use the `parts:ISA_8bit` footprint. Two mechanical details:
 1. **Orientation** — gold fingers and key notch must follow the ISA mechanical spec, or the card is electrically backwards.
 2. **Thickness and gold** — 1.6 mm FR-4 with hard-gold fingers; ENIG wears. A slot *extender* or socketed breakout saves the fingers during bring-up.
 
-### Solving the 5-volt problem
+### The 5-volt bus: less of a problem than you think
 
-| Approach | What you do | Verdict |
+Here is where the first edition of this guide was wrong, so read carefully. Because the worked example uses an **RP2350**, the 5 V ISA bus is *not* a voltage-protection problem: per `fujinet-bringup`, the RP2350 interfaces to 5 V signal lines directly, and the universal board's direct, jumper-routed connection is the intended baseline. Buffering on an RP2350 adapter is **optional**, added for *signal integrity* on a real, loaded backplane — not to keep the chip alive.
+
+| Approach | What you do | When |
 | --- | --- | --- |
-| Direct (as prototyped) | GPIO straight to the bus; inputs see 5 V on a non-tolerant pin | Bench only, powered-down probing |
-| Series resistors + clamps | ~330 Ω in each line; the RP2350 ESD diodes clamp | Short-lived prototypes |
-| **Buffered (recommended)** | `74LVC245` transceivers on data, `74LVC` buffers on address/strobe inputs (5 V-tolerant `LVC` inputs, 3.3 V outputs) | Production |
+| Direct (the baseline) | RP2350 GPIO straight to the 5 V bus through the jumpers. Supported; this is how the prototype is built. | RP2350 on a short, lightly-loaded bus — start here |
+| Buffered (optional) | `74LVC245` transceivers on data, `74LVC` buffers on address/strobe. Adds drive strength, isolates bus capacitance, offloads data-direction switching. | A production RP2350 card in a real, fully-populated slot |
+| Translator (mandatory) | The same `74LVC245`/`74LVC` parts, but now **required** — to protect a *non-5 V-tolerant ESP32*. The `fujinet-bringup` H89 example drives one via `OE`/`DIR`. | Any **ESP32** interface (the narrow-bus path) |
 
-The buffered design needs the data transceiver's **direction** driven. `D0–D7` are inputs except during a host read of *our* address:
+For the RP2350 the choice is direct vs. buffered for signal quality; a translator is only **mandatory** on the ESP32 path.
+
+A buffered adapter needs the data transceiver's **direction** driven. `D0–D7` are inputs except during a host read of *our* address:
 
 ```text
 DIR(A->B, card drives bus) = our_read_cycle
@@ -875,7 +931,7 @@ Bring a platform up in the order the layers stack, lowest first. Each rung is in
 | 7 | Mount + boot a disk | CONFIG mounts a `.img`; the machine boots it |
 | 8 | `N:` works | A program opens `N:HTTP://…` and reads data over WiFi |
 
-> **Note** — Milestones 1–3 need **no host bus at all** — they run on the bench over USB. You can reach milestone 3 before the ISA adapter PCB even arrives, so the slow-to-fabricate adapter is not on the critical path for firmware.
+> **Note** — Milestones 1–3 are exactly the `fujinet-bringup` MVP ([Chapter 1](#start-at-fujinet-bringup)): a minimal byte relay plus `iotest` proving two-way communication, with the FujiNet firmware running as a PC build. They need **no host bus board at all** — you can reach milestone 3 before the ISA adapter PCB even arrives. Milestone 5 is the `fujinet-bringup` "Hello World" (fetch the adapter config) succeeding for the first time. Order your work so the slow-to-fabricate adapter is never on the critical path.
 
 ## 18. Troubleshooting
 
@@ -980,6 +1036,9 @@ There are no buffer ICs; add level-shifting on the adapter (Chapter 6).
 
 | Path | Contents |
 | --- | --- |
+| `fujinet-bringup/README.md` | **Start here.** The bring-up-first method (relay + `iotest` + PC firmware) |
+| `fujinet-bringup/iotest/` | Host two-way-comms test + per-platform `portio` examples (~14 platforms) |
+| `fujinet-bringup/esp32/`, `…/rp2350/` | Minimal byte-relay firmware (GPIO bus ⟷ USB serial) |
 | `fujiversal/main.cpp` | Core 0 USB bridge + core 1 `romulan()` bus loop + DBC handler |
 | `fujiversal/boards/*.pio` | Per-board PIO + pin defines + `BusSignals` union (add `isa_proto.pio`) |
 | `fujiversal/setup_sm.cpp` | Generic PIO state-machine setup helper |
@@ -1029,4 +1088,4 @@ There are no buffer ICs; add level-shifting on the adapter (Chapter 6).
 
 ---
 
-*FujiNet Platform Bring-Up Guide — Revision 1, June 2026. Built from sources in `fujiversal`, `fujiversal-pcb-prototype`, `fujinet-firmware`, `fujinet-lib-experimental`, and `fujinet-config`. The network is as easy as the disk drive — once the bus says so.*
+*FujiNet Platform Bring-Up Guide — Revision 2, June 2026. Built from sources in `fujinet-bringup`, `fujiversal`, `fujiversal-pcb-prototype`, `fujinet-firmware`, `fujinet-lib-experimental`, and `fujinet-config`. The network is as easy as the disk drive — once the bus says so.*
