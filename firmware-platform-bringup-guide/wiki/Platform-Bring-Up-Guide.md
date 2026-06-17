@@ -79,7 +79,7 @@ void     port_putc(uint8_t c);                 // write one byte
 uint16_t port_putbuf(void *buf, uint16_t len);
 ```
 
-`iotest` already ships working `portio` examples and build makefiles for roughly a dozen platforms — `adam`, `apple2`, `atari`, `c64`, `coco`, `dragon`, `h89-cpm`, `msdos`, `msx`, `vic20`, and more — so for many machines you are adapting an example, not starting blank. The host loop itself is just:
+`iotest` ships *working* `portio` examples for three machines — `coco`, `msdos`, and `msx` — with `h89` in progress. (Build makefiles exist for more platforms, but those three are the examples that actually run, so start from the nearest one.) The host loop itself is just:
 
 ```c
 // iotest/src/main.c  (the entire two-way test)
@@ -116,11 +116,11 @@ Resist the urge to frame a bring-up as "which existing bus do I copy?" That is t
 
 **Decision 2 — which microcontroller sits on the bus** — is the electrical question from the previous section: count your signal lines (ESP32 for few, RP2350 for many), and remember the RP2350 takes 5 V directly.
 
-> **Note** — The two decisions are independent, and the UX goal often breaks the tie. Riding a disk interface can be less work, but it frequently costs the bare-metal-boot experience: the user may have to own a disk controller or load its software before FujiNet appears. A cartridge or card slot lets FujiNet present a boot ROM and come up on its own. When in doubt, favour the path that boots from bare metal.
+> **Note** — The two decisions are independent, and the UX goal often breaks the tie. Riding a disk interface can be less work, but it frequently costs the bare-metal-boot experience: the user may have to own a disk controller or load its software before FujiNet appears. A cartridge or card slot lets FujiNet present a boot ROM and come up on its own. When in doubt, favor the path that boots from bare metal.
 
-When the answer to Decision 1 is "no disk interface" and the transport is a parallel expansion bus, you cannot simply hang the ESP32 on that bus: parallel CPU buses are **fast and unforgiving**. A Z80 or an 8088 expects valid data within tens of nanoseconds of asserting a read strobe; an ESP32 running FreeRTOS and a WiFi stack cannot meet that deadline. An RP2350 can — its Programmable I/O (PIO) blocks are deterministic state machines that react in single clock cycles, and a whole core can be dedicated to the bus. That is why a wide parallel-bus platform uses the two-chip design, and why this guide — and the prototype board it is built around — exists.
+When the answer to Decision 1 is "no disk interface" and the transport is a parallel expansion bus, you cannot simply hang the ESP32 on that bus: parallel CPU buses are **fast and unforgiving**, and — this surprises people — the demand is set by *bus timing*, not CPU megahertz. A 1 MHz 6809 in a CoCo gives a peripheral a **tighter** window than a 4 MHz Z80 does; keeping up with the CoCo bus meant running the RP2350 at double its usual clock (250 MHz). An ESP32 running FreeRTOS and a WiFi stack cannot meet deadlines like that at all. An RP2350 can — its Programmable I/O (PIO) blocks are deterministic state machines that react in single clock cycles, and a whole core can be dedicated to the bus. That is why a wide parallel-bus platform uses the two-chip design, and why this guide — and the prototype board it is built around — exists.
 
-### The division of labour
+### The division of labor
 
 This is the single most important idea in the guide.
 
@@ -163,7 +163,7 @@ A bring-up rig is three boards plus an adapter:
 
 The prototype board's generic bus header uses the footprint of an 8-bit ISA edge connector (`Connector:Bus_ISA_8bit`) — a **practical choice of a cheap, available 62-pin connector** whose signal set is a superset of most 8-bit buses, *not* a sign that ISA is the reference platform. Each per-machine adapter (`MSX-adapter`, `CoCo-adapter`) carries a matching `Bus_ISA_8bit` on the board side and the real machine connector on the other.
 
-The board's **default** GPIO routing follows the ISA pin roles, but that is a starting assignment you customise per bus, not a fixed pinout — Chapter 4 is the full design rationale, and Chapters 5–6 show it bent to fit MSX and CoCo.
+The board's **default** GPIO routing follows the ISA pin roles, but that is a starting assignment you customize per bus, not a fixed pinout — Chapter 4 is the full design rationale, and Chapters 5–6 show it bent to fit MSX and CoCo.
 
 ### The two firmware images and one ROM image
 
@@ -185,7 +185,7 @@ The host ROM is *data* compiled into the RP2350 image (`build/<board>/rom.h`). B
 | 2 — Bus interface (PIO) | RP2350 | ROM emulation, address decode, drive/sample the data bus |
 | 1 — Physical bus | adapter + board | voltage levels, connector, timing, AEN / strobes |
 
-This guide is organised bottom-up: Part II builds layer 1, Part III builds layers 2–3, Part IV builds layers 4–5.
+This guide is organized bottom-up: Part II builds layer 1, Part III builds layers 2–3, Part IV builds layers 4–5.
 
 ## 3. The FujiBus protocol (FEP-004)
 
@@ -259,7 +259,7 @@ You rarely hand-assemble descriptors: the client library exposes `fuji_bus_call(
 
 ### Devices
 
-A packet's first byte selects a device. The RP2350 also watches this byte: a packet addressed to `0xFF` (`FUJI_DEVICEID_DBC`, the bus controller itself) is consumed by the RP2350 and never reaches the ESP32 (see [Chapter 8](#8-inside-the-fujiversal-firmware)).
+A packet's first byte selects a device. Device `0xFF` (`FUJI_DEVICEID_DBC`) names the bus controller — the RP2350 itself — rather than a device behind it on the ESP32.
 
 | ID | Symbol | Device |
 | --- | --- | --- |
@@ -271,7 +271,7 @@ A packet's first byte selects a device. The RP2350 also watches this byte: a pac
 | `0x70` | `FUJINET` | The Fuji control device (mounts, hosts, config) |
 | `0x71`–`0x78` | `NETWORK` … `NETWORK_LAST` | `N:` network units (8 of them) |
 | `0x99` | `MIDI` | MIDI |
-| `0xFF` | `DBC` | Bus controller (RP2350) — intercepted locally |
+| `0xFF` | `DBC` | Bus controller (the RP2350 itself) |
 
 Commands are a single byte, many printable ASCII: `'O'` (`0x4F`) open, `'R'` (`0x52`) read, `'W'` (`0x57`) write, `'S'` (`0x53`) status, `'C'` (`0x43`) close. The Fuji control device uses the high range `0xD0`–`0xFF`. The complete enum is `fujiCommandID.h`.
 
@@ -326,7 +326,7 @@ Because the header is ISA-shaped, the board's **default** jumper routing maps ea
 
 ### The jumper farm is a routing decision, not a checklist
 
-Thirty-nine solder jumpers sit between the GPIO map and the header. **This is the board's customisation mechanism, and it is the part people misuse.** The jumpers are not a ritual — you do *not* "cut them all and bridge them back." You make a **per-signal routing decision**:
+Thirty-nine solder jumpers sit between the GPIO map and the header. **This is the board's customization mechanism, and it is the part people misuse.** The jumpers are not a ritual — you do *not* "cut them all and bridge them back." You make a **per-signal routing decision**:
 
 | Jumpers | Default | What deciding means |
 | --- | --- | --- |
@@ -339,7 +339,7 @@ The design question to ask from the start: *which of my bus's signals fall on th
 
 `J2` and `J3`/`J4` are the obvious logic-analyzer taps, and you will live on them during bring-up. But they have a second job: they are how you **add** a connection the board does not route by default. If your bus needs a signal on a GPIO the default map never wired to the header, you do not respin the board — you run a jumper wire from the GPIO breakout to where it needs to go. The CoCo example turns on exactly this.
 
-### Customising the board for your bus
+### Customizing the board for your bus
 
 A sequence of decisions, not a procedure:
 
@@ -389,7 +389,7 @@ The `MSX-adapter` is mostly straight wiring, and the RP2350 meets the 5 V bus di
 
 ## 6. The Color Computer: when the board is not enough
 
-The CoCo bring-up is the instructive case, because the prototype board, as designed, **does not have enough of the right signals connected** for it. A UX judgement call, a hardware shortfall, and four different ways to fix it all show up here.
+The CoCo bring-up is the instructive case, because the prototype board, as designed, **does not have enough of the right signals connected** for it. A UX judgment call, a hardware shortfall, and four different ways to fix it all show up here.
 
 ### The decision that sets the tone: cartridge, not DriveWire
 
@@ -412,7 +412,7 @@ None of these is "correct"; they trade reworkability against permanence against 
 | **Solder back** | Run the wire on the back of the board. | The front is crowded; clearance matters |
 | **Wire-wrap** | Fit long wire-wrap posts and wire-wrap the connections. | Many signals to patch; you value reworkable-but-robust |
 
-The point of listing them is not to pick a winner — it is to show that "the board doesn't have the signal" is a solvable problem with a spectrum of answers, and which you choose is a judgement about your build, not a rule.
+The point of listing them is not to pick a winner — it is to show that "the board doesn't have the signal" is a solvable problem with a spectrum of answers, and which you choose is a judgment about your build, not a rule.
 
 ### The fingerprints of a tight fit
 
@@ -476,7 +476,7 @@ Bring a board up in layers so a fault is contained — and note what this is *no
 ### Two cores
 
 - **Core 1 — `romulan()`**: the bus loop. Runs `__time_critical_func`, sets up the PIO, then spins forever pulling latched bus words from a PIO FIFO and responding. The only code allowed to touch the bus.
-- **Core 0 — `main()`**: the USB bridge. Runs TinyUSB, moves bytes between host (via core 1) and ESP32 (via USB-CDC), maintains SLIP framing, intercepts the packets addressed to the bus controller, and feeds the watchdog.
+- **Core 0 — `main()`**: the USB bridge. Runs TinyUSB and *relays bytes* between host (via core 1) and ESP32 (via USB-CDC), and feeds the watchdog. Note what it does **not** do: it does not generate or parse FujiBus packets. SLIP framing is the business of the two *endpoints* — the host's 8-bit client library and the ESP32 — not the RP2350, which is a transparent byte pipe between them.
 
 The two cores exchange single bytes through the SDK's multicore FIFO, buffered by a 1 KB ring on each side.
 
@@ -519,7 +519,7 @@ if (IO_BASE <= bus.addr && bus.addr < IO_TOP) {
                        sio_hw->fifo_st & SIO_FIFO_ST_VLD_BITS
                          ? IO_FLAG_AVAIL : 0x00); break;              // is a byte ready?
     case IO_PUTC:   sio_hw->fifo_wr = bus.combined; break;            // byte to ESP32
-    case IO_CONTROL: break;
+    case IO_CONTROL: rom_activate(bus.data); break;                  // flip to a loaded ROM image
     }
 }
 else if (BUS_ROM_BASE <= bus.addr && bus.addr < BUS_ROM_TOP) {
@@ -527,22 +527,15 @@ else if (BUS_ROM_BASE <= bus.addr && bus.addr < BUS_ROM_TOP) {
 }
 ```
 
-The four registers are the two ends of the multicore FIFO dressed up as bus-visible ports. `IO_BASE`, the register offsets, `IO_FLAG_AVAIL`, `BUS_ROM_BASE`/`BUS_ROM_TOP` are all `.define`s in the board's `.pio` file — re-pointing the byte pipe at your bus's address map is mostly changing those constants.
+`GETC`, `STATUS`, and `PUTC` are the two ends of the multicore FIFO dressed up as bus-visible ports. The fourth register, `IO_CONTROL`, is the control register the host writes to drive the RP2350 directly (next section). `IO_BASE`, the offsets, `IO_FLAG_AVAIL`, `BUS_ROM_BASE`/`BUS_ROM_TOP` are all `.define`s in the board's `.pio` file — re-pointing the byte pipe at your bus's address map is mostly changing those constants.
 
-### ROM bank-switching: the one packet the RP2350 keeps
+### Switching the emulated ROM
 
-The host-side loader swaps the emulated ROM's contents with FujiBus packets addressed to `FUJI_DEVICEID_DBC` (`0xFF`). Core 0 sniffs the second byte of every frame and, if it is `0xFF`, consumes the packet locally:
+The host swaps the emulated ROM's contents at runtime — to page in CONFIG, or a booted disk's loader. The host loads a replacement image into the RP2350's RAM, then **activates** it by writing the `IO_CONTROL` register; the next ROM fetch sees the new image. The activation trigger is the register write, **not** a packet — earlier firmware used a `FUJICMD_CLOSE` packet and that is no longer how it works. The mechanism is host ↔ RP2350 over the byte pipe; a new bus needs no change beyond pointing `IO_CONTROL` at a reachable address.
 
-```c
-if (command_size == 2 && input != FUJI_DEVICEID_DBC) {
-    // second byte isn't 0xFF -> not for us, push to ESP32
-}
-else if (command_size > 1 && input == SLIP_END) {
-    process_command(command_buf);     // a complete DBC frame: handle locally
-}
-```
+### USB transport
 
-`process_command()` implements `FUJICMD_OPEN` (select a RAM bank), `FUJICMD_WRITE` (fill it), `FUJICMD_CLOSE` (activate it), `FUJICMD_RESET` (revert). Your build needs no change here.
+Everything else core 0 does is deliberately dumb: read a byte from USB (`tud_cdc_read`) and hand it to core 1 for the host to read via `GETC`; take bytes the host wrote via `PUTC` and send them out `tud_cdc_write`. It does not look inside the stream — no SLIP, no packet boundaries, no checksums; those belong to the endpoints.
 
 ## 9. Writing the PIO for your bus
 
@@ -553,7 +546,7 @@ The PIO is where a bus's specifics live. Chapter 8 described the three state mac
 | What "selected" means | `/SLTSL` low — a ready-made slot-select line | `/CTS` or `/SCS` low — two selects you decode |
 | Timing reference | none needed; the select line frames the cycle | the 6809 `E` clock edges |
 | Read vs write | `/RD` / `/WR` (separate Z80 strobes) | a single `R/W` level |
-| Data-direction flip | tri-state when the FIFO empties or `/SLTSL` releases | flip `pindirs` with side-set around `E` |
+| Data-direction flip | tri-state when the FIFO empties or `/SLTSL` releases | drive directly while selected (the file's `245`-era side-set is a PicoROM leftover) |
 | Byte pipe | memory-mapped, `0xBFFC` | `0xFF41` in the `/SCS` I/O spot |
 | ROM window | `0x4000` (AB-header cartridge) | `0xC000` (autostart Program Pak) |
 
@@ -603,30 +596,15 @@ send:
         wait 0 gpio CLOCK_PIN    ; end of this bus cycle
 ```
 
-The lesson is the decision: *does your bus give you a select line, or must you synthesise one from address-decode and strobes?* If it hands you one (MSX), `wait_sel` is trivial. If not (CoCo, and most backplane buses), you decode — in PIO, or with a little external logic that produces a single select line and reduces the problem to the MSX case.
+The lesson is the decision: *does your bus give you a select line, or must you synthesize one from address-decode and strobes?* If it hands you one (MSX), `wait_sel` is trivial. If not (CoCo, and most backplane buses), you decode — in PIO, or with a little external logic that produces a single select line and reduces the problem to the MSX case.
 
 ### Driving data: the `read` decision
 
-`read` puts a byte on `D0–D7` when core 1 supplies one and tri-states the pins otherwise. The decision: *what edge tells you the cycle is ending?* MSX keys off the select line; CoCo keys off the `E` clock, using a side-set bit to flip `pindirs` in lockstep:
+`read` puts a byte on `D0–D7` when core 1 supplies one and tri-states the pins otherwise. On the proto board the RP2350 drives the bus directly, so the mechanism is simply: drive while selected, tri-state otherwise. MSX does this by keying off the select line (`jmp pin` while `/SLTSL` is asserted).
 
-```text
-; CoCo read  (side-set flips data-pin direction around E)
-.program read
-.side_set 1 opt
-        mov x, ~null  side 1            ; D0-7 start as inputs
-.wrap_target
-        pull block                      ; byte from core 1
-        out pins, DATA_WIDTH
-        mov osr, ~null
-        out pindirs, DATA_WIDTH side 0  ; drive D0-7
-        wait 1 gpio CLOCK_PIN           ; through the E cycle
-        wait 0 gpio CLOCK_PIN
-        mov osr, null
-        out pindirs, DATA_WIDTH side 1  ; release D0-7
-.wrap
-```
+> **Caution** — The `read` program in `coco_proto_260402.pio` carries extra **side-set / `pindirs`** machinery that looks like it flips the data direction in lockstep with the `E` clock. **Do not copy it as a model.** That code is a **leftover from the PicoROM design, which has a `74LVC245` transceiver** to switch; the proto cart has no `245`, and the RP2350 drives the bus directly. When you read the CoCo file, mentally strike the direction-switching lines — they are not the proto board's mechanism.
 
-Identify your timing reference first and the `read` program writes itself. `send_bus` carries no per-bus decision — it samples GPIO and autopushes — so it is copied unchanged between board files.
+So the `read` decision is simpler than the CoCo file suggests: drive `D0–D7` during a read of your address, tri-state otherwise. Your *timing reference* — the select line (MSX) or a bus clock edge (the 6809's `E`) — only tells you *when the cycle ends* so you release at the right moment; it is not a `245` direction signal. `send_bus` carries no per-bus decision — it samples GPIO and autopushes — so it is copied unchanged between board files.
 
 ### Building the board into fujiversal
 
@@ -661,7 +639,7 @@ make ROM_FILE=../fujinet-config/config-<platform>.rom BOARD=<your_board>
 
 ### Flash and enumerate
 
-Hold BOOTSEL while plugging the Core2350B into USB; it mounts as mass storage. Copy the `.uf2` (or `picotool load`). On reset it should enumerate as a USB CDC-ACM serial device — the port the ESP32 will later own. Open it from your workstation first; you have a debug console before the ESP32 is in the loop.
+Flash with `make upload`, which uses `picotool` to load the `.uf2` onto the running board over USB — no buttons, no dragging files. (The BOOTSEL-button mass-storage dance is only the *recovery* path, for when you have bricked the board and `picotool` can no longer reach it.) On reset it should enumerate as a USB CDC-ACM serial device — the port the ESP32 will later own. Open it from your workstation first; you have a debug console before the ESP32 is in the loop.
 
 ### The loopback test
 
@@ -940,7 +918,7 @@ Walk this diff for any new bus — ISA below, or a 6502 cartridge port, S-100 ba
 
 | What changes per bus | Where you change it |
 | --- | --- |
-| Disk interface, or not | Decision 1 (Ch. 1): a disk interface to ride, or FEP-004 direct. Favour whatever boots from bare metal. |
+| Disk interface, or not | Decision 1 (Ch. 1): a disk interface to ride, or FEP-004 direct. Favor whatever boots from bare metal. |
 | Connector and voltage | The adapter (Ch. 6–7); on an RP2350, voltage is usually nothing to do. |
 | Signal-to-GPIO routing | The jumpers and patches (Ch. 4–6): which signals land on the default map, which you reroute, which you wire in from the breakouts. |
 | The decode rule | `wait_sel` (Ch. 9): what "selected" means, and the timing reference (clock edge, chip-select, or strobe). |
@@ -1037,9 +1015,9 @@ There are no buffer ICs; add level-shifting on the adapter (Chapter 6).
 | Path | Contents |
 | --- | --- |
 | `fujinet-bringup/README.md` | **Start here.** The bring-up-first method (relay + `iotest` + PC firmware) |
-| `fujinet-bringup/iotest/` | Host two-way-comms test + per-platform `portio` examples (~14 platforms) |
+| `fujinet-bringup/iotest/` | Host two-way-comms test + working `portio` examples (CoCo, MS-DOS, MSX; H89 in progress) |
 | `fujinet-bringup/esp32/`, `…/rp2350/` | Minimal byte-relay firmware (GPIO bus ⟷ USB serial) |
-| `fujiversal/main.cpp` | Core 0 USB bridge + core 1 `romulan()` bus loop + DBC handler |
+| `fujiversal/main.cpp` | Core 0 USB byte relay + core 1 `romulan()` bus loop + ROM activation |
 | `fujiversal/boards/*.pio` | Per-board PIO + pin defines + `BusSignals` union (`msx_proto`, `coco_proto`; add yours) |
 | `fujiversal/setup_sm.cpp` | Generic PIO state-machine setup helper |
 | `fujiversal/FujiBusPacket.*` | FujiBus encoder/decoder (RP2350 copy) |
@@ -1062,13 +1040,13 @@ There are no buffer ICs; add level-shifting on the adapter (Chapter 6).
 
 - **AEN** — Address Enable. High during ISA DMA; an I/O card must decode only when it is low.
 - **Byte pipe** — the four I/O registers (`GETC`, `STATUS`, `PUTC`, `CONTROL`) through which the host streams bytes to/from the RP2350.
-- **DBC** — device ID `0xFF`, the bus controller (RP2350) itself; DBC packets are consumed locally for ROM bank-switching.
+- **DBC** — device ID `0xFF`, the bus controller (RP2350) itself.
 - **FEP-004** — the FujiNet protocol proposal that FujiBus implements.
 - **FujiBus** — the SLIP-framed packet protocol the host and ESP32 exchange.
 - **fujiversal** — the RP2350 firmware that emulates the bus interface.
 - **Option ROM** — a BIOS-scanned expansion ROM (`0x55 0xAA` header) in `0xC0000`–`0xDFFFF`; FujiNet's boot loader on ISA.
 - **PIO** — the RP2350's Programmable I/O — deterministic state machines that implement the bus timing.
-- **RAMROM** — the RP2350's swappable emulated-ROM image, bank-switched via DBC commands.
+- **RAMROM** — the RP2350's swappable emulated-ROM image, activated by a write to the `IO_CONTROL` register.
 - **Tandem design** — the ESP32 + RP2350 pairing for bus-based platforms.
 
 ## Appendix F — Bill of materials (one bring-up rig)
@@ -1088,4 +1066,4 @@ There are no buffer ICs; add level-shifting on the adapter (Chapter 6).
 
 ---
 
-*FujiNet Platform Bring-Up Guide — Revision 3, June 2026. Built from sources in `fujinet-bringup`, `fujiversal`, `fujiversal-pcb-prototype`, `fujinet-firmware`, `fujinet-lib-experimental`, and `fujinet-config`. The network is as easy as the disk drive — once the bus says so.*
+*FujiNet Platform Bring-Up Guide — Revision 4, June 2026. Built from sources in `fujinet-bringup`, `fujiversal`, `fujiversal-pcb-prototype`, `fujinet-firmware`, `fujinet-lib-experimental`, and `fujinet-config`. The network is as easy as the disk drive — once the bus says so.*

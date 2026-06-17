@@ -2,6 +2,39 @@
 
 Corrections folded into `manual.typ` and `wiki/Platform-Bring-Up-Guide.md`.
 
+## Rev. 3 → Rev. 4 — factual + spelling corrections (Chris Osborn / FozzTexx, June 2026)
+
+Seven fixes from Chris's third pass:
+
+1. **`iotest` platform count.** It does *not* have working `portio` for ~a dozen
+   platforms. Working examples are **CoCo, MS-DOS, and MSX**; **H89 is in
+   progress**; there are no others (build makefiles exist for more, but without
+   working `portio`). Corrected everywhere the inflated list appeared.
+2. **American spelling.** Converted all British spellings (labour→labor,
+   favour→favor, customise→customize, recognise→recognize, judgement→judgment,
+   programme→program, synthesise→synthesize, organise→organize, behaviour→behavior,
+   internalise→internalize, generalise→generalize).
+3. **"Fast and unforgiving" was about the wrong thing.** Bus timing, not CPU
+   MHz: a **1 MHz 6809 (CoCo) is tighter than a 4 MHz Z80**, and keeping up with
+   the CoCo bus required running the **RP2350 at double clock (250 MHz)**. Ch1
+   rewritten to say this.
+4. **The RP2350 does NOT do SLIP.** SLIP packet generation/decoding happens at
+   the *endpoints* — the host 8-bit's client library and the ESP32 — not the pico,
+   which is a transparent byte relay. Ch8 "Two cores" + "USB transport" corrected;
+   the stale DBC-frame-sniffing code listing removed.
+5. **ROM activation is via the `IO_CONTROL` register**, not a `FUJICMD_CLOSE`
+   packet (no longer true). Ch8 "Switching the emulated ROM" rewritten; the
+   `case IO_CONTROL` now shows `rom_activate(...)`; DBC/RAMROM glossary + device
+   notes de-claimed accordingly.
+6. **CoCo `read` side-set/`pindirs` is a PicoROM leftover.** The direction-
+   switching in `coco_proto_260402.pio` is vestigial from PicoROM (which has a
+   `74LVC245`); the proto cart has no `245` and the RP2350 drives the bus
+   directly. Ch9 no longer presents it as the model — added a Caution to strike
+   those lines when reading the CoCo file.
+7. **Flashing is `make upload`** (picotool, over USB, no buttons). The
+   BOOTSEL-button mass-storage drag is only the *recovery* path for a bricked
+   board. Ch10 corrected.
+
 ## Rev. 2 → Rev. 3 — reframe from ISA recipe to design reasoning (Chris Osborn / FozzTexx, June 2026)
 
 Chris's second review reframed the document's whole approach. The guide had
@@ -50,9 +83,9 @@ the canonical first step and changes three things:
    build** — *before* building ROM emulation or an on-board ESP32. The host-side
    `portio` you write for `iotest` (`port_init` / `port_putc` / `port_getc` /
    `port_available`, plus buffered/timeout variants) is the same code you later
-   drop into `fujinet-lib-experimental`. `iotest` already ships `portio` examples
-   and build makefiles for ~14 platforms (adam, apple2, atari, c64, coco, dragon,
-   h89-cpm, msdos, msx, …) to crib from.
+   drop into `fujinet-lib-experimental`. `iotest` ships working `portio` examples
+   for CoCo, MS-DOS, and MSX (H89 in progress) to crib from. (The "~14 platforms"
+   figure in the original Rev. 2 text was wrong — corrected in Rev. 4 above.)
 
 2. **ESP32-vs-RP2350 decision (new §1.3).** Count your bus signal lines: **≤ 8
    lines → an ESP32 can be the interface; > 8 lines → use an RP2350.** ISA
