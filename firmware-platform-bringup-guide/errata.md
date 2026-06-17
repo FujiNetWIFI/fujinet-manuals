@@ -2,6 +2,40 @@
 
 Corrections folded into `manual.typ` and `wiki/Platform-Bring-Up-Guide.md`.
 
+## Rev. 2 → Rev. 3 — reframe from ISA recipe to design reasoning (Chris Osborn / FozzTexx, June 2026)
+
+Chris's second review reframed the document's whole approach. The guide had
+become "here's how to do ISA," a recipe; it should teach *reasoning* on the
+prototype board through real examples. Changes:
+
+1. **The decisions, corrected (§1).** Removed the "three ways / copy an existing
+   bus" framing — that is the wrong question. There are **two** decisions:
+   (1) connect through an existing *disk interface* or not — if not, the protocol
+   is **FEP-004**; if so, it *could* be FEP-004 inside the disk protocol, but only
+   if that makes sense, which requires understanding the disk protocol. (2) ESP32
+   vs RP2350 (already covered). Over it all: **look like a normal boot device**
+   (bare-metal boot, no other peripherals, nothing pre-installed) for the best UX.
+2. **Honest identity.** This is a guide to *using the prototype board*, taught
+   through design rationale and examples — not a generic bring-up cookbook. Title,
+   subtitle, and intro now say so.
+3. **The board chapter leads with *why*, not "cut the jumpers."** New Chapter 4
+   explains why the board exists, why the header is ISA-shaped (a generic 62-pin
+   connector, *not* "ISA is the reference"), and frames the jumper farm as a
+   per-signal *routing decision* — not a ritual of cutting everything. The
+   breakout headers are also presented as *patch points* for adding connections.
+4. **Real worked examples replace the ISA recipe (Chapters 5–6).** Pivoted to
+   **MSX** (the board fits cleanly — Z80 strobes land on the default pins,
+   AB-header cartridge boot) and **CoCo** (the board does *not* have enough signals
+   connected — two phase clocks plus `/CART`/`/SLENB`/etc.; closed four ways:
+   breakout jumpers / solder front / solder back / wire-wrap; the cartridge-vs-
+   DriveWire choice is the boot-device UX decision in action). Chapter 9 now
+   teaches the PIO *decisions* from the real `msx_proto`/`coco_proto` files.
+5. **ISA demoted to a design exercise (Chapter 19).** ISA — the user's original
+   ask — is kept only as a clearly-marked *illustrative, unbuilt* exercise that
+   applies the method to a bus with no board file. The rest of the firmware/PIO
+   chapters are de-ISA'd (generic `<platform>` placeholders).
+
+
 ## Rev. 1 → Rev. 2 — incorporate `fujinet-bringup` (Chris Osborn / FozzTexx, June 2026)
 
 Chris pointed out that a platform bring-up should **always start with the

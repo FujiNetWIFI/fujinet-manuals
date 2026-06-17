@@ -22,17 +22,17 @@ Every register value, pin assignment, packet field, and source excerpt here was 
   - [1. Introduction](#1-introduction)
   - [2. System architecture](#2-system-architecture)
   - [3. The FujiBus protocol (FEP-004)](#3-the-fujibus-protocol-fep-004)
-- [Part II — Hardware bring-up](#part-ii--hardware-bring-up)
-  - [4. The ISA bus in one sitting](#4-the-isa-bus-in-one-sitting)
-  - [5. Anatomy of the universal prototype board](#5-anatomy-of-the-universal-prototype-board)
-  - [6. Building the ISA adapter](#6-building-the-isa-adapter)
-  - [7. Hardware configuration and first power-on](#7-hardware-configuration-and-first-power-on)
+- [Part II — The Prototype Board, by Example](#part-ii--the-prototype-board-by-example)
+  - [4. The prototype board, and how to think about it](#4-the-prototype-board-and-how-to-think-about-it)
+  - [5. MSX: when the board fits](#5-msx-when-the-board-fits)
+  - [6. The Color Computer: when the board is not enough](#6-the-color-computer-when-the-board-is-not-enough)
+  - [7. Hardware decisions you will face](#7-hardware-decisions-you-will-face)
 - [Part III — The RP2350 bus interface](#part-iii--the-rp2350-bus-interface)
   - [8. Inside the fujiversal firmware](#8-inside-the-fujiversal-firmware)
-  - [9. Writing the ISA PIO program](#9-writing-the-isa-pio-program)
+  - [9. Writing the PIO for your bus](#9-writing-the-pio-for-your-bus)
   - [10. Bringing the RP2350 up](#10-bringing-the-rp2350-up)
 - [Part IV — The ESP32 device firmware](#part-iv--the-esp32-device-firmware)
-  - [11. Where ISA fits in fujinet-firmware](#11-where-isa-fits-in-fujinet-firmware)
+  - [11. Where a bus platform fits in fujinet-firmware](#11-where-a-bus-platform-fits-in-fujinet-firmware)
   - [12. Adding the platform to the build system](#12-adding-the-platform-to-the-build-system)
   - [13. Device classes](#13-device-classes)
   - [14. Media classes](#14-media-classes)
@@ -41,7 +41,7 @@ Every register value, pin assignment, packet field, and source excerpt here was 
 - [Part V — Integration & validation](#part-v--integration--validation)
   - [17. The bring-up milestone ladder](#17-the-bring-up-milestone-ladder)
   - [18. Troubleshooting](#18-troubleshooting)
-  - [19. Porting to a bus that is not ISA](#19-porting-to-a-bus-that-is-not-isa)
+  - [19. Design exercise: a bus nobody has built yet](#19-design-exercise-a-bus-nobody-has-built-yet)
 - [Appendices](#appendices)
 
 ---
@@ -101,17 +101,24 @@ The first design decision `fujinet-bringup` asks you to make is *which microcont
 
 ISA, with 20 address + 8 data + several control lines, is firmly in RP2350 territory — which is why this guide's worked example uses one.
 
-> **Important** — Note the 5 V point, because it corrects a natural assumption (and an error in this guide's first edition): the RP2350's direct connection to a 5 V bus is *intentional and supported*, not a hazard to be buffered away. Level shifting in this design is an **ESP32** concern, not an RP2350 one. See [Chapter 6](#6-building-the-isa-adapter).
+> **Important** — Note the 5 V point, because it corrects a natural assumption (and an error in this guide's first edition): the RP2350's direct connection to a 5 V bus is *intentional and supported*, not a hazard to be buffered away. Level shifting in this design is an **ESP32** concern, not an RP2350 one. See [Chapter 7](#7-hardware-decisions-you-will-face).
 
-### Three ways to bring up a platform
+### The two decisions
 
-| Strategy | How it works | Examples |
-| --- | --- | --- |
-| **Adapt an existing serial bus** | The machine already has a multi-drop serial peripheral bus with a documented protocol. FujiNet becomes another device on that bus, speaking the native protocol directly on the ESP32. | Atari SIO, CoCo DriveWire |
-| **FEP-004 serial encapsulation** | The machine has a UART or a simple serial link but no peripheral protocol. FujiNet defines its own framing — FEP-004 — over that link, and a small host-side driver speaks it. | RS-232, MSX (serial) |
-| **Bus-interface tandem** | The machine has no serial bus, only a parallel CPU expansion bus (cartridge slot, ISA, S-100, Apple slot…). A second microcontroller, an RP2350, sits directly on that parallel bus and bridges it to the ESP32. **This guide.** | ISA, MSX (cartridge), CoCo (cartridge) |
+Resist the urge to frame a bring-up as "which existing bus do I copy?" That is the wrong question and it leads to brittle designs. There are really only **two** decisions about how FujiNet talks to a machine, sitting underneath one overriding goal.
 
-The tandem design exists because parallel CPU buses are **fast and unforgiving**. A Z80 or an 8088 expects valid data on the bus within tens of nanoseconds of asserting a read strobe. An ESP32 running FreeRTOS and a WiFi stack cannot meet that deadline. The RP2350 can: its Programmable I/O (PIO) blocks are deterministic state machines that react to bus signals in single clock cycles, and its second core can be dedicated to the bus.
+**The goal: look like a boot device.** The best user experience asks the least of the user — power on, and FujiNet is simply *there*. No second peripheral to own, no driver to side-load first, no disk to boot from something else. So wherever the machine allows it, FujiNet should **look like a normal boot device** and come up from bare metal. Hold this goal in mind; it decides close calls.
+
+**Decision 1 — do you connect through an existing disk interface, or not?**
+
+- **No (the common case):** FujiNet speaks **FEP-004** ([Chapter 3](#3-the-fujibus-protocol-fep-004)) directly, over whatever transport the machine offers — a serial port, or a microcontroller you place on the parallel expansion bus. Cartridge ports and card slots fall here, and this is the path the rest of the guide builds.
+- **Yes:** Some machines already have a peripheral *disk* interface with a documented protocol — Atari's SIO, the Tandy CoCo's DriveWire. FujiNet can ride it by presenting as a drive, and the wire protocol could even be *FEP-004 carried inside* the disk protocol. But "could" is not "should": whether it makes sense depends entirely on the disk protocol, and you cannot judge that without understanding it first. Studying that protocol **is** the job in this case.
+
+**Decision 2 — which microcontroller sits on the bus** — is the electrical question from the previous section: count your signal lines (ESP32 for few, RP2350 for many), and remember the RP2350 takes 5 V directly.
+
+> **Note** — The two decisions are independent, and the UX goal often breaks the tie. Riding a disk interface can be less work, but it frequently costs the bare-metal-boot experience: the user may have to own a disk controller or load its software before FujiNet appears. A cartridge or card slot lets FujiNet present a boot ROM and come up on its own. When in doubt, favour the path that boots from bare metal.
+
+When the answer to Decision 1 is "no disk interface" and the transport is a parallel expansion bus, you cannot simply hang the ESP32 on that bus: parallel CPU buses are **fast and unforgiving**. A Z80 or an 8088 expects valid data within tens of nanoseconds of asserting a read strobe; an ESP32 running FreeRTOS and a WiFi stack cannot meet that deadline. An RP2350 can — its Programmable I/O (PIO) blocks are deterministic state machines that react in single clock cycles, and a whole core can be dedicated to the bus. That is why a wide parallel-bus platform uses the two-chip design, and why this guide — and the prototype board it is built around — exists.
 
 ### The division of labour
 
@@ -135,7 +142,7 @@ This is the single most important idea in the guide.
 
 ### Conventions
 
-Active-low signals are written `/IOR`. Hexadecimal is `0x1234`; an I/O *port* is also `0x300`. GPIO numbers are `GP17`. Callouts use four levels: **Note** (background), **Tip** (shortcut), **Important** (must get right), **⚠️ Magic Smoke** (can destroy hardware).
+Active-low signals are written `/IOR`. Hexadecimal is `0x1234`; an I/O *port* is also `0x300`. GPIO numbers are `GP17`. Callouts use levels: **Note** (background), **Tip** (shortcut), **Important** (must get right), **Caution** (electrical/UX hazard).
 
 ## 2. System architecture
 
@@ -148,15 +155,15 @@ A bring-up rig is three boards plus an adapter:
 | **Waveshare Core2350B** | RP2350B (component `U1`); ~48 GPIO, enough for a 20-bit address bus + data + control | `FujiNet:WaveShare-Core-RP2350B` |
 | **Freenove ESP32-S3-CAM** | ESP32 + WiFi + microSD (component `U2`) | `FujiNet:ESP32-S3-CAM` |
 | **Universal prototype board** | Seats both dev boards; routes every GPIO to a generic bus header through solder jumpers | `fujiversal-pcb-prototype/Bus-proto` |
-| **Bus adapter** | Converts the universal bus header into the machine's physical connector | `CoCo-adapter`, `MSX-adapter`, (new) ISA adapter |
+| **Bus adapter** | Converts the universal bus header into the machine's physical connector | `CoCo-adapter`, `MSX-adapter`, (or yours) |
 
 > **Note** — The Freenove board may need a hardware tweak before its microSD works: one SD pin must be grounded by a solder bridge. The prototype README flags this; confirm against your board revision before assembly.
 
-### Why the inter-board bus is shaped like ISA
+### Why the inter-board bus is shaped like an ISA slot
 
-When the prototype board was designed, its generic bus header was given the footprint of an 8-bit ISA edge connector (`Connector:Bus_ISA_8bit`, footprint `parts:ISA_8bit`). Both the CoCo and MSX adapters carry a matching `Bus_ISA_8bit` connector on the universal-board side, and the machine's real connector on the other.
+The prototype board's generic bus header uses the footprint of an 8-bit ISA edge connector (`Connector:Bus_ISA_8bit`) — a **practical choice of a cheap, available 62-pin connector** whose signal set is a superset of most 8-bit buses, *not* a sign that ISA is the reference platform. Each per-machine adapter (`MSX-adapter`, `CoCo-adapter`) carries a matching `Bus_ISA_8bit` on the board side and the real machine connector on the other.
 
-For an ISA bring-up the adapter is therefore **nearly a pass-through**: the universal board's GPIO map was drawn directly from the ISA signal list (`GP0`=`A0`, `GP20`=`D0`, `GP28`=`/MEMR`…). The ISA adapter's job is not signal translation but **electrical conditioning** — getting the 5 V ISA bus safely in and out of a 3.3 V RP2350.
+The board's **default** GPIO routing follows the ISA pin roles, but that is a starting assignment you customise per bus, not a fixed pinout — Chapter 4 is the full design rationale, and Chapters 5–6 show it bent to fit MSX and CoCo.
 
 ### The two firmware images and one ROM image
 
@@ -279,179 +286,186 @@ Commands are a single byte, many printable ASCII: `'O'` (`0x4F`) open, `'R'` (`0
 
 ---
 
-# Part II — Hardware Bring-Up
+# Part II — The Prototype Board, by Example
 
-## 4. The ISA bus in one sitting
+What the prototype board is, why it is built the way it is, and how to bend it to a new bus — taught through two real bring-ups: **MSX**, where the board fits cleanly, and the **Color Computer**, where it does not and has to be coaxed.
 
-You must decode the bus **exactly** — a card that mis-decodes a cycle does nothing or corrupts the machine. If you are porting to a different bus, this is the chapter you replace.
+## 4. The prototype board, and how to think about it
 
-### Two address spaces, four strobes
+Before any platform, understand the board every platform is brought up on: `fujiversal-pcb-prototype/Bus-proto` (`Universal-proto-v1`). It is not an ISA card, not a cartridge — it is a *development fixture* designed so you can try any bus without spinning a new PCB each time.
 
-The 8088 has *separate* I/O and memory address spaces, each with its own read and write strobe.
+### Why the board exists
 
-| Strobe | Active | Cycle |
-| --- | --- | --- |
-| `/MEMR` | low | CPU reads memory — drive `D0–D7` if the address is our ROM |
-| `/MEMW` | low | CPU writes memory |
-| `/IOR` | low | CPU reads an I/O port — drive `D0–D7` if the port is ours |
-| `/IOW` | low | CPU writes an I/O port — latch `D0–D7` if the port is ours |
+It does four things and nothing more:
 
-On the universal board these are `GP28`–`GP31`.
+1. **Seats the two dev boards** — the Waveshare Core2350B (`U1`, RP2350) and the Freenove ESP32-S3-CAM (`U2`) — and wires the USB link between them.
+2. **Distributes power** with a selectable source (`J9`) and reverse protection (`D1`).
+3. **Routes every RP2350 GPIO** to a generic, bus-shaped header (`J1`) through a field of solder jumpers, so you choose what reaches the bus.
+4. **Brings every signal out to 0.1″ breakout headers** (`J2` bus side, `J3`/`J4` GPIO side) so you can probe — or patch — anything.
 
-### The signals that matter, and AEN above all
+There are **no buffers, no glue logic, no decode** — those are decisions left to you, because they depend on the bus.
 
-| Signal | Dir (card) | Why you care |
-| --- | --- | --- |
-| `A0–A19` | in | 20-bit memory address. I/O ports decode only `A0–A9`. |
-| `D0–D7` | bi | 8-bit data. Drive only during *your* read cycles. |
-| `AEN` | in | **Address Enable.** High during DMA. An I/O card MUST qualify decode with `AEN` low, or it responds to DMA addresses and crashes the machine. |
-| `ALE` / `BALE` | in | Address valid to latch on the falling edge. |
-| `RESET DRV` | in | Active-high system reset. |
-| `CLK` / `OSC` | in | ~4.77 MHz bus clock / 14.318 MHz oscillator. |
-| `I/O CH RDY` | out (o.c.) | Wait-state line; pull low to stretch a cycle. |
-| `IRQ2–7`, `DRQ/DACK` | — | Interrupts / DMA. Not used by the polled byte pipe. |
+### Why the header is shaped like an ISA slot
 
-> **Important** — `AEN` is the easiest signal to get wrong and the most destructive. The decode condition for *any* I/O port on ISA is "address matches **and** `AEN` is low". The universal board routes `AEN` to `GP32` precisely so the PIO can gate on it.
+The generic bus header `J1` has the footprint of an 8-bit ISA edge connector. This is a **practical convenience, not a statement that the board is an ISA card**: an 8-bit ISA edge is a cheap, available 62-pin connector with a sane pitch, and its signal set is a comfortable *superset* of most 8-bit buses. The per-machine adapters carry a matching `Bus_ISA_8bit` on one side and the real machine connector on the other.
 
-### Decoding our two windows
+> **Important** — Do not read the ISA-shaped header as "ISA is the reference platform." It is a generic interconnect that happens to use an ISA footprint. The worked examples are MSX and CoCo precisely to keep that distinction honest.
 
-- **A boot ROM** (optional) in the expansion-ROM region `0xC0000`–`0xDFFFF`. The BIOS scans this region in 2 KB steps for option ROMs marked by `0x55 0xAA`, a length byte, and an entry point. We place ours at `0xC8000`.
-- **An I/O window of four ports** (the byte pipe). The prototype range `0x300`–`0x31F` is conventional; we use `0x300`–`0x303` for `GETC`, `STATUS`, `PUTC`, `CONTROL`. (Compare the MSX build at `0xBFFC` and the CoCo build at `0xFF41` — the byte pipe is identical; only the decode address changes.)
+### The default GPIO routing
 
-### Timing, and why FujiNet hides behind a poll
+Because the header is ISA-shaped, the board's **default** jumper routing maps each GPIO to the ISA pin of the same role. Treat this as a starting assignment, not a fixed pinout:
 
-A PC/XT bus read gives a card a few hundred nanoseconds to drive `D0–D7`. The PIO can meet that for a value it *already has* (a ROM byte, or whatever is in the byte-pipe FIFO). It cannot fetch a fresh byte from the ESP32 (USB + WiFi latency is milliseconds) inside one cycle.
-
-The byte pipe is designed around this. The host never blocks the bus for the network: it reads `STATUS`, and only when `available` is set does it read `GETC`, returning a byte the RP2350 already buffered. The slow path runs entirely between bus cycles — which is why a FujiNet card does not normally need to assert `I/O CH RDY`.
-
-## 5. Anatomy of the universal prototype board
-
-The board is `fujiversal-pcb-prototype/Bus-proto` (`Universal-proto-v1`).
-
-### The GPIO-to-ISA map
-
-| GP | ISA | GP | ISA | GP | ISA |
+| GP | default | GP | default | GP | default |
 | --- | --- | --- | --- | --- | --- |
 | `GP0`–`GP7` | `A0`–`A7` | `GP8`–`GP15` | `A8`–`A15` | `GP16`–`GP19` | `A16`–`A19` |
-| `GP20`–`GP27` | `D0`–`D7` | `GP28` | `/MEMR` | `GP29` | `/MEMW` |
-| `GP30` | `/IOR` | `GP31` | `/IOW` | `GP32` | `AEN` |
-| `GP33` | `CLK` | `GP34` | `ALE` | `GP35` | `RESET` |
+| `GP20`–`GP27` | `D0`–`D7` | `GP28` | strobe 1 | `GP29` | strobe 2 |
+| `GP30` | strobe 3 | `GP31` | strobe 4 | `GP32` | select / `AEN` |
+| `GP33` | clock | `GP34` | latch / `ALE` | `GP35` | reset |
 
-`GP36`–`GP47` are unassigned spares brought out to the breakout headers. (Schematic net labels: `GP0_ISA_A0` … `GP35_ISA_RESET`.)
+`GP36`–`GP47` are unassigned spares on the breakout headers. The four "strobe" pins are wired to ISA's `/MEMR`/`/MEMW`/`/IOR`/`/IOW` by default; a different bus repurposes them (the MSX example does exactly that).
 
-> **Note** — This map is also your PIO pin-define table. In [Chapter 9](#9-writing-the-isa-pio-program) these exact numbers become `.define A0_PIN 0`, `.define D0_PIN 20`, `.define IOR_PIN 30` in `boards/isa_proto.pio`.
+### The jumper farm is a routing decision, not a checklist
 
-### Connectors and headers
+Thirty-nine solder jumpers sit between the GPIO map and the header. **This is the board's customisation mechanism, and it is the part people misuse.** The jumpers are not a ritual — you do *not* "cut them all and bridge them back." You make a **per-signal routing decision**:
 
-| Ref | What | Use |
+| Jumpers | Default | What deciding means |
 | --- | --- | --- |
-| `J1` | `Bus_ISA_8bit` edge | The universal bus header. The adapter mates here. |
-| `J2` | ISA Breakout | Every ISA-side signal on 0.1″ pins — logic-analyzer tap. |
-| `J3` / `J4` | Pico GPIO Breakout 1 & 2 | Every RP2350 GPIO on 0.1″ pins. |
-| `J5`–`J8` | `Conn_01x20` | Seats for the Core2350B and ESP32-S3 modules. |
-| `J9` | `Conn_02x02` | Power-source selection. |
-| `U1` / `U2` | modules | WaveShare Core2350B / Freenove ESP32-S3-CAM. |
-| `D1` | diode | Power-rail protection. |
+| `JP1`–`JP36` | bridged | Each connects one GPIO to its default header pin. *Leave bridged* the signals your bus uses in their default role; *cut* the ones it does not, to free that GPIO or header pin. |
+| `JP37`–`JP39` | open | Optional straps for alternate routing. *Bridge* one only when a specific need calls for it. |
 
-> **Note** — There are **no buffer ICs** on this board, and the RP2350's GPIO connect to the 5 V ISA bus **directly** through the solder jumpers. Per the `fujinet-bringup` guidance this is *intentional and supported*: the RP2350 can interface to 5 V signal lines directly without a level shifter, which is precisely why it — and not the ESP32 — is the right chip for a wide 5 V bus like ISA ([Chapter 1](#choosing-the-interface-esp32-or-rp2350)). Level shifting in this design is an **ESP32** concern ([Chapter 6](#6-building-the-isa-adapter)), not an RP2350 one. The solder jumpers are your per-signal isolation control during bring-up — that is their job, not damage control.
+The design question to ask from the start: *which of my bus's signals fall on the default GPIO, which do not, and how will I bring the strays in?* MSX and CoCo are the two answers — "almost all of them do" and "several of them don't."
 
-### The solder-jumper farm
+### The breakout headers are also patch points
 
-| Jumpers | Default | Function |
+`J2` and `J3`/`J4` are the obvious logic-analyzer taps, and you will live on them during bring-up. But they have a second job: they are how you **add** a connection the board does not route by default. If your bus needs a signal on a GPIO the default map never wired to the header, you do not respin the board — you run a jumper wire from the GPIO breakout to where it needs to go. The CoCo example turns on exactly this.
+
+### Customising the board for your bus
+
+A sequence of decisions, not a procedure:
+
+1. **Enumerate the bus signals** the interface must see (address, data, selects, strobes, clocks, reset — and any oddities).
+2. **Match them to the default routing.** Which land where they already are? Which need a jumper cut and re-bridged elsewhere? Which are not on the header at all and must be patched from a breakout?
+3. **Decide the byte-pipe and ROM addresses** — where can the host reach four registers, and is there a window to present a boot ROM in?
+4. **Decide voltage and power** — almost always "nothing to do" on an RP2350.
+
+## 5. MSX: when the board fits
+
+The MSX bring-up is the easy case, and the right one to study first, because the prototype board's default routing nearly matches the machine.
+
+### The decisions
+
+- **Disk interface? No.** The MSX has cartridge and expansion slots but no standard peripheral *disk* protocol to ride, so FujiNet speaks **FEP-004** directly (Decision 1).
+- **Look like a boot device? Yes, and MSX makes it easy.** An MSX cartridge whose ROM begins with the signature bytes `0x41 0x42` ("AB") at `0x4000` is found by the BIOS at power-on, which calls the cartridge's `INIT` entry. So FujiNet presents a ROM with that header and *is* a normal, auto-starting cartridge — bare-metal boot, nothing pre-installed.
+- **Which microcontroller?** The cartridge bus is wide, so RP2350, which also takes the 5 V bus directly.
+
+### Mapping MSX onto the board
+
+The MSX cartridge is a Z80 bus. The board's default routing absorbs it almost untouched — and where it does not match exactly, the four "strobe" jumpers are simply *repurposed* rather than rerouted:
+
+| MSX signal | GPIO | Note |
 | --- | --- | --- |
-| `JP1`–`JP36` | bridged | One per bus signal. **Cut** one to lift that signal — to isolate it, splice a buffer in series, or free the GPIO. |
-| `JP37`–`JP39` | open | Optional configuration straps. **Bridge** only when an option calls for it. |
+| `A0`–`A15` | `GP0`–`GP15` | Default address routing, unchanged. |
+| `D0`–`D7` | `GP20`–`GP27` | Default data routing, unchanged. |
+| `/RD`, `/WR`, `/IORQ`, `/MERQ` | `GP28`–`GP31` | The four default "strobe" pins, *repurposed* from ISA's `/MEMR`/`/MEMW`/`/IOR`/`/IOW` to the Z80's four control lines. No rewiring — just a different meaning in the PIO. |
+| `/SLTSL` | `GP32` | The default select pin (ISA's `AEN`), now the cartridge slot-select. |
+| `CLOCK` | `GP33` | The default clock pin. |
+| `RESET` | `GP35` | The default reset pin. |
 
-The discipline these enable: **verify the board one signal at a time**. Cut every jumper, bring the RP2350 up with no bus connection, then bridge signals back in groups (power/ground, then address, then strobes, then data), checking each at the breakout headers.
+From `boards/msx_proto_260402.pio`. Nothing is cut or patched; the only adaptation is in firmware (what the PIO calls each pin), not in copper. *That* is what "the board fits" means.
+
+### The byte pipe and the boot ROM
+
+MSX memory-maps the byte pipe. The four registers live at `0xBFFC`–`0xBFFF` (a free spot high in the cartridge's page-2 window), and the boot ROM occupies `0x4000`–`0xBFFF`:
+
+```text
+IO_BASE      0xBFFC      ; GETC=+0  STATUS=+1  PUTC=+2  CONTROL=+3
+IO_FLAG_AVAIL 0x80       ; STATUS bit 7 set when a byte is waiting
+BUS_ROM_BASE 0x4000      ; the cartridge ROM window (AB header lives here)
+```
+
+> **Note** — `0xBFFC` is not arbitrary: the `fujinet-bringup` `iotest` MSX `portio` reads and writes the *same* `0xBFFC` byte pipe (`IO_OFFSET = 0x8000 + 0x3FFC`). The relay MVP and the production board expose the identical four registers at the identical address.
+
+The `MSX-adapter` is mostly straight wiring, and the RP2350 meets the 5 V bus directly. There is little to *decide* here — which is exactly why MSX is the example to cut your teeth on.
+
+## 6. The Color Computer: when the board is not enough
+
+The CoCo bring-up is the instructive case, because the prototype board, as designed, **does not have enough of the right signals connected** for it. A UX judgement call, a hardware shortfall, and four different ways to fix it all show up here.
+
+### The decision that sets the tone: cartridge, not DriveWire
+
+The CoCo *does* have a disk interface FujiNet could ride: **DriveWire**, a serial disk protocol, which is how FujiNet's existing CoCo support works. So Decision 1 has a real "yes" available. Why does the prototype-board bring-up choose the cartridge port instead?
+
+**Because of the boot-device goal.** Riding DriveWire means the user must have Disk BASIC and a DriveWire setup in place before FujiNet appears — a peripheral and pre-installed software, exactly what the UX goal says to avoid. The cartridge port **autostarts a Program Pak**: on power-up the Color BASIC ROM hands control to a cartridge at `0xC000`, so a FujiNet cartridge comes up from bare metal with nothing installed. The worse-effort path wins because it is the better experience.
+
+### Where the board comes up short
+
+The 6809 cartridge edge brings signals the ISA-shaped default routing never anticipated: *two* phase clocks (`E` and `Q`, where ISA has one), plus cartridge control lines — `/CART`, `/SLENB`, `/HALT`, `/NMI`, `SND` — with no analogue in the default map at all. The board simply does not route all of them to where the `CoCo-adapter` can reach them. Put plainly: **as built, the proto board does not have enough signals connected for CoCo.** That is not a defect; it is the expected outcome of a generic fixture meeting a specific machine.
+
+### Four ways to add the missing connections
+
+None of these is "correct"; they trade reworkability against permanence against effort:
+
+| Approach | What it is | Best when |
+| --- | --- | --- |
+| **Breakout jumpers** | Run a jumper wire from a `J3`/`J4` GPIO breakout pin to where the signal must go. *This is how the team manages CoCo today.* | You are still iterating; you want to move it tomorrow |
+| **Solder front** | Omit those breakout headers and solder a wire directly between the two pads. | The routing is settled and you want it low-profile |
+| **Solder back** | Run the wire on the back of the board. | The front is crowded; clearance matters |
+| **Wire-wrap** | Fit long wire-wrap posts and wire-wrap the connections. | Many signals to patch; you value reworkable-but-robust |
+
+The point of listing them is not to pick a winner — it is to show that "the board doesn't have the signal" is a solvable problem with a spectrum of answers, and which you choose is a judgement about your build, not a rule.
+
+### The fingerprints of a tight fit
+
+When the board does not match the machine, the firmware shows it. Two artefacts in `boards/coco_proto_260402.pio`:
+
+1. **Relocated pins.** The file still carries the original assignment as a comment — `CTS=16`, `SCS=17`, `CLOCK=18` — above the assignment actually used — `CTS=32`, `SCS=30`, `CLOCK=33`. The signals were moved to whatever GPIO could be reached after patching.
+2. **A defensive pull-up.** One unused middle pin (`GP31`) is pulled up in firmware "to avoid a false zero" on the bus. A stray or repurposed line often needs a small defensive measure; budget for one or two.
+
+### The byte pipe and the boot ROM
+
+```text
+IO_BASE      0xFF41     ; STATUS=+0  GETC=+1  CONTROL=+2  PUTC=+3  (note order)
+IO_FLAG_AVAIL 0x02      ; STATUS bit set when a byte is waiting
+BUS_ROM_BASE 0xC000     ; the /CTS cartridge ROM window (autostart vector here)
+```
+
+The register order and available-bit position *differ from MSX* — chosen to fall on convenient bits and addresses for the 6809 code. That is fine: the byte pipe is a contract about four registers, not their exact offsets. Timing references the `E` clock and `R/W` (a 6809 has no separate read/write strobes), the other reason the CoCo PIO looks different from the MSX one.
+
+## 7. Hardware decisions you will face
+
+### Voltage: usually nothing to do
+
+On an RP2350 board this is the shortest decision in the guide: the RP2350 interfaces to a 5 V bus **directly** ([Chapter 1](#choosing-the-interface-esp32-or-rp2350)), so there is no level shifter and no "5 V problem." Both worked examples connect straight to the 5 V cartridge bus.
+
+A translator becomes **mandatory** only on the narrow-bus **ESP32** path, which is not 5 V tolerant — the `fujinet-bringup` H89 example drives a `74LVC245` from the ESP32 via `OE`/`DIR` for exactly this reason. On an RP2350 you would add buffering only for *signal integrity* on a long or heavily-loaded bus, never for protection.
+
+### The adapter, from patched header to PCB
+
+"Adapter" is a spectrum, not a deliverable you need up front:
+
+| Stage | What the adapter is |
+| --- | --- |
+| Bench bring-up | Jumper wires from the breakout headers to the machine's connector. No PCB at all. |
+| Settling | A scrap of perfboard, or wire-wrap, fixing the routing you proved on the bench. |
+| Reproducible | A small PCB — machine edge on one side, `Bus_ISA_8bit` on the other — like the `MSX-adapter` and `CoCo-adapter`. |
 
 ### Power
 
-The board can take power from the ISA bus (`+5V`, with `±12V`/`-5V` on the edge), from USB, or from a bench supply. `J9` selects the source; `D1` blocks back-feed. ESP rails are `E_5V` / `E_3v3`.
+Bring `+5V` and `GND` from the machine to the board's power header through `J9` (source select); `D1` blocks back-feed. The Freenove ESP32 module may need its microSD pin grounded by a solder bridge before SD works — confirm against your revision.
 
-> **Caution** — Decide your power source *before* you plug into a PC. During bench bring-up, power from USB and leave the ISA `+5V` jumper open; switch to bus power only once the card is otherwise proven.
+> **Caution** — Decide the power source *before* connecting to a live machine. During bench bring-up, power from USB and leave the machine's `+5V` disconnected so you never tie two supplies together. Switch to bus power only once the interface is otherwise proven.
 
-## 6. Building the ISA adapter
+### First power-on, in groups
 
-Because the universal board's bus header is already an 8-bit ISA edge — and because the RP2350 takes the 5 V bus directly ([Chapter 1](#choosing-the-interface-esp32-or-rp2350)) — the ISA adapter is the simplest of the family: mostly a card edge, power, and optional signal-integrity buffering.
+Bring a board up in layers so a fault is contained — and note what this is *not*: it is not "cut every jumper first." For a clean-fit bus (MSX) you change no jumpers; for a tight-fit bus (CoCo) you first make your deliberate routing changes, then stage the bring-up. Either way the staging is about **observability**:
 
-| Adapter | Machine edge | Universal side |
-| --- | --- | --- |
-| `CoCo-adapter` | `CoCo-edge` (`P1`) | `Bus_ISA_8bit` |
-| `MSX-adapter` | `MSX-Edge` (`J1`) | `Bus_ISA_8bit` |
-| **ISA-adapter** (you build it) | real ISA gold fingers (`parts:ISA_8bit`) | `Bus_ISA_8bit` |
+1. **RP2350 alone**, on USB, no bus: confirm it enumerates as a USB CDC device. Nothing should warm up.
+2. **ESP32 alone**: flash it, confirm WiFi and SD.
+3. **Bus, address + select**, watched at the breakouts: confirm the PIO sees the machine address the interface, and only when it should.
+4. **Bus, strobes + data**: run the loopback of [Chapter 10](#10-bringing-the-rp2350-up).
+5. **In the machine**: only now move from the bench to a real slot and switch `J9` to bus power.
 
-The CoCo and MSX adapters *re-map* signals (their net labels show the 6809/Z80 pinout translated onto the ISA-shaped header). For ISA the signals already line up one-to-one, so the adapter's job is electrical.
-
-### The card edge
-
-Use the `parts:ISA_8bit` footprint. Two mechanical details:
-
-1. **Orientation** — gold fingers and key notch must follow the ISA mechanical spec, or the card is electrically backwards.
-2. **Thickness and gold** — 1.6 mm FR-4 with hard-gold fingers; ENIG wears. A slot *extender* or socketed breakout saves the fingers during bring-up.
-
-### The 5-volt bus: less of a problem than you think
-
-Here is where the first edition of this guide was wrong, so read carefully. Because the worked example uses an **RP2350**, the 5 V ISA bus is *not* a voltage-protection problem: per `fujinet-bringup`, the RP2350 interfaces to 5 V signal lines directly, and the universal board's direct, jumper-routed connection is the intended baseline. Buffering on an RP2350 adapter is **optional**, added for *signal integrity* on a real, loaded backplane — not to keep the chip alive.
-
-| Approach | What you do | When |
-| --- | --- | --- |
-| Direct (the baseline) | RP2350 GPIO straight to the 5 V bus through the jumpers. Supported; this is how the prototype is built. | RP2350 on a short, lightly-loaded bus — start here |
-| Buffered (optional) | `74LVC245` transceivers on data, `74LVC` buffers on address/strobe. Adds drive strength, isolates bus capacitance, offloads data-direction switching. | A production RP2350 card in a real, fully-populated slot |
-| Translator (mandatory) | The same `74LVC245`/`74LVC` parts, but now **required** — to protect a *non-5 V-tolerant ESP32*. The `fujinet-bringup` H89 example drives one via `OE`/`DIR`. | Any **ESP32** interface (the narrow-bus path) |
-
-For the RP2350 the choice is direct vs. buffered for signal quality; a translator is only **mandatory** on the ESP32 path.
-
-A buffered adapter needs the data transceiver's **direction** driven. `D0–D7` are inputs except during a host read of *our* address:
-
-```text
-DIR(A->B, card drives bus) = our_read_cycle
-  our_read_cycle = (/IOR low AND AEN low AND port in 0x300..0x303)
-                OR (/MEMR low AND addr in ROM window 0xC8000..)
-OE# (enable)    = our_cycle  (read OR write of one of our windows)
-```
-
-Produce these with a small GAL/ATF16V8 or a couple of `74LVC` gates, **or** let the RP2350 drive the `245` direction from a spare GPIO (`GP36`–`GP39`) — the PIO already computes "we are selected and this is a read."
-
-> **Note** — MSX/CoCo dodge most of this because their cartridge edges are closer to the RP2350's comfort zone and their `read` PIO flips pin directions in step with the system clock. On ISA there is no convenient single clock edge to hang the data-direction flip on — you decode it from the strobes. Plan the buffer direction logic early; it is the adapter's only real complexity.
-
-### Power and decoupling
-
-Bring `+5V`/`GND` (and `±12V`/`-5V` if wanted) from the ISA edge to the universal board's power header, gated by `J9`. Put 10 µF bulk + 0.1 µF per buffer IC at the adapter; backplane power is noisy.
-
-## 7. Hardware configuration and first power-on
-
-### ISA jumper and strap settings
-
-| Control | Setting for ISA | Reason |
-| --- | --- | --- |
-| `JP1`–`JP36` | bridged for `A0–A19`, `D0–D7`, `/MEMR`, `/MEMW`, `/IOR`, `/IOW`, `AEN`, `RESET`; rest cut | Connect only the signals the ISA PIO uses |
-| `JP37`–`JP39` | open | No optional strap needed for the baseline build |
-| `J9` power | USB during bench bring-up; bus `+5V` only when deployed | Avoid tying USB and ISA `+5V` together |
-| microSD mod | apply per board revision | The Freenove SD pin-to-ground bridge |
-
-### Test points and probing
-
-| Probe at | To answer |
-| --- | --- |
-| `J2` `AEN`, `/IOR`, `A0–A9` | Is the host addressing our port, and is `AEN` low when it does? |
-| `J3`/`J4` `GP20–GP27` | Is the RP2350 driving `D0–D7` at the right instant, and releasing after? |
-| `J3`/`J4` `GP30`/`GP31` | Does the PIO see `/IOR` / `/IOW` cleanly, or is there ringing? |
-| `J2` `I/O CH RDY` | Is anything stretching the cycle unexpectedly? |
-
-Trigger the analyzer on `/IOR` falling with `AEN` low to capture exactly our read cycles.
-
-### The power-on sequence
-
-1. **Continuity, unpowered** — confirm `+5V`↔`GND` not shorted; each bridged jumper connects the expected GPIO to the expected ISA pin.
-2. **RP2350 alone** — USB only, no bus. Confirm it enumerates as USB CDC. Nothing warms up.
-3. **ESP32 alone** — power and flash; confirm WiFi and SD. Still no bus.
-4. **Bus, address only** — bridge address + `AEN`; watch the PIO latch addresses. Data jumpers still cut.
-5. **Bus, full** — bridge `/IOR`/`/IOW`/`/MEMR` + data jumpers. Run the loopback test of [Chapter 10](#10-bringing-the-rp2350-up).
-6. **In the machine** — only now, with the adapter buffered, move the card into a real slot and switch `J9` to bus power.
-
-> **Tip** — Keep a powered USB hub with per-port power between your workstation and both dev boards. You will reflash the RP2350 and ESP32 many times; per-port power lets you cycle one without disturbing the other or the bus.
-
----
+> **Tip** — Keep a powered USB hub with per-port power between your workstation and both dev boards. You will reflash each many times; per-port power lets you cycle one without disturbing the other or the bus.
 
 # Part III — The RP2350 Bus Interface
 
@@ -513,7 +527,7 @@ else if (BUS_ROM_BASE <= bus.addr && bus.addr < BUS_ROM_TOP) {
 }
 ```
 
-The four registers are the two ends of the multicore FIFO dressed up as bus-visible ports. `IO_BASE`, the register offsets, `IO_FLAG_AVAIL`, `BUS_ROM_BASE`/`BUS_ROM_TOP` are all `.define`s in the board's `.pio` file — re-pointing the byte pipe at ISA's address map is mostly changing those constants.
+The four registers are the two ends of the multicore FIFO dressed up as bus-visible ports. `IO_BASE`, the register offsets, `IO_FLAG_AVAIL`, `BUS_ROM_BASE`/`BUS_ROM_TOP` are all `.define`s in the board's `.pio` file — re-pointing the byte pipe at your bus's address map is mostly changing those constants.
 
 ### ROM bank-switching: the one packet the RP2350 keeps
 
@@ -528,153 +542,120 @@ else if (command_size > 1 && input == SLIP_END) {
 }
 ```
 
-`process_command()` implements `FUJICMD_OPEN` (select a RAM bank), `FUJICMD_WRITE` (fill it), `FUJICMD_CLOSE` (activate it), `FUJICMD_RESET` (revert). An ISA build needs no change here.
+`process_command()` implements `FUJICMD_OPEN` (select a RAM bank), `FUJICMD_WRITE` (fill it), `FUJICMD_CLOSE` (activate it), `FUJICMD_RESET` (revert). Your build needs no change here.
 
-## 9. Writing the ISA PIO program
+## 9. Writing the PIO for your bus
 
-This builds `boards/isa_proto.pio`. The repo ships `msx_proto_260402.pio` and `coco_proto_260402.pio`; an ISA file does not yet exist. Use the MSX file as your structural template (it, like ISA, has separate I/O and memory strobes) and change three things: the pin defines, the decode in `wait_sel`, and the data-direction timing in `read`.
+The PIO is where a bus's specifics live. Chapter 8 described the three state machines in the abstract; the differences between the **real** MSX and CoCo `.pio` files *are* the design decisions you will face.
 
-> **Important** — The PIO listings here are a **worked starting point** in the style of the shipping `.pio` files, not a build the repository has proven on silicon. Bring them up with a logic analyzer ([Chapter 10](#10-bringing-the-rp2350-up)). Every value traces to the GPIO map and the ISA decode rules.
+| Decision | MSX (`msx_proto_260402.pio`) | CoCo (`coco_proto_260402.pio`) |
+| --- | --- | --- |
+| What "selected" means | `/SLTSL` low — a ready-made slot-select line | `/CTS` or `/SCS` low — two selects you decode |
+| Timing reference | none needed; the select line frames the cycle | the 6809 `E` clock edges |
+| Read vs write | `/RD` / `/WR` (separate Z80 strobes) | a single `R/W` level |
+| Data-direction flip | tri-state when the FIFO empties or `/SLTSL` releases | flip `pindirs` with side-set around `E` |
+| Byte pipe | memory-mapped, `0xBFFC` | `0xFF41` in the `/SCS` I/O spot |
+| ROM window | `0x4000` (AB-header cartridge) | `0xC000` (autostart Program Pak) |
 
-### Pin defines and constants
+### Pin defines and the BusSignals union
 
-```text
-.pio_version 1
-
-.define public DATA_WIDTH   8
-.define public ADDR_WIDTH   20          ; ISA carries A0..A19
-
-.define public A0_PIN       0           ; A0..A19  -> GP0..GP19
-.define public D0_PIN       20          ; D0..D7   -> GP20..GP27
-.define public MEMR_PIN     28          ; /MEMR
-.define public MEMW_PIN     29          ; /MEMW
-.define public IOR_PIN      30          ; /IOR
-.define public IOW_PIN      31          ; /IOW
-.define public AEN_PIN      32          ; AEN  (HIGH during DMA)
-.define public CLK_PIN      33          ; bus CLK
-.define public ALE_PIN      34          ; address latch enable
-.define public RESET_PIN    35          ; RESET DRV
-
-; --- byte-pipe registers, in ISA I/O space (ports 0x300..0x303) ---
-.define public IO_BASE      0x300
-.define public IO_GETC      0
-.define public IO_STATUS    1
-.define public IO_PUTC      2
-.define public IO_CONTROL   3
-.define public IO_FLAG_AVAIL 0x80
-
-; --- boot ROM window, in the expansion-ROM region ---
-.define public BUS_ROM_BASE 0xC8000
-.define public BUS_ROM_TOP  0xCC000     ; 16 KB option ROM
-
-.define public IRQ_SEL 0
-```
-
-### The BusSignals union for ISA
+Every board file opens with pin `.define`s that must match how the board is actually routed (Chapters 4–6) and a `BusSignals` union whose bit layout *is* that routing. Derive them from your routing table, not from another bus's file.
 
 ```c
+// MSX BusSignals (16-bit address, separate Z80 strobes)
 typedef union {
   struct {
-    uint32_t addr:20;     // A0..A19  on GP0..GP19
-    uint32_t data:8;      // D0..D7   on GP20..GP27 -- starts at bit 20
-    uint32_t memr:1;      // /MEMR    GP28
-    uint32_t memw:1;      // /MEMW    GP29
-    uint32_t ior:1;       // /IOR     GP30
-    uint32_t iow:1;       // /IOW     GP31
+    uint32_t addr:16;     // A0..A15  GP0..GP15
+    uint32_t resv:4;
+    uint32_t data:8;      // D0..D7   GP20..GP27
+    uint32_t rd:1, wr:1, iorq:1, memrq:1;   // GP28..GP31
   } __attribute__((packed));
   uint32_t combined;
 } __attribute__((packed)) BusSignals;
 ```
 
-> **Caution** — `send_bus` samples GPIO 0–31, so `AEN` (`GP32`), `CLK` (`GP33`), `ALE` (`GP34`), `RESET` (`GP35`) are *above* the 32-bit sample window. The baseline design gates `AEN` inside `wait_sel` (which can `wait` on any GPIO) rather than reading it in the latched word. If your decode needs `AEN`'s level in core 1, move data down to free low bits or sample with a second `mov`.
+### Decode: the `wait_sel` decision
 
-### Decode: the wait_sel program
-
-The ISA "we are selected" condition has two forms — an I/O cycle (valid only when `AEN` is low) and a memory (ROM) cycle. Compare the MSX `wait_sel`, which gates on `/SLTSL`; here we gate on `AEN` and the strobes.
+**MSX — a ready-made select line.** The cartridge slot hands the card a single `/SLTSL`, asserted exactly when this slot is addressed. So `wait_sel` is almost nothing:
 
 ```text
+; MSX wait_sel  (SLTSL pin configured inverted, so "wait 1" = /SLTSL low)
 .program wait_sel
 .wrap_target
-idle:
-        wait 0 gpio AEN_PIN          ; an I/O cycle requires AEN low
-        wait 0 gpio IOR_PIN  [1]     ; (illustrative) block until /IOR falls
-        irq IRQ_SEL                  ; tell send_bus + core1 we are selected
-        wait 1 gpio IOR_PIN          ; hold until the strobe releases
+        wait 1 gpio SLTSL_PIN [WAIT_CYCLES]   ; selected
+        irq 0
+        wait 0 gpio SLTSL_PIN                  ; deselected
 .wrap
 ```
 
-> **Note** — The single-strobe `wait` above is simplified to show the shape. A complete ISA `wait_sel` must select on `/IOR` *or* `/IOW` *or* `/MEMR`, and pre-qualify the address against the I/O or ROM window so it does not IRQ on every bus cycle. Two ways: (a) decode the high address bits with a few `mov`/`jmp` before the `wait`, or (b) decode the window in external logic (a GAL on the adapter) and feed a single "card selected" line to one GPIO — reducing `wait_sel` to the MSX form. Option (b) is faster to bring up and recommended for the first board; the CoCo/MSX boards effectively use (b) since the cartridge edge gives them a ready-made select line.
-
-### Driving data: the read program
+**CoCo — decode it yourself.** The cartridge port has two selects (`/CTS`, `/SCS`) and no single "card selected" line, so the program reads the pins, masks the two select bits, and qualifies on `R/W` and the `E` clock:
 
 ```text
+; CoCo wait_sel  (decode /CTS or /SCS, then time against E)
+idle:
+        mov osr, ~pins          ; all pins, inverted
+        out x, NUM_PINS         ; grab the /CTS /SCS bits
+        jmp !x idle             ; both high -> not us
+        jmp pin send            ; R/W high (read)? no need to wait
+        wait 1 gpio CLOCK_PIN    ; else wait for E
+send:
+        irq IRQ_SEL             ; selected
+        wait 0 gpio CLOCK_PIN    ; end of this bus cycle
+```
+
+The lesson is the decision: *does your bus give you a select line, or must you synthesise one from address-decode and strobes?* If it hands you one (MSX), `wait_sel` is trivial. If not (CoCo, and most backplane buses), you decode — in PIO, or with a little external logic that produces a single select line and reduces the problem to the MSX case.
+
+### Driving data: the `read` decision
+
+`read` puts a byte on `D0–D7` when core 1 supplies one and tri-states the pins otherwise. The decision: *what edge tells you the cycle is ending?* MSX keys off the select line; CoCo keys off the `E` clock, using a side-set bit to flip `pindirs` in lockstep:
+
+```text
+; CoCo read  (side-set flips data-pin direction around E)
 .program read
 .side_set 1 opt
-        mov x, ~null  side 1         ; X = all ones; start with D0-7 as inputs
+        mov x, ~null  side 1            ; D0-7 start as inputs
 .wrap_target
-        pull block                   ; wait for core1 to provide the byte
-        out pins, DATA_WIDTH         ; place it on D0-D7
+        pull block                      ; byte from core 1
+        out pins, DATA_WIDTH
         mov osr, ~null
-        out pindirs, DATA_WIDTH side 0   ; drive D0-D7 (outputs)
-        wait 0 gpio IOR_PIN          ; ... while /IOR (or /MEMR) is low
-        wait 1 gpio IOR_PIN          ; host has latched; cycle ending
+        out pindirs, DATA_WIDTH side 0  ; drive D0-7
+        wait 1 gpio CLOCK_PIN           ; through the E cycle
+        wait 0 gpio CLOCK_PIN
         mov osr, null
-        out pindirs, DATA_WIDTH side 1   ; release D0-D7 back to inputs
+        out pindirs, DATA_WIDTH side 1  ; release D0-7
 .wrap
 ```
 
-`send_bus` needs no ISA-specific change — keep it verbatim from the MSX file.
+Identify your timing reference first and the `read` program writes itself. `send_bus` carries no per-bus decision — it samples GPIO and autopushes — so it is copied unchanged between board files.
 
-### Wiring it into core 1
-
-ISA distinguishes I/O reads from writes by which strobe is active, so fold the strobe into the register index (the way the CoCo build folds `R/W`):
-
-```c
-if (IO_BASE <= bus.addr && bus.addr < IO_BASE + 4) {
-    unsigned io_reg = (bus.addr - IO_BASE) & 0x3;
-    if (!bus.iow) {                       // an I/O write cycle
-        if (io_reg == IO_PUTC) sio_hw->fifo_wr = bus.data;
-    } else if (!bus.ior) {                // an I/O read cycle
-        if (io_reg == IO_GETC)
-            pio_put_fifo(PSM_READ, sio_hw->fifo_rd);
-        else if (io_reg == IO_STATUS)
-            pio_put_fifo(PSM_READ,
-                sio_hw->fifo_st & SIO_FIFO_ST_VLD_BITS ? IO_FLAG_AVAIL : 0);
-    }
-}
-else if (!bus.memr && BUS_ROM_BASE <= bus.addr && bus.addr < BUS_ROM_TOP) {
-    pio_put_fifo(PSM_READ, rom_ptr[bus.addr - BUS_ROM_BASE]);
-}
-```
-
-### Adding the board to the build
+### Building the board into fujiversal
 
 ```cmake
-# CMakeLists.txt — add isa_proto to the RP2350 board set
-if(BOARD STREQUAL "msxrp2350"
-   OR BOARD STREQUAL "msx_proto_260402"
+# CMakeLists.txt — RP2350 board set
+if(BOARD STREQUAL "msx_proto_260402"
    OR BOARD STREQUAL "coco_proto_260402"
-   OR BOARD STREQUAL "isa_proto")                 # <-- new
-    set(PICO_BOARD "pimoroni_pga2350" CACHE STRING "Pico board type" FORCE)
-    set(PICO_PLATFORM "rp2350-arm-s" CACHE STRING "Pico platform" FORCE)
-    set(PICO_CHIP "rp2350" CACHE STRING "Pico chip" FORCE)
-    # PICO_PIO_USE_GPIO_BASE=1 is required: ISA uses GP0..GP35.
+   OR BOARD STREQUAL "<your_board>")              # <-- new
+    set(PICO_BOARD  "pimoroni_pga2350" CACHE STRING "" FORCE)
+    set(PICO_PLATFORM "rp2350-arm-s"   CACHE STRING "" FORCE)
+    set(PICO_CHIP   "rp2350"           CACHE STRING "" FORCE)
 endif()
 ```
 
-> **Important** — ISA touches GPIO above 31 (`AEN`=`GP32`, `RESET`=`GP35`). The build **must** define `PICO_PIO_USE_GPIO_BASE=1` (the existing RP2350 boards do) so the PIO can address the upper GPIO bank. `setup_state_machine()` in `setup_sm.cpp` computes the GPIO base/range and rejects an illegal span — heed its return codes.
+> **Important** — If your routing uses any GPIO above 31 (as both examples do — selects and reset live up there), the build **must** define `PICO_PIO_USE_GPIO_BASE=1` so the PIO can reach the upper bank. `setup_state_machine()` in `setup_sm.cpp` rejects an illegal span — heed its return codes when a state machine silently fails to start.
 
 ### Generating the host ROM
 
 ```bash
-# 1. build the host-side loader + CONFIG for ISA (in fujinet-config)
-make PLATFORM=isa            # see Chapter 15  ->  config-isa.rom
+# 1. build the host loader + CONFIG for your platform (fujinet-config)
+make PLATFORM=<platform>          # -> config-<platform>.rom   (Chapter 15)
 
-# 2. build the RP2350 firmware with that ROM baked in
+# 2. build the RP2350 firmware with that ROM
 cd ../fujiversal
-make ROM_FILE=../fujinet-config/config-isa.rom BOARD=isa_proto
-# -> build/isa_proto/fujiversal_isa_proto.uf2
+make ROM_FILE=../fujinet-config/config-<platform>.rom BOARD=<your_board>
+# -> build/<your_board>/fujiversal_<your_board>.uf2
 ```
+
+> **Note** — Applying all of this to a bus that has *no* board file yet — decoding it from scratch, choosing the byte-pipe address, writing the union — is the design exercise in [Chapter 19](#19-design-exercise-a-bus-nobody-has-built-yet), worked through for the 8-bit ISA bus.
 
 ## 10. Bringing the RP2350 up
 
@@ -697,9 +678,9 @@ That round trip exercises both PIO directions, the multicore FIFO, and the USB b
 
 # Part IV — The ESP32 Device Firmware
 
-## 11. Where ISA fits in fujinet-firmware
+## 11. Where a bus platform fits in fujinet-firmware
 
-The ESP32 never sees ISA. It sees a CDC-ACM serial port carrying FujiBus packets — exactly what the firmware's `rs232` bus already consumes (the same class used by the real RS-232 FujiNet and the MSX serial bring-up). The two existing `fujiversal` targets, `fujiversal-rs232` and `fujiversal-drivewire`, prove the pattern.
+The ESP32 never sees your bus — not MSX, not CoCo, not anything. It sees a CDC-ACM serial port carrying FujiBus packets — exactly what the firmware's `rs232` bus already consumes (the same class used by the real RS-232 FujiNet). The two existing `fujiversal` targets, `fujiversal-rs232` and `fujiversal-drivewire`, prove the pattern.
 
 ### The rs232 bus IS the FujiBus transport
 
@@ -723,7 +704,7 @@ class systemBus {
 extern systemBus SYSTEM_BUS;
 ```
 
-The `FUJINET_OVER_USB` switch is the whole story: built for the RP2350-over-USB path, `_serial` is an `ACMChannel` (USB-CDC *host*). ISA uses this, identical to `fujiversal-rs232`.
+The `FUJINET_OVER_USB` switch is the whole story: built for the RP2350-over-USB path, `_serial` is an `ACMChannel` (USB-CDC *host*). A tandem bus platform uses this, identical to `fujiversal-rs232`.
 
 > **Important** — For a tandem bus-based platform you usually write **no new bus class and no new device classes on the ESP32**. You add a build target and a pin map, and reuse `rs232`. New ESP32 code is needed only when your platform exposes a device the existing set lacks, or a disk image format not already handled. The deep work is the PIO (Part III) and the host side (Chapters 15–16).
 
@@ -732,16 +713,16 @@ The `FUJINET_OVER_USB` switch is the whole story: built for the RP2350-over-USB 
 ### The build platform file
 
 ```ini
-; build-platforms/platformio-fujiversal-isa.ini
+; build-platforms/platformio-fujiversal-<platform>.ini
 [fujinet]
 build_bus      = RS232          ; reuse the FujiBus serial bus
 build_platform = BUILD_RS232    ; ... and its device/media set
 
-[env:fujiversal-isa]
+[env:fujiversal-<platform>]
 build_type = debug
 build_flags =
     ${env.build_flags}
-    -D PINMAP_FUJIVERSAL_ISA            ; <-- new pin map
+    -D PINMAP_FUJIVERSAL_<PLATFORM>     ; <-- new pin map
     -D CONFIG_USB_HOST_ENABLED=1        ; ESP32-S3 is the USB *host*
     -D CONFIG_USB_CDC_ACM_HOST_ENABLED=1
 platform         = espressif32@${fujinet.esp32s3_platform_version}
@@ -749,15 +730,15 @@ platform_packages = ${fujinet.esp32s3_platform_packages}
 board            = esp32-s3-wroom-1-n16r8
 ```
 
-Three lines carry the design: `build_bus = RS232` chooses the FujiBus transport; the two `CONFIG_USB_*` flags make the ESP32-S3 a USB host so it can open the RP2350's CDC port; `PINMAP_FUJIVERSAL_ISA` selects your board's pins.
+Three lines carry the design: `build_bus = RS232` chooses the FujiBus transport; the two `CONFIG_USB_*` flags make the ESP32-S3 a USB host so it can open the RP2350's CDC port; `PINMAP_FUJIVERSAL_<PLATFORM>` selects your board's pins.
 
 ### The pin map
 
 On a `fujiversal` board the ESP32 pin map is small — the heavy bus I/O is on the RP2350.
 
 ```c
-// include/pinmap/fujiversal_isa.h   (sketch; mirror fujiversal_rs232.h)
-#ifdef PINMAP_FUJIVERSAL_ISA
+// include/pinmap/fujiversal_<platform>.h   (mirror fujiversal_rs232.h)
+#ifdef PINMAP_FUJIVERSAL_<PLATFORM>
 #define PIN_LED_WIFI     GPIO_NUM_..   // white WiFi LED
 #define PIN_LED_BUS      GPIO_NUM_..   // bus activity LED
 #define PIN_BUTTON_A     GPIO_NUM_..
@@ -772,8 +753,8 @@ On a `fujiversal` board the ESP32 pin map is small — the heavy bus I/O is on t
 Reuse `fujinet_partitions_16MB.csv`. Build and flash:
 
 ```bash
-pio run -e fujiversal-isa
-pio run -e fujiversal-isa -t upload
+pio run -e fujiversal-<platform>
+pio run -e fujiversal-<platform> -t upload
 ```
 
 ## 13. Device classes
@@ -813,7 +794,7 @@ To add a device, subclass `virtualDevice`, implement those two methods, and regi
 SYSTEM_BUS.addDevice(new myDevice(), FUJI_DEVICEID_SOMETHING);
 ```
 
-For a stock ISA build you change nothing here — the `rs232` set registers itself.
+For a stock build you change nothing here — the `rs232` set registers itself.
 
 ## 14. Media classes
 
@@ -836,7 +817,7 @@ public:
 };
 ```
 
-For ISA, a flat sector image (a `.img` of a 360 KB / 720 KB floppy or a hard disk) maps directly onto block reads and needs no new class. Start flat.
+A flat sector image (a `.dsk`/`.img` of a floppy or hard disk) maps directly onto block reads and needs no new class; a structured format would. Start flat.
 
 > **Tip** — `discover_disktype()` dispatches on file extension. When you add a format, register its extension there so mounting `disk.img` from CONFIG picks the right `MediaType` automatically.
 
@@ -846,7 +827,7 @@ The emulated ROM the RP2350 serves is built by `fujinet-config`. This is code th
 
 `fujinet-config` builds, per platform, two things baked into one ROM image:
 
-1. **A loader** — on ISA an option ROM (`0x55 0xAA`, length, entry point) the BIOS calls during its expansion-ROM scan. It brings up the byte pipe, asks FujiNet to mount the boot disk, and boots it or launches CONFIG.
+1. **A loader** — in whatever form the machine autostarts (the boot-device goal): MSX wants a cartridge ROM with the `AB` header at `0x4000`; CoCo wants an autostart Program Pak at `0xC000`; a PC ISA card wants an option ROM (`0x55 0xAA`, length, entry point) the BIOS calls during its expansion-ROM scan. It brings up the byte pipe, asks FujiNet to mount the boot disk, and boots it or launches CONFIG.
 2. **The CONFIG application** — the full-screen UI for WiFi hosts, TNFS browsing, and mounting images into the eight disk slots. Its screen text lives in `fujinet-config/src/<platform>/screen.c`, rendered in the machine's native character set.
 
 ### How the loader talks to FujiNet
@@ -861,7 +842,7 @@ On ISA those are 8088 `IN`/`OUT` to ports `0x300`–`0x303`. On MSX they are mem
 
 ```bash
 # in fujinet-config
-make PLATFORM=isa          # builds loader + CONFIG -> config-isa.rom
+make PLATFORM=<platform>   # builds loader + CONFIG -> config-<platform>.rom
 ```
 
 The output is consumed by `fujiversal` (`ROM_FILE=…`), converted to a C array (`build/<board>/rom.h`), and served from `BUS_ROM_BASE`.
@@ -878,8 +859,8 @@ fujinet-lib-experimental/
   common/         network.c, network_json.c, fuji_*.c   (platform-independent)
   bus/
     apple2/  atari/  c64/  coco/  msx/  msdos/  adam/    (one dir per platform)
-    isa/     <-- you add this
-  Makefile        PLATFORMS = coco apple2 atari c64 msx msdos adam   (+ isa)
+    <platform>/   <-- you add this
+  Makefile        PLATFORMS = coco apple2 atari c64 msx msdos adam  (+ yours)
 ```
 
 `common/` is the bulk of the library and is shared verbatim. Each `bus/<platform>/` provides the same small surface:
@@ -887,7 +868,7 @@ fujinet-lib-experimental/
 | File | Responsibility |
 | --- | --- |
 | `portio.s` / `portio.h` | `inb`/`outb` to ports `0x300`–`0x303` (8088 `IN`/`OUT`) |
-| `fujinet-bus-isa.c` | `fuji_bus_call` / `fuji_bus_read` / `fuji_bus_write`: build the FujiBus packet (header, descriptors, AUX, payload, checksum), SLIP-encode, stream out `PUTC`, read the SLIP reply back via `GETC` |
+| `fujinet-bus-<platform>.c` | `fuji_bus_call` / `fuji_bus_read` / `fuji_bus_write`: build the FujiBus packet (header, descriptors, AUX, payload, checksum), SLIP-encode, stream out `PUTC`, read the SLIP reply back via `GETC` |
 
 Compare `bus/msdos/portio.s` (real PC `IN`/`OUT`) — the ISA backend is closest to it. The public surface:
 
@@ -901,10 +882,10 @@ size_t fuji_bus_read (uint8_t device, void *buffer, size_t length);
 size_t fuji_bus_write(uint8_t device, const void *buffer, size_t length);
 ```
 
-A program that opens an `N:` URL never sees FujiBus framing: it calls `network_open()` in `common/`, which calls `fuji_bus_call()`, which calls your `bus/isa` primitives, which hit the ports.
+A program that opens an `N:` URL never sees FujiBus framing: it calls `network_open()` in `common/`, which calls `fuji_bus_call()`, which calls your `bus/<platform>` primitives, which hit the byte pipe.
 
 ```bash
-make isa            # builds fujinet.lib for the isa backend
+make <platform>     # builds fujinet.lib for your backend
 ```
 
 `SRC_DIRS = common bus/%PLATFORM%` already composes the shared core with your backend; no other Makefile change is needed.
@@ -927,43 +908,62 @@ Bring a platform up in the order the layers stack, lowest first. Each rung is in
 | 3 | Byte pipe loopback | A host `GETC` returns an injected byte; a host `PUTC` reaches the USB console |
 | 4 | Address decode | The PIO IRQ fires on *our* I/O cycles and ROM reads, and **not** during DMA (`AEN` high) |
 | 5 | FujiBus ACK | A `fuji_bus_call()` returns `ACK` from the ESP32 (the Fuji device answers an adapter-config query) |
-| 6 | CONFIG boots | The host fetches the option ROM, runs the loader, CONFIG draws on screen |
+| 6 | CONFIG boots | The host runs the boot ROM (cartridge / Program Pak / option ROM), the loader runs, CONFIG draws on screen |
 | 7 | Mount + boot a disk | CONFIG mounts a `.img`; the machine boots it |
 | 8 | `N:` works | A program opens `N:HTTP://…` and reads data over WiFi |
 
-> **Note** — Milestones 1–3 are exactly the `fujinet-bringup` MVP ([Chapter 1](#start-at-fujinet-bringup)): a minimal byte relay plus `iotest` proving two-way communication, with the FujiNet firmware running as a PC build. They need **no host bus board at all** — you can reach milestone 3 before the ISA adapter PCB even arrives. Milestone 5 is the `fujinet-bringup` "Hello World" (fetch the adapter config) succeeding for the first time. Order your work so the slow-to-fabricate adapter is never on the critical path.
+> **Note** — Milestones 1–3 are exactly the `fujinet-bringup` MVP ([Chapter 1](#start-at-fujinet-bringup)): a minimal byte relay plus `iotest` proving two-way communication, with the FujiNet firmware running as a PC build. They need **no host bus board at all** — you can reach milestone 3 before the bus adapter PCB even arrives. Milestone 5 is the `fujinet-bringup` "Hello World" (fetch the adapter config) succeeding for the first time. Order your work so the slow-to-fabricate adapter is never on the critical path.
 
 ## 18. Troubleshooting
 
 | Symptom | Layer | Likely cause and cure |
 | --- | --- | --- |
-| Machine hangs/reboots the instant the card is inserted | 1 | I/O decode not gated on `AEN` — the card answers DMA. Confirm `AEN`-low is in `wait_sel`. Or a 5 V signal fights an RP2350 output: check buffering/jumpers. |
-| Card does nothing; no PIO IRQ | 2 | `wait_sel` decode never matches. Wrong `IO_BASE`, wrong strobe polarity (ISA strobes are active-**low**), or an address jumper cut. Probe `J2` vs `J3`/`J4`. |
+| Machine hangs/crashes the moment the interface is connected | 1 | The decode is too loose — it answers cycles that aren't ours. (On ISA, forgetting to gate I/O on `AEN` low is the classic case.) Tighten `wait_sel`. Or a signal is mis-routed and two drivers fight — check your routing. |
+| Interface does nothing; no PIO IRQ | 2 | `wait_sel` decode never matches. Wrong `IO_BASE`, wrong strobe polarity (strobes are usually active-**low**), or a needed signal not routed to its GPIO. Probe `J2` vs `J3`/`J4`. |
 | PIO IRQs fire on every bus cycle | 2 | `wait_sel` not pre-qualifying the address window. Add window decode, or feed a decoded select line from adapter logic. |
 | Host reads our port, gets `0xFF`/garbage | 2–3 | Data not driven in time, or direction backwards. Check the `read` program's `pindirs` flip timing against the strobe, and the buffer `DIR` term. |
 | Bytes go out but no reply | 3–4 | Loopback (M3) first. If loopback is fine, the ESP32 isn't opening the CDC port (`CONFIG_USB_CDC_ACM_HOST_ENABLED`?) or the RP2350 is still in verbose `printf` mode stealing the channel. |
 | `fuji_bus_call` returns failure though bytes flow | 4 | Framing bug: checksum (add-with-fold, not XOR), little-endian `length`, or a descriptor/AUX mismatch. Diff your encoder against `FujiBusPacket.cpp`. |
-| BIOS never runs the option ROM | 5 | ROM not on a 2 KB boundary, bad `0x55 0xAA`/length/checksum header, or `BUS_ROM_BASE` outside `0xC0000`–`0xDFFFF`. Verify served bytes at `0xC8000` with the analyzer on `/MEMR`. |
+| Host never runs the boot ROM | 5 | ROM not where/what the machine autostarts from — wrong `BUS_ROM_BASE`, or a bad header (MSX `AB`, CoCo autostart bytes, PC option-ROM `0x55 0xAA`). Verify served bytes at the ROM window with the analyzer on the memory-read strobe. |
 | CONFIG draws garbage characters | 5 | Host-side rendering — `fujinet-config/src/<platform>/screen.c` wrong charset/addresses. A byte-pipe problem would corrupt *data*, not just glyphs. |
 | Intermittent corruption at speed | 1 | Unbuffered 5 V bus ringing, or missing decoupling at the adapter. Add the `74LVC` buffers. |
 
-## 19. Porting to a bus that is not ISA
+## 19. Design exercise: a bus nobody has built yet
 
-The *method* is unchanged; specific things move.
+The two worked examples were real — code you can open in the repository. This closing chapter applies the same method to a bus that has *no* board file, no adapter, and no firmware yet — the 8-bit IBM PC/XT ISA bus — purely as a reasoning exercise.
+
+> **Important** — Everything here is *illustrative and unbuilt*. The addresses, the PIO sketch, and the build names are a worked design, not a proven port. Its value is the reasoning, not the numbers. Verify every choice on a logic analyzer if you ever build it.
+
+### The method: what changes from one bus to the next
+
+Walk this diff for any new bus — ISA below, or a 6502 cartridge port, S-100 backplane, Apple slot — and you have your design. Everything *not* in this table is shared and unchanged.
 
 | What changes per bus | Where you change it |
 | --- | --- |
-| Connector and voltage | A new adapter PCB; level-shifting depends on bus voltage/drive |
-| Signal-to-GPIO mapping | If the bus does not match the ISA-shaped header, the adapter re-wires it (as CoCo/MSX do), and the PIO `.define`s follow |
-| The decode rule | `wait_sel` in the `.pio`: which lines mean "selected", and the timing reference (clock edge, chip-select, or strobe) |
-| Data-direction timing | The `read` program: what edge to flip `pindirs` on. Synchronous buses hang it on the clock; asynchronous ones on the strobe |
-| Byte-pipe address | `IO_BASE` / `BUS_ROM_BASE` and the register offsets |
-| Host loader + screens | `fujinet-config/src/<platform>/` |
-| Client port I/O | `fujinet-lib` `bus/<platform>/portio.*` |
+| Disk interface, or not | Decision 1 (Ch. 1): a disk interface to ride, or FEP-004 direct. Favour whatever boots from bare metal. |
+| Connector and voltage | The adapter (Ch. 6–7); on an RP2350, voltage is usually nothing to do. |
+| Signal-to-GPIO routing | The jumpers and patches (Ch. 4–6): which signals land on the default map, which you reroute, which you wire in from the breakouts. |
+| The decode rule | `wait_sel` (Ch. 9): what "selected" means, and the timing reference (clock edge, chip-select, or strobe). |
+| Data-direction timing | The `read` program (Ch. 9): which edge flips `pindirs`. |
+| Byte-pipe + ROM address | `IO_BASE` / `BUS_ROM_BASE` and the register offsets — wherever the host can reach four registers and present a boot ROM. |
+| Host loader + screens | `fujinet-config/src/<platform>/`. |
+| Client port I/O | `fujinet-lib` `bus/<platform>/portio.*`. |
 
-Everything else — FujiBus framing, the ESP32 device/media classes, the `N:` stack, the byte-pipe model — is shared and unchanged.
+FujiBus framing, the ESP32 device/media classes, the `N:` stack, and the byte-pipe model never appear here — they do not change.
 
-> **Tip** — The fastest bring-up of a brand-new bus: feed the PIO a single decoded "card selected" line from a GAL on the adapter (so `wait_sel` reduces to the MSX form), put the byte pipe wherever the host can do four `peek`/`poke`s, and reuse `BUILD_RS232` whole.
+### Working the diff for ISA
+
+- **Disk interface? No.** A PC/XT has no peripheral disk-serial bus to ride, so FEP-004 direct. **Boot device? Yes** — the BIOS scans `0xC0000`–`0xDFFFF` for option ROMs marked `0x55 0xAA` + length + entry; present one at `0xC8000` and FujiNet boots from bare metal.
+- **The decode rule — and the trap.** ISA gives no ready-made select line, so this is the CoCo-style "decode it yourself" case with one extra hazard: `AEN`. An I/O cycle is *ours* only when "address in our port window AND a command strobe asserted AND `AEN` low". `AEN` is high during DMA; ignore it and the interface answers DMA addresses and crashes the machine. The ROM window is simpler — address in `0xC8000…` AND `/MEMR` — and ignores `AEN`.
+- **Signal routing — the one place ISA is easy.** ISA is the bus the default routing was drawn from, so it lands almost untouched: `A0`–`A19`→`GP0`–`GP19`, `D0`–`D7`→`GP20`–`GP27`, the four strobes→`GP28`–`GP31`, `AEN`→`GP32`. Caveat: `send_bus` samples only `GP0`–`GP31`, so gate `AEN` (at `GP32`) inside `wait_sel` rather than reading its level in core 1.
+- **Data direction.** No single clock; flip `pindirs` on the active strobe edge.
+- **Byte pipe + ROM.** Four I/O ports at `0x300`–`0x303`, option ROM at `0xC8000`.
+
+### What you would build next
+
+If the design survives the bench (milestones 0–5), the artifacts are the familiar five, and *only* these: a `boards/isa_proto.pio`, a `fujiversal` CMake board (+`PICO_PIO_USE_GPIO_BASE=1`), a `platformio-fujiversal-isa.ini` (`build_bus = RS232`), a `fujinet-config/src/isa/` option-ROM loader, and a `fujinet-lib/bus/isa/` with `IN`/`OUT` `portio`. Nothing in the FujiBus, device, media, or `N:` layers changes — the entire payoff of the tandem design.
+
+> **Tip** — The fastest bring-up of any brand-new bus: feed the PIO a single decoded "selected" line from a small GAL on the adapter (so `wait_sel` reduces to the MSX form), put the byte pipe wherever the host can do four `peek`/`poke`s, and reuse `BUILD_RS232` whole — exactly the `fujinet-bringup` philosophy, all the way down.
 
 ---
 
@@ -1023,7 +1023,7 @@ Schematic net names confirm this: `~{SMEMR}`/`~{SMEMW}`, `~{IOR}`/`~{IOW}`, `AEN
 | `JP1`–`JP36` | solder, bridged | One per bus signal; cut to isolate or insert a buffer |
 | `JP37`–`JP39` | solder, open | Optional configuration straps |
 | `J1` | `Bus_ISA_8bit` | Universal bus header — adapter mates here |
-| `J2` | 2×13 header | ISA-side breakout (logic-analyzer tap) |
+| `J2` | 2×13 header | Bus-side breakout (logic-analyzer tap) |
 | `J3`, `J4` | headers | RP2350 GPIO breakouts |
 | `J5`–`J8` | 1×20 | Core2350B and ESP32-S3 module seats |
 | `J9` | 2×2 | Power-source selection |
@@ -1040,23 +1040,23 @@ There are no buffer ICs; add level-shifting on the adapter (Chapter 6).
 | `fujinet-bringup/iotest/` | Host two-way-comms test + per-platform `portio` examples (~14 platforms) |
 | `fujinet-bringup/esp32/`, `…/rp2350/` | Minimal byte-relay firmware (GPIO bus ⟷ USB serial) |
 | `fujiversal/main.cpp` | Core 0 USB bridge + core 1 `romulan()` bus loop + DBC handler |
-| `fujiversal/boards/*.pio` | Per-board PIO + pin defines + `BusSignals` union (add `isa_proto.pio`) |
+| `fujiversal/boards/*.pio` | Per-board PIO + pin defines + `BusSignals` union (`msx_proto`, `coco_proto`; add yours) |
 | `fujiversal/setup_sm.cpp` | Generic PIO state-machine setup helper |
 | `fujiversal/FujiBusPacket.*` | FujiBus encoder/decoder (RP2350 copy) |
 | `fujiversal/CMakeLists.txt` | Board selection, `PICO_PIO_USE_GPIO_BASE` |
 | `fujiversal-pcb-prototype/Bus-proto/` | `Universal-proto-v1` board (jumpers, breakouts) |
-| `fujiversal-pcb-prototype/*-adapter/` | CoCo / MSX adapters (templates for the ISA adapter) |
+| `fujiversal-pcb-prototype/*-adapter/` | The `MSX-adapter` and `CoCo-adapter` (templates for yours) |
 | `fujiversal-pcb-prototype/parts.pretty/ISA_8bit*` | ISA edge footprints |
-| `fujinet-firmware/build-platforms/platformio-fujiversal-*.ini` | Build targets (add `…-isa.ini`) |
+| `fujinet-firmware/build-platforms/platformio-fujiversal-*.ini` | Build targets (`rs232`, `drivewire`; add yours) |
 | `fujinet-firmware/lib/bus/rs232/` | FujiBus transport + `systemBus` (reused as-is) |
 | `fujinet-firmware/lib/device/rs232/` | Device classes (Fuji, disk, network, printer, …) |
 | `fujinet-firmware/lib/media/` | Image formats (`MediaType`) |
-| `fujinet-firmware/include/pinmap/` | Pin maps (add `fujiversal_isa.h`) |
-| `fujinet-lib-experimental/bus/<plat>/` | Per-platform transport + port I/O (add `bus/isa/`) |
+| `fujinet-firmware/include/pinmap/` | Pin maps (add `fujiversal_<platform>.h`) |
+| `fujinet-lib-experimental/bus/<plat>/` | Per-platform transport + port I/O (add `bus/<platform>/`) |
 | `fujinet-lib-experimental/common/` | Shared `network`, `json`, `fuji` code |
 | `fujinet-config/src/<plat>/` | Host loader + CONFIG screens (add `src/isa/`) |
 
-"Add …" marks the artifacts a new ISA platform creates; everything else is reused.
+"Add …" marks the artifacts a new platform creates; everything else is reused.
 
 ## Appendix E — Glossary
 
@@ -1078,7 +1078,7 @@ There are no buffer ICs; add level-shifting on the adapter (Chapter 6).
 | 1 | Waveshare Core2350B (RP2350B) | `U1`; ≥40 usable GPIO |
 | 1 | Freenove ESP32-S3-CAM (dual-USB, microSD) | `U2`; may need SD-pin ground mod |
 | 1 | Universal-proto-v1 PCB + headers | `fujiversal-pcb-prototype` |
-| 1 | ISA adapter PCB | you fabricate (Chapter 6) |
+| 1 | Bus adapter PCB / patched header | you make (Chapter 7) |
 | 1–2 | `74LVC245` (data) + `74LVC` buffers (addr/strobe) | for the buffered adapter |
 | 1 | GAL/ATF16V8 (optional) | card-select decode for `wait_sel` |
 | — | 0.1 µF + 10 µF decoupling, headers, jumper wire | |
@@ -1088,4 +1088,4 @@ There are no buffer ICs; add level-shifting on the adapter (Chapter 6).
 
 ---
 
-*FujiNet Platform Bring-Up Guide — Revision 2, June 2026. Built from sources in `fujinet-bringup`, `fujiversal`, `fujiversal-pcb-prototype`, `fujinet-firmware`, `fujinet-lib-experimental`, and `fujinet-config`. The network is as easy as the disk drive — once the bus says so.*
+*FujiNet Platform Bring-Up Guide — Revision 3, June 2026. Built from sources in `fujinet-bringup`, `fujiversal`, `fujiversal-pcb-prototype`, `fujinet-firmware`, `fujinet-lib-experimental`, and `fujinet-config`. The network is as easy as the disk drive — once the bus says so.*
