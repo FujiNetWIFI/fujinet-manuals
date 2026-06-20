@@ -126,7 +126,7 @@
   })
 
 // ---------- green gradient end bar ----------------------------
-#let gbar = block(above: 1.4em, below: 0.6em, align(right,
+#let gbar = block(width: 100%, above: 1.4em, below: 0.6em, align(right,
   box(width: 58%, stack(dir: ttb,
     rect(width: 100%, height: 3.4pt,
       fill: gradient.linear(paper, grn-l, angle: 0deg)),
@@ -1280,6 +1280,20 @@ HDB-DOS itself, that manual is the authority.]
 #ix("Programs, FujiNet-aware", "News program", "Weather program",
    "Wiki program", "Netcat program")
 
+// a program screenshot in the manual's black TV bezel
+#let scrshot(file, w: 2.35in) = align(center, block(breakable: false,
+  box(fill: vg.k, inset: 8pt, radius: 3pt,
+    image("images/" + file, width: w))))
+// one program: heading, description, and its screen — kept together
+#let prog(head, num, cap, shot, body) = block(breakable: false,
+  above: 1.1em, below: 0.3em, {
+  sect(head)
+  body
+  v(3pt)
+  scrshot(shot)
+  figcap(num, cap)
+})
+
 #cols2[
 Disk images were only the beginning. A growing shelf of programs is
 written #emph[for] the FujiNet — they talk through its network channel
@@ -1288,41 +1302,36 @@ the daily drivers, all free in the #tt("COCO") folder at
 #tt("TNFS.FUJINET.ONLINE"). Load one into drive 0, leave CONFIG, and it
 runs by itself.
 
-#sect[News — #tt("NEWS.DSK")]
-
+#prog([News — #tt("NEWS.DSK")], "17",
+  [The News topic menu.], "prog-news.png")[
 A wire-service reader. Pick a topic — world news, business, science,
 technology, sports — scroll the headlines, and read whole stories on your
 CoCo. On a CoCo 1 or 2 it offers 32- and 42-column displays (the latter
 with real lowercase); a CoCo 3 can use its native 40- and 80-column
-screens.
+screens.]
 
-#sect[Weather — #tt("WEATHER.DSK")]
-
+#prog([Weather — #tt("WEATHER.DSK")], "18",
+  [Weather, with a forecast a keypress away.], "prog-weather.png")[
 Current conditions and forecasts, anywhere you can name. It finds your
 location automatically (by your network address), shows temperature,
 humidity, wind, dew point, sunrise and sunset — and switches between
-Fahrenheit and metric on a keypress.
+Fahrenheit and metric on a keypress.]
 
-#sect[Wiki — #tt("WIKI.DSK")]
-
+#prog([Wiki — #tt("WIKI.DSK")], "19",
+  [Wikipedia in 42 columns of real lowercase.], "prog-wiki.png")[
 Wikipedia, on a Color Computer. Type a subject, pick from the matching
 articles, and read — the soft 42-column font with true lowercase makes
 long articles a pleasure. Forty years on, your CoCo contains the sum of
-human knowledge. Approximately.
+human knowledge. Approximately.]
 
-#colbreak()
-
-#sect[Netcat — #tt("NETCAT.DSK")]
+#prog([Netcat — #tt("NETCAT.DSK")], "20",
+  [Netcat dialing a telnet BBS.], "prog-netcat.png")[
 #ix("Bulletin boards (BBS)")
-
 A simple, solid terminal program for the telnet bulletin boards that are
-alive and well today. Give it an address in the form:
-
-#block(inset: (left: 0.15in),
-  tt("N:TELNET://BBS.EXAMPLE.COM:23"))
-
-and you're calling — no telephone, no long distance. Recent versions
-speak VT-52 with a 42-column display, so full-screen boards look right.
+alive and well today. Give it an address in the form
+#tt("N:TELNET://BBS.EXAMPLE.COM:23") and you're calling — no telephone,
+no long distance. Recent versions speak VT-52 with a 42-column display,
+so full-screen boards look right.]
 
 #sect[And More]
 
@@ -1333,15 +1342,19 @@ from BASIC or C or assembly. Start at
 #strong[fujinet-lib] library; the community Discord is full of people who
 will happily get you started.
 #ix("Programming, FujiNet")
+]
 
-#v(4pt)
-#fig("17", [The complete outfit.],
+// a full-width closing plate: the whole outfit at work
+#v(0.22in)
+#block(breakable: false, {
   phimg("full-setup.jpg",
-    "the whole setup: CoCo with CocoFuji installed, TV showing CONFIG",
-    height: 2.05in))
+    "the whole setup: CoCo with CocoFuji installed, serial cable to the rear, TV showing CONFIG",
+    height: 3.7in)
+  figcap("21", [The complete outfit — disks and programs alike,
+  conjured out of thin air.])
+})
 
 #gbar
-]
 
 // ============================================================
 // TROUBLESHOOTING AND MAINTENANCE

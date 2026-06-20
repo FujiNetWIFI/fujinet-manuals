@@ -347,6 +347,317 @@ BUF     DB   128 DUP(0)
         END  START
 ```
 
+### The same program in C (Rosetta stone)
+
+The same steps, written with `fujinet-lib` instead of raw `INT F5h`. Read it
+against the assembler above: each library call reduces to one of the
+interrupt calls. `network_open` is OPEN, `network_status` returns the same
+four bytes, `network_read`/`network_write` are READ/WRITE, and
+`network_close` is CLOSE — the library loads the registers and issues `INT
+F5h` for you.
+
+```c
+/* NETCAT.C -- the program above, in C, via fujinet-lib.
+   Open Watcom:  wcl -bcl=dos netcat.c fujinet.lib            */
+
+#include <conio.h>             /* kbhit, getch            */
+#include <stdio.h>             /* fwrite, printf          */
+#include <fujinet-network.h>
+
+#define SPEC "N:TCP://192.168.1.10:9000/"
+
+int main(void)
+{
+    unsigned char  buf[128];
+    unsigned short waiting;    /* bytes ready to read     */
+    unsigned char  connected;  /* is the link still up?   */
+    unsigned char  err;        /* detailed error code     */
+    int            n, key;
+
+    network_init();
+    if (network_open(SPEC, OPEN_MODE_RW, OPEN_TRANS_NONE) != FN_ERR_OK) {
+        printf("could not connect\n");
+        return 1;
+    }
+
+    for (;;) {
+        /* STATUS: bytes waiting, and are we still connected? */
+        network_status(SPEC, &waiting, &connected, &err);
+        if (!connected)
+            break;                          /* remote closed  */
+
+        if (waiting) {                      /* READ and print */
+            if (waiting > sizeof(buf))
+                waiting = sizeof(buf);
+            n = network_read(SPEC, buf, waiting);
+            if (n > 0)
+                fwrite(buf, 1, n, stdout);
+        }
+
+        if (kbhit()) {                      /* a key? WRITE it */
+            key = getch();
+            if (key == 27)                  /* ESC quits      */
+                break;
+            buf[0] = (unsigned char) key;
+            network_write(SPEC, buf, 1);
+        }
+    }
+
+    network_close(SPEC);                    /* CLOSE          */
+    return 0;
+}
+```
+
+---
+
+## Worked Example: Reading Mastodon (JSON)
+
+Most web services answer in JSON, which is a poor fit for an 8-bit machine.
+The FujiNet solves this on the adapter: it fetches the page, parses the JSON,
+and hands back only the field you ask for. This example fetches the newest
+post from a public Mastodon timeline and pulls out three fields — shown three
+ways.
+
+**The JSON engine.** After an ordinary OPEN:
+
+- **CHANNEL MODE** (`FCh`) with AUX1 = `01h` switches the adapter into JSON
+  mode.
+- **PARSE** (`50h` `'P'`) reads the whole HTTP response and parses it.
+- **QUERY** (`51h` `'Q'`) sends a path such as `/0/content`; a following
+  STATUS gives the value's length and a READ returns it.
+
+A path is a slash-separated walk into the JSON: `/0` is the first element of
+the top-level array (the newest post), `/0/account/display_name` the author's
+name. The URL asks for just the newest post:
+
+```
+N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1
+```
+
+### In C (fujinet-lib)
+
+```c
+/* MASTO.C -- newest Mastodon post, three fields, via fujinet-lib. */
+#include <string.h>
+#include <fujinet-network.h>
+
+static const char *url =
+    "N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1";
+
+void fetch_post(char *name, char *date, char *toot)
+{
+    char tmp[256];
+
+    memset(name, 0, 32);
+    memset(date, 0, 32);
+    memset(toot, 0, 5120);
+
+    network_init();
+    network_open(url, OPEN_MODE_HTTP_GET, 0x00);
+    network_json_parse(url);                       /* JSON mode + PARSE */
+
+    network_json_query(url, "/0/account/display_name", tmp);
+    strncpy(name, tmp, 31);
+    network_json_query(url, "/0/created_at", tmp);
+    strncpy(date, tmp, 31);
+    network_json_query(url, "/0/content", toot);   /* QUERY+STATUS+READ */
+
+    network_close(url);
+}
+```
+
+### In Assembler
+
+```asm
+; MASTO.ASM -- newest Mastodon post fields via INT F5h.
+        .MODEL SMALL
+        .STACK 100h
+        .DATA
+URL     DB 'N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1',0
+URLLEN  EQU $-URL
+QNAME   DB '/0/account/display_name',0
+QDATE   DB '/0/created_at',0
+QBODY   DB '/0/content',0
+STAT    DB 4 DUP(0)
+NAME    DB 32 DUP(0)
+DATE_   DB 32 DUP(0)
+BODY    DB 5120 DUP(0)        ; a toot can be long
+        .CODE
+START:  MOV  AX,@DATA
+        MOV  DS,AX
+        MOV  ES,AX             ; ES=DS for ES:BX payloads
+        MOV  DX,0080h          ; open: DH=00, DL=80 (write)
+        MOV  AX,4F71h          ; 'O', adapter 1
+        MOV  CL,04h            ; AUX1 = HTTP GET
+        MOV  CH,00h            ; AUX2 = no translation
+        MOV  BX,OFFSET URL
+        MOV  DI,URLLEN
+        INT  0F5h
+        MOV  DX,0000h          ; channel mode: none
+        MOV  AX,0FC71h         ; AH=FCh
+        MOV  CL,01h            ; AUX1 = JSON mode
+        INT  0F5h
+        MOV  DX,0000h          ; parse: none
+        MOV  AX,5071h          ; AH=50h 'P'
+        INT  0F5h
+        MOV  SI,OFFSET QNAME   ; query each field
+        MOV  BP,OFFSET NAME
+        CALL QUERY
+        MOV  SI,OFFSET QDATE
+        MOV  BP,OFFSET DATE_
+        CALL QUERY
+        MOV  SI,OFFSET QBODY
+        MOV  BP,OFFSET BODY
+        CALL QUERY
+        MOV  DX,0000h          ; close: none
+        MOV  AX,4371h          ; 'C'
+        INT  0F5h
+        MOV  AX,4C00h
+        INT  21h
+; QUERY: path at DS:SI, destination at DS:BP
+QUERY:  MOV  DX,0080h          ; write the path
+        MOV  AX,5171h          ; AH=51h 'Q'
+        MOV  BX,SI
+        MOV  DI,256            ; the library sends 256
+        INT  0F5h
+        MOV  DX,0040h          ; status -> bytes waiting
+        MOV  AX,5371h          ; AH=53h 'S'
+        MOV  BX,OFFSET STAT
+        MOV  DI,4
+        INT  0F5h
+        MOV  CX,WORD PTR [STAT]    ; CL/CH = byte count
+        JCXZ Q9
+        MOV  DX,0240h          ; read: DH=02 (A1_A2), DL=40
+        MOV  AX,5271h          ; AH=52h 'R'
+        MOV  BX,BP             ; ES:BX -> destination
+        MOV  DI,CX             ; DI = count
+        INT  0F5h
+Q9:     RET
+        END START
+```
+
+### In Pascal (Turbo Pascal)
+
+```pascal
+{ MASTO.PAS -- newest Mastodon post via INT F5h (Turbo Pascal). }
+uses Dos, Strings;
+
+const
+  DEV = $71;
+  url   : PChar = 'N:HTTPS://oldbytes.space/api/v1/timelines/public'
+                + '?limit=1';
+  qName : PChar = '/0/account/display_name';
+  qDate : PChar = '/0/created_at';
+  qBody : PChar = '/0/content';
+var
+  stat : array[0..3] of Byte;
+
+function FujiF5(dir, fld, cmd, aux1, aux2: Byte;
+                buf: Pointer; len: Word): Char;
+var r: Registers;
+begin
+  FillChar(r, SizeOf(r), 0);
+  r.DL := dir;  r.DH := fld;
+  r.AL := DEV;  r.AH := cmd;
+  r.CL := aux1; r.CH := aux2;
+  if buf <> nil then begin
+    r.ES := Seg(buf^);  r.BX := Ofs(buf^);  r.DI := len;
+  end;
+  Intr($F5, r);
+  FujiF5 := Chr(r.AL);
+end;
+
+procedure JsonQuery(query, dest: PChar);
+var bw: Word;
+begin
+  FujiF5($80, $00, $51, 0, 0, query, 256);          { 'Q' write path }
+  FujiF5($40, $00, $53, 0, 0, @stat, 4);            { 'S' status     }
+  bw := stat[0] or (Word(stat[1]) shl 8);
+  if bw > 0 then
+    FujiF5($40, $02, $52, Lo(bw), Hi(bw), dest, bw);  { 'R' read     }
+  dest[bw] := #0;
+end;
+
+procedure FetchPost(name, date, toot: PChar);
+begin
+  FillChar(name^, 32, 0);  FillChar(date^, 32, 0);
+  FillChar(toot^, 5120, 0);
+  FujiF5($80, $00, $4F, $04, 0, url, StrLen(url)+1);  { open HTTP GET }
+  FujiF5($00, $00, $FC, $01, 0, nil, 0);             { JSON mode     }
+  FujiF5($00, $00, $50, 0, 0, nil, 0);               { parse         }
+  JsonQuery(qName, name);
+  JsonQuery(qDate, date);
+  JsonQuery(qBody, toot);
+  FujiF5($00, $00, $43, 0, 0, nil, 0);               { close         }
+end;
+```
+
+All three speak to the same engine in the same order — open, JSON mode,
+parse, query each field, close. C names the steps, Pascal wraps them, and the
+assembler shows the registers underneath.
+
+---
+
+## Inside the Drivers
+
+INT F5 does not appear by magic — it is installed by **FUJINET.SYS**, the
+block device driver loaded from `CONFIG.SYS`. Its companion, **FUJIPRN.SYS**,
+forwards printer output to the FujiNet. Both are documented at length, with
+source listings, in the printed *Technical Reference* (Sections 7 and 8); the
+essentials follow. (The DOS side — how DOS loads and calls a driver — is in
+the IBM *DOS Technical Reference*.)
+
+### FUJINET.SYS — the block driver
+
+A block device driver presents the FujiNet's eight virtual disks as DOS drive
+letters, and installs the INT F5 handler along the way.
+
+- **Device header.** A fixed structure at offset 0: link field, attribute word
+  (block device; "over 32 MB" + "FAT BPB" + "RW IOCTL" bits set), the strategy
+  and interrupt entry offsets, and a unit count of 8.
+- **Strategy / Interrupt.** DOS calls a driver twice: *strategy* saves the far
+  pointer to the request packet; *interrupt* does the work. The interrupt
+  routine saves registers, switches from DOS's tiny stack to a private 1 KB
+  stack, dispatches on the command byte, sets the *done* bit, and restores.
+- **Request packet.** A 5-byte header (length, unit, command, status) plus a
+  union of per-command fields. The command byte (0–24) indexes a dispatch
+  table; unused commands return *unknown command*.
+- **INIT (cmd 0).** Parses the `CONFIG.SYS` line into environment variables,
+  opens the serial port and identifies the UART, confirms the FujiNet answers
+  (else stays out of memory), hands DOS a 360 KB-floppy BPB for each disk,
+  reports the drive letters (read from DOS's *List of Lists* at offset `0x20`),
+  and arms INT F5.
+- **READ (4) / WRITE (8).** Loop over the requested sectors; each becomes a
+  disk-device READ/WRITE on the FujiBus, the 32-bit sector packed into AUX1–4
+  with the `C1234` field descriptor, 512 bytes per sector. WRITE first refuses
+  a read-only image with DOS's *write protect* error.
+- **MEDIA CHECK (1)** compares the slot's mount time with the previous value to
+  tell DOS when a new image has been mounted under the same letter; **BUILD BPB
+  (2)** reads the image's boot sector and copies the real BPB from offset
+  `0x0B`.
+- **IOCTL READ (3)** returns the signature `"FUJI"` plus the unit number, so
+  tools like `FMOUNT` can tell which drive letters are FujiNet disks.
+
+### FUJIPRN.SYS — the printer driver
+
+A character device named `LPT1` that captures printer output and forwards it to
+the FujiNet's printer device (`40h`).
+
+- **Character header.** Attribute bit 15 set (`8000h`); the name/unit field
+  holds `'LPT1    '` instead of a unit count.
+- **OUTPUT (8)** buffers each byte; **CLOSE/FLUSH** push the buffer to the
+  FujiNet as one FujiBus WRITE. Bytes gather in a 255-byte buffer and flush at
+  250.
+- **INT 17h hook.** Programs that print through the BIOS bypass DOS, so the
+  driver also hooks `INT 17h`: function 0 buffers the character, functions 1
+  and 2 are accepted, and all return BIOS status `90h` (*selected, ready*).
+- **Auto-flush.** The tail of a job is flushed a few seconds after printing
+  stops, using `INT 08h` (timer) and `INT 28h` (DOS idle). Because DOS is not
+  re-entrant, the timer flushes only when the **InDOS flag** (from `INT 21h`
+  AH=34h) is zero; otherwise it defers to the next `INT 28h`, which DOS raises
+  only when it is safe to re-enter. The timer wrapper chains to the previous
+  `INT 08h` handler so the clock keeps ticking.
+
 ---
 
 ## Appendix: Network Error Codes

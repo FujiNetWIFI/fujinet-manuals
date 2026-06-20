@@ -128,8 +128,10 @@
 
 // a major head (bold serif, flush left, like the IBM subsection heads)
 #let sect(title) = block(above: 1.4em, below: 0.7em, breakable: false,
+  sticky: true,
   text(font: f-body, weight: 700, size: 13pt, fill: ink, title))
 #let subsect(title) = block(above: 1.1em, below: 0.5em, breakable: false,
+  sticky: true,
   text(font: f-body, weight: 700, size: 11pt, fill: ink, title))
 
 // ---------- big step numerals -------------------------------

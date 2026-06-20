@@ -432,15 +432,27 @@ it).
 Free, FujiNet-aware programs in `tnfs.fujinet.online`'s `COCO` folder —
 load one into drive 0 and leave CONFIG:
 
-- **NEWS.DSK** — a wire-service news reader (topics, headlines, full
-  stories; 32/42-column on CoCo 1/2, native 40/80 on CoCo 3)
-- **WEATHER.DSK** — conditions and forecasts anywhere; finds your location
-  automatically; imperial/metric
-- **WIKI.DSK** — search and read Wikipedia, with a 42-column
-  true-lowercase display on CoCo 1/2
-- **NETCAT.DSK** — a telnet terminal for BBSes:
-  `N:TELNET://BBS.EXAMPLE.COM:23` — recent versions speak VT-52
-- **LOBBY.DSK** — the Game Lobby, if you'd rather boot it directly
+**NEWS.DSK** — a wire-service news reader (topics, headlines, full
+stories; 32/42-column on CoCo 1/2, native 40/80 on CoCo 3)
+
+![FujiNet News topic menu](images/prog-news.png)
+
+**WEATHER.DSK** — conditions and forecasts anywhere; finds your location
+automatically; imperial/metric
+
+![FujiNet Weather](images/prog-weather.png)
+
+**WIKI.DSK** — search and read Wikipedia, with a 42-column
+true-lowercase display on CoCo 1/2
+
+![FujiNet Wiki](images/prog-wiki.png)
+
+**NETCAT.DSK** — a telnet terminal for BBSes:
+`N:TELNET://BBS.EXAMPLE.COM:23` — recent versions speak VT-52
+
+![FujiNet Netcat](images/prog-netcat.png)
+
+**LOBBY.DSK** — the Game Lobby, if you'd rather boot it directly
 
 Programmers: the same network channel is available to your own BASIC, C
 (cmoc + fujinet-lib), or assembly programs. Start at

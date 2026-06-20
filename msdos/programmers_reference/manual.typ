@@ -101,8 +101,10 @@
 }
 
 #let sect(title) = block(above: 1.4em, below: 0.7em, breakable: false,
+  sticky: true,
   text(font: f-body, weight: 700, size: 13pt, fill: ink, title))
 #let subsect(title) = block(above: 1.1em, below: 0.5em, breakable: false,
+  sticky: true,
   text(font: f-body, weight: 700, size: 11pt, fill: ink, title))
 
 #let bl(body) = block(above: 0.4em, below: 0.4em,
@@ -131,6 +133,11 @@
   width: 100%, fill: lst-bg, inset: 9pt, stroke: 0.5pt + rgb("#cfcabf"),
   text(font: f-mono, size: 8.3pt, fill: ink,
     lines.pos().map(l => l).join(linebreak())))
+// breakable variant for long program listings (may span a page break)
+#let lstb(..lines) = block(above: 0.9em, below: 0.9em, breakable: true,
+  width: 100%, fill: lst-bg, inset: 9pt, stroke: 0.5pt + rgb("#cfcabf"),
+  text(font: f-mono, size: 8.3pt, fill: ink,
+    lines.pos().map(l => l).join(linebreak())))
 
 // ---------- register diagram --------------------------------
 // a row of 16 bit-cells split into two bytes (hi/lo) with a label
@@ -155,23 +162,26 @@
 #let cmd(name, summary, dev: "", code: "", dir: "", field: "—",
          aux: "—", payload: "—", returns: "", body) = block(
   breakable: true, above: 1.6em, below: 0.8em, {
-  // rule + title line
-  line(length: 100%, stroke: 0.8pt + rule-c)
-  v(3pt)
-  grid(columns: (1fr, auto), column-gutter: 8pt,
-    text(font: f-body, weight: 700, size: 12pt,
-      [#kw(name) — #summary]),
-    text(font: f-mono, size: 9pt)[Dev #dev#h(8pt)Cmd #code])
-  v(4pt)
-  block(width: 100%, fill: reg-bg, inset: 6pt, {
-    set text(size: 8.8pt)
-    grid(columns: (auto, 1fr), row-gutter: 2.5pt, column-gutter: 8pt,
-      text(weight: 700)[Direction], dir,
-      text(weight: 700)[Field (DH)], field,
-      text(weight: 700)[AUX], aux,
-      text(weight: 700)[Payload], payload,
-      text(weight: 700)[Returns], returns,
-    )
+  // header (rule + title + parameter box) stays together and sticks
+  // to the body that follows, so it can never orphan at a page foot.
+  block(breakable: false, sticky: true, {
+    line(length: 100%, stroke: 0.8pt + rule-c)
+    v(3pt)
+    grid(columns: (1fr, auto), column-gutter: 8pt,
+      text(font: f-body, weight: 700, size: 12pt,
+        [#kw(name) — #summary]),
+      text(font: f-mono, size: 9pt)[Dev #dev#h(8pt)Cmd #code])
+    v(4pt)
+    block(width: 100%, fill: reg-bg, inset: 6pt, {
+      set text(size: 8.8pt)
+      grid(columns: (auto, 1fr), row-gutter: 2.5pt, column-gutter: 8pt,
+        text(weight: 700)[Direction], dir,
+        text(weight: 700)[Field (DH)], field,
+        text(weight: 700)[AUX], aux,
+        text(weight: 700)[Payload], payload,
+        text(weight: 700)[Returns], returns,
+      )
+    })
   })
   v(5pt)
   body
@@ -294,8 +304,15 @@ is for.]
 direction, parameters, payload, and return — device by device, with an
 example for each group.]
 #bl[#strong[Section 5. A Worked Example] builds a complete network utility,
-#kw("NETCAT"), in assembly language.]
-#bl[#strong[Section 6. Appendices] gather the error codes, the status
+#kw("NETCAT"), in assembly language and again in C.]
+#bl[#strong[Section 6. A Second Example] reads a Mastodon timeline through
+the FujiNet's JSON engine, in assembly, C, and Pascal side by side.]
+#bl[#strong[Section 7. Inside FUJINET.SYS] is a guided tour of the block
+device driver — the program that installs INT F5 and presents the FujiNet's
+disks as DOS drive letters — with source listings.]
+#bl[#strong[Section 8. Inside FUJIPRN.SYS] does the same for the printer
+driver, including its INT 17h hook and idle-time auto-flush.]
+#bl[#strong[Section 9. Appendices] gather the error codes, the status
 request types, the field-descriptor table, the wire-frame layout, and a
 one-line summary of every command.]
 
@@ -948,7 +965,7 @@ program pull one field out of a web reply without a JSON parser of its own.]
   align: (center, left, left), stroke: 0.5pt + rule-c, inset: 4.5pt,
   table.header(text(weight: 700)[Cmd], text(weight: 700)[Name],
     text(weight: 700)[Purpose]),
-  kw("FCh"), [CHANNEL MODE], [Switch between stream and JSON modes (AUX2)],
+  kw("FCh"), [CHANNEL MODE], [Switch between stream (0) and JSON (1) modes; mode in AUX1],
   kw("25h"), [SEEK], [Move the read/write position (AUX = 32-bit offset)],
   kw("26h"), [TELL], [Report the current position],
   kw("30h"), [GET PREFIX], [Read the adapter's path prefix],
@@ -1047,7 +1064,7 @@ local-time commands.]
 // ============================================================
 #chapter("A Worked Example: NETCAT", num: 5, tab: "NetCat",
   subs: ("What It Does", "Opening the Connection", "The Polling Loop",
-         "Reading and Writing", "The Whole Program"))
+         "Reading and Writing", "The Whole Program", "The Same Program in C"))
 #ix("NETCAT", "Example program")
 
 Nothing shows an interface better than a small, complete program. This
@@ -1236,10 +1253,900 @@ real program would yield to DOS between polls, or raise the byte-waiting
 interrupt rate (network command #kw("5Ah")) and wait on it, to be gentler on
 the machine.]
 
+#sect[The Same Program in C]
+#ix("NETCAT, in C", "fujinet-lib")
+
+For comparison, here is NETCAT again — the same program, the same steps — in
+C, using the FujiNet library #kw("fujinet-lib") instead of raw #kw("INT
+F5h"). Read the two side by side as a Rosetta stone: each library call below
+reduces to one of the interrupt calls on the facing pages. #kw("network_open")
+is the OPEN of Section 4.2; #kw("network_status") returns the same four bytes
+this program reads by hand; #kw("network_read") and #kw("network_write") are
+the READ and WRITE; #kw("network_close") is the CLOSE. The library simply
+loads the registers and issues #kw("INT F5h") for you (Section 2, #emph[The C
+Wrappers]).
+
+#lst(
+  "/* NETCAT.C -- the program above, in C, via fujinet-lib.",
+  "   Open Watcom:  wcl -bcl=dos netcat.c fujinet.lib            */",
+  "",
+  "#include <conio.h>             /* kbhit, getch            */",
+  "#include <stdio.h>             /* fwrite, printf          */",
+  "#include <fujinet-network.h>",
+  "",
+  "#define SPEC \"N:TCP://192.168.1.10:9000/\"",
+  "",
+  "int main(void)",
+  "{",
+  "    unsigned char  buf[128];",
+  "    unsigned short waiting;    /* bytes ready to read     */",
+  "    unsigned char  connected;  /* is the link still up?   */",
+  "    unsigned char  err;        /* detailed error code     */",
+  "    int            n, key;",
+  "",
+  "    network_init();",
+  "    if (network_open(SPEC, OPEN_MODE_RW, OPEN_TRANS_NONE) != FN_ERR_OK) {",
+  "        printf(\"could not connect\\n\");",
+  "        return 1;",
+  "    }",
+  "",
+  "    for (;;) {",
+  "        /* STATUS: bytes waiting, and are we still connected? */",
+  "        network_status(SPEC, &waiting, &connected, &err);",
+  "        if (!connected)",
+  "            break;                          /* remote closed  */",
+  "",
+  "        if (waiting) {                      /* READ and print */",
+  "            if (waiting > sizeof(buf))",
+  "                waiting = sizeof(buf);",
+  "            n = network_read(SPEC, buf, waiting);",
+  "            if (n > 0)",
+  "                fwrite(buf, 1, n, stdout);",
+  "        }",
+  "",
+  "        if (kbhit()) {                      /* a key? WRITE it */",
+  "            key = getch();",
+  "            if (key == 27)                  /* ESC quits      */",
+  "                break;",
+  "            buf[0] = (unsigned char) key;",
+  "            network_write(SPEC, buf, 1);",
+  "        }",
+  "    }",
+  "",
+  "    network_close(SPEC);                    /* CLOSE          */",
+  "    return 0;",
+  "}",
+)
+
+The C is shorter and clearer, and it is what most programs should use. The
+assembler version exists to show what #kw("fujinet-lib") does underneath —
+and to prove that the whole interface fits in a handful of register loads and
+one interrupt.
+
 // ============================================================
-// SECTION 6 — APPENDICES
+// SECTION 6 — A SECOND EXAMPLE: READING MASTODON
 // ============================================================
-#chapter("Appendices", num: 6, tab: "Appendix",
+#chapter("A Second Example: Reading Mastodon", num: 6, tab: "Mastodon",
+  subs: ("The JSON Engine", "The Flow", "In C", "In Assembler", "In Pascal"))
+#ix("Mastodon", "JSON", "Web services")
+
+Most of the modern web answers in #strong[JSON], and JSON is a poor fit for a
+machine with 64 kilobytes and no string library. The FujiNet solves this on
+your behalf: it can fetch a web page, parse the JSON #emph[on the adapter],
+and hand back only the field you ask for. Your program never sees a brace.
+
+This example fetches the newest post from a public Mastodon timeline and
+pulls out three fields — the author's display name, the date, and the body of
+the post. It is the heart of the FujiNet Mastodon client, reduced to its
+network calls and shown three ways.
+
+#sect[The JSON Engine]
+#ix("PARSE command", "QUERY command")
+
+Three network commands do the work, after an ordinary OPEN:
+
+#bl[#strong[CHANNEL MODE] (#kw("FCh")) with AUX1 = #kw("01h") switches the
+adapter into #strong[JSON mode].]
+#bl[#strong[PARSE] (#kw("50h"), #kw("'P'")) tells the adapter to read the
+whole HTTP response and parse it as JSON, holding the result in the FujiNet.]
+#bl[#strong[QUERY] (#kw("51h"), #kw("'Q'")) sends a path such as
+#kw("/0/content"); a following STATUS gives the length of the matching value,
+and a READ returns it.]
+
+A path is a slash-separated walk into the JSON: #kw("/0") is the first element
+of the top-level array (the newest post), #kw("/0/account/display_name") the
+author's name within it. Query as many paths as you like before closing.
+
+#sect[The Flow]
+
+#bl[#kw("network_open") the timeline URL for an HTTP GET.]
+#bl[#kw("network_json_parse") — set JSON mode, then PARSE.]
+#bl[#kw("network_json_query") once per field — QUERY, STATUS, READ.]
+#bl[#kw("network_close").]
+
+The URL asks the server for just the newest post:
+
+#lst("N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1")
+
+#sect[In C]
+#ix("Mastodon, in C")
+
+With #kw("fujinet-lib") the whole job is a dozen lines. This is essentially
+the client's own #kw("fetch_post") routine:
+
+#lstb(
+  "/* MASTO.C -- newest Mastodon post, three fields, via fujinet-lib. */",
+  "#include <string.h>",
+  "#include <fujinet-network.h>",
+  "",
+  "static const char *url =",
+  "    \"N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1\";",
+  "",
+  "void fetch_post(char *name, char *date, char *toot)",
+  "{",
+  "    char tmp[256];",
+  "",
+  "    memset(name, 0, 32);",
+  "    memset(date, 0, 32);",
+  "    memset(toot, 0, 5120);",
+  "",
+  "    network_init();",
+  "    network_open(url, OPEN_MODE_HTTP_GET, 0x00);",
+  "    network_json_parse(url);                       /* JSON mode + PARSE */",
+  "",
+  "    network_json_query(url, \"/0/account/display_name\", tmp);",
+  "    strncpy(name, tmp, 31);",
+  "    network_json_query(url, \"/0/created_at\", tmp);",
+  "    strncpy(date, tmp, 31);",
+  "    network_json_query(url, \"/0/content\", toot);  /* QUERY+STATUS+READ */",
+  "",
+  "    network_close(url);",
+  "}",
+)
+
+#sect[In Assembler]
+#ix("Mastodon, in assembler")
+
+The same sequence in 8088, calling #kw("INT F5h") directly. A subroutine
+#kw("QUERY") sends one path and reads its value, so the three fields are three
+calls. Note the JSON-mode and PARSE calls between OPEN and the first query.
+
+#lstb(
+  "; MASTO.ASM -- newest Mastodon post fields via INT F5h.",
+  "        .MODEL SMALL",
+  "        .STACK 100h",
+  "        .DATA",
+  "URL     DB 'N:HTTPS://oldbytes.space/api/v1/timelines/public?limit=1',0",
+  "URLLEN  EQU $-URL",
+  "QNAME   DB '/0/account/display_name',0",
+  "QDATE   DB '/0/created_at',0",
+  "QBODY   DB '/0/content',0",
+  "STAT    DB 4 DUP(0)",
+  "NAME    DB 32 DUP(0)",
+  "DATE_   DB 32 DUP(0)",
+  "BODY    DB 5120 DUP(0)        ; a toot can be long",
+  "        .CODE",
+  "START:  MOV  AX,@DATA",
+  "        MOV  DS,AX",
+  "        MOV  ES,AX             ; ES=DS for ES:BX payloads",
+  "        MOV  DX,0080h          ; open: DH=00, DL=80 (write)",
+  "        MOV  AX,4F71h          ; 'O', adapter 1",
+  "        MOV  CL,04h            ; AUX1 = HTTP GET",
+  "        MOV  CH,00h            ; AUX2 = no translation",
+  "        MOV  BX,OFFSET URL",
+  "        MOV  DI,URLLEN",
+  "        INT  0F5h",
+  "        MOV  DX,0000h          ; channel mode: none",
+  "        MOV  AX,0FC71h         ; AH=FCh",
+  "        MOV  CL,01h            ; AUX1 = JSON mode",
+  "        INT  0F5h",
+  "        MOV  DX,0000h          ; parse: none",
+  "        MOV  AX,5071h          ; AH=50h 'P'",
+  "        INT  0F5h",
+  "        MOV  SI,OFFSET QNAME   ; query each field",
+  "        MOV  BP,OFFSET NAME",
+  "        CALL QUERY",
+  "        MOV  SI,OFFSET QDATE",
+  "        MOV  BP,OFFSET DATE_",
+  "        CALL QUERY",
+  "        MOV  SI,OFFSET QBODY",
+  "        MOV  BP,OFFSET BODY",
+  "        CALL QUERY",
+  "        MOV  DX,0000h          ; close: none",
+  "        MOV  AX,4371h          ; 'C'",
+  "        INT  0F5h",
+  "        MOV  AX,4C00h",
+  "        INT  21h",
+  "; QUERY: path at DS:SI, destination at DS:BP",
+  "QUERY:  MOV  DX,0080h          ; write the path",
+  "        MOV  AX,5171h          ; AH=51h 'Q'",
+  "        MOV  BX,SI",
+  "        MOV  DI,256            ; the library sends 256",
+  "        INT  0F5h",
+  "        MOV  DX,0040h          ; status -> bytes waiting",
+  "        MOV  AX,5371h          ; AH=53h 'S'",
+  "        MOV  BX,OFFSET STAT",
+  "        MOV  DI,4",
+  "        INT  0F5h",
+  "        MOV  CX,WORD PTR [STAT]    ; CL/CH = byte count",
+  "        JCXZ Q9",
+  "        MOV  DX,0240h          ; read: DH=02 (A1_A2), DL=40",
+  "        MOV  AX,5271h          ; AH=52h 'R'",
+  "        MOV  BX,BP             ; ES:BX -> destination",
+  "        MOV  DI,CX             ; DI = count",
+  "        INT  0F5h",
+  "Q9:     RET",
+  "        END START",
+)
+
+#sect[In Pascal]
+#ix("Mastodon, in Pascal")
+
+And once more in Turbo Pascal, reaching #kw("INT F5h") through the #kw("Dos")
+unit's #kw("Intr"). A small #kw("FujiF5") helper plays the part the library's
+wrappers play in C; #kw("JsonQuery") mirrors #kw("network_json_query").
+
+#lstb(
+  "{ MASTO.PAS -- newest Mastodon post via INT F5h (Turbo Pascal). }",
+  "uses Dos, Strings;",
+  "",
+  "const",
+  "  DEV = $71;",
+  "  url   : PChar = 'N:HTTPS://oldbytes.space/api/v1/timelines/public'",
+  "                + '?limit=1';",
+  "  qName : PChar = '/0/account/display_name';",
+  "  qDate : PChar = '/0/created_at';",
+  "  qBody : PChar = '/0/content';",
+  "var",
+  "  stat : array[0..3] of Byte;",
+  "",
+  "function FujiF5(dir, fld, cmd, aux1, aux2: Byte;",
+  "                buf: Pointer; len: Word): Char;",
+  "var r: Registers;",
+  "begin",
+  "  FillChar(r, SizeOf(r), 0);",
+  "  r.DL := dir;  r.DH := fld;",
+  "  r.AL := DEV;  r.AH := cmd;",
+  "  r.CL := aux1; r.CH := aux2;",
+  "  if buf <> nil then begin",
+  "    r.ES := Seg(buf^);  r.BX := Ofs(buf^);  r.DI := len;",
+  "  end;",
+  "  Intr($F5, r);",
+  "  FujiF5 := Chr(r.AL);",
+  "end;",
+  "",
+  "procedure JsonQuery(query, dest: PChar);",
+  "var bw: Word;",
+  "begin",
+  "  FujiF5($80, $00, $51, 0, 0, query, 256);          { 'Q' write path }",
+  "  FujiF5($40, $00, $53, 0, 0, @stat, 4);            { 'S' status     }",
+  "  bw := stat[0] or (Word(stat[1]) shl 8);",
+  "  if bw > 0 then",
+  "    FujiF5($40, $02, $52, Lo(bw), Hi(bw), dest, bw);  { 'R' read     }",
+  "  dest[bw] := #0;",
+  "end;",
+  "",
+  "procedure FetchPost(name, date, toot: PChar);",
+  "begin",
+  "  FillChar(name^, 32, 0);  FillChar(date^, 32, 0);",
+  "  FillChar(toot^, 5120, 0);",
+  "  FujiF5($80, $00, $4F, $04, 0, url, StrLen(url)+1);  { open HTTP GET }",
+  "  FujiF5($00, $00, $FC, $01, 0, nil, 0);             { JSON mode     }",
+  "  FujiF5($00, $00, $50, 0, 0, nil, 0);               { parse         }",
+  "  JsonQuery(qName, name);",
+  "  JsonQuery(qDate, date);",
+  "  JsonQuery(qBody, toot);",
+  "  FujiF5($00, $00, $43, 0, 0, nil, 0);               { close         }",
+  "end;",
+)
+
+#note[All three speak to the same engine in the same order — open, JSON mode,
+parse, query each field, close. C names the steps, Pascal wraps them, and the
+assembler shows the registers underneath. The FujiNet does the parsing; the
+program just asks for #kw("/0/content") and is handed the text.]
+
+// ============================================================
+// SECTION 7 — INSIDE FUJINET.SYS
+// ============================================================
+#chapter("Inside FUJINET.SYS", num: 7, tab: "FUJINET.SYS",
+  subs: ("The Device Header", "Strategy and Interrupt", "The Request Packet",
+         "The Dispatch Table", "Initialization", "Reading and Writing Sectors",
+         "Media Check and BPB", "The IOCTL Signature"))
+#ix("FUJINET.SYS", "Device driver, block")
+
+#kw("FUJINET.SYS") is the program behind everything in this book. It is an
+installable MS-DOS #strong[block device driver], loaded from
+#kw("CONFIG.SYS"), that does two jobs at once: it presents the FujiNet's eight
+virtual disks to DOS as ordinary drive letters, and — on the way — it installs
+the #kw("INT F5h") handler documented in Sections 2 through 4. This section
+walks its source.
+
+The DOS side of the story (how DOS finds, calls, and talks to a device driver)
+is covered in the IBM #emph[DOS Technical Reference]; here we follow what
+#kw("FUJINET.SYS") does in answer.
+
+#sect[The Device Header]
+#ix("Device header")
+
+Every driver begins with a #strong[device header]: a fixed structure DOS reads
+to learn the driver's kind, its entry points, and its name. For
+#kw("FUJINET.SYS") it is written in assembly, at offset 0 of the load image:
+
+#lstb(
+  "_SYS_HEADER segment word public 'SYS_HEADER'",
+  "        org     0",
+  "_sys_hdr_ label near",
+  "        extrn   Strategy_:near",
+  "        extrn   Interrupt_:near",
+  "ATTRIB_OVER_32M equ     0020h",
+  "ATTRIB_FAT_BPB  equ     2000h",
+  "ATTRIB_RW_IOCTL equ     4000h",
+  "        dd      -1                  ; link to next driver (set by DOS)",
+  "        dw      ATTRIB_OVER_32M OR ATTRIB_FAT_BPB OR ATTRIB_RW_IOCTL",
+  "        dw      Strategy_           ; offset of STRATEGY entry",
+  "        dw      Interrupt_          ; offset of INTERRUPT entry",
+  "        db      8, 0, 0, 0, 0, 0, 0, 0   ; 8 units; rest unused",
+)
+
+The fields, in order:
+
+#bl[#strong[Link field] (#kw("dd -1")) — a far pointer to the next driver in
+the chain. DOS fills this in when it links the driver; the initial #kw("-1")
+marks the end.]
+#bl[#strong[Attribute word] — bit flags describing the driver. A #strong[zero]
+top bit marks it a #strong[block] device (a character device sets bit 15).
+The three flags raised here say the driver understands volumes over 32 MB
+(#kw("0020h")), supplies its own BPB so DOS accepts a non-IBM disk layout
+(#kw("2000h")), and accepts IOCTL read/write control calls (#kw("4000h")).]
+#bl[#strong[Strategy and Interrupt offsets] — the two entry points DOS calls
+(next).]
+#bl[#strong[Name/unit field] — eight bytes. For a block driver the first byte
+is the #strong[unit count]: #kw("8"), the FujiNet's eight disks. (A character
+driver puts an eight-character device name here instead — see
+#kw("FUJIPRN.SYS").)]
+
+#sect[Strategy and Interrupt]
+#ix("Strategy routine", "Interrupt routine")
+
+DOS calls a driver in #strong[two steps]. First it calls the #strong[strategy]
+routine with a far pointer (in #kw("ES:BX")) to a #strong[request packet];
+the strategy routine only stows that pointer away. Then it calls the
+#strong[interrupt] routine, which does the actual work on the saved packet.
+The split is a relic of multitasking ambitions that DOS never used, but every
+driver must honor it.
+
+In #kw("FUJINET.SYS") the two are C functions with custom calling conventions.
+Strategy is a single line:
+
+#lstb(
+  "static SYSREQ __far *fpRequest = (SYSREQ __far *) 0;",
+  "",
+  "void far Strategy(SYSREQ far *req)",
+  "#pragma aux Strategy __parm [__es __bx]      // packet arrives in ES:BX",
+  "{",
+  "  fpRequest = req;                           // just remember it",
+  "  return;",
+  "}",
+)
+
+The interrupt routine saves every register, switches to the driver's own
+stack, dispatches the command, marks the packet done, restores the stack and
+registers, and returns:
+
+#lstb(
+  "void far Interrupt(void)",
+  "{",
+  "  push_regs();",
+  "",
+  "  // Save DOS's SS:SP and switch to our own 1 KB stack",
+  "  // (DOS calls drivers on a tiny stack).",
+  "  _asm {",
+  "    mov dos_ss, ss",
+  "    mov dos_sp, sp",
+  "    mov ss, ax            // ax = our_ss, cx = our_sp",
+  "    mov sp, cx",
+  "  }",
+  "",
+  "  if (fpRequest->command > MAXCOMMAND",
+  "      || !(currentFunction = dispatchTable[fpRequest->command]))",
+  "    fpRequest->status = ERROR_BIT | UNKNOWN_CMD;",
+  "  else",
+  "    fpRequest->status = currentFunction(fpRequest);",
+  "",
+  "  fpRequest->status |= DONE_BIT;             // tell DOS we finished",
+  "",
+  "  _asm {                  // restore DOS's stack",
+  "    mov ss, dos_ss",
+  "    mov sp, dos_sp",
+  "  }",
+  "  pop_regs();",
+  "}",
+)
+
+#note[The stack swap matters. DOS hands a driver only a few dozen bytes of
+stack — far too little for C code that calls into the serial routines.
+#kw("FUJINET.SYS") moves to its own 1 KB stack for the duration of the call,
+then puts DOS's stack back exactly as it was.]
+
+#sect[The Request Packet]
+#ix("Request packet")
+
+DOS describes each operation in a #strong[request packet]. The first five
+bytes are common to every command — a length, the target unit, the command
+code, and a status word DOS reads on return — followed by a union of
+command-specific fields:
+
+#lstb(
+  "typedef struct {",
+  "  uint8_t  length;        // size of this packet",
+  "  uint8_t  unit;          // which disk (0-7)",
+  "  uint8_t  command;       // what to do (0-24)",
+  "  uint16_t status;        // driver writes the result here",
+  "  uint8_t  reserved[8];",
+  "  union {                 // one arm per command group:",
+  "    SYSREQ_INIT  init;     //   command 0  (INIT)",
+  "    SYSREQ_MEDIA media;    //   command 1  (MEDIA CHECK)",
+  "    SYSREQ_BPB   bpb;      //   command 2  (BUILD BPB)",
+  "    SYSREQ_IO    io;       //   commands 4 & 8 (READ / WRITE)",
+  "    SYSREQ_INPUT input;",
+  "    SYSREQ_LDMAP ldmap;",
+  "  };",
+  "} SYSREQ;",
+)
+
+The #kw("command") byte is the whole story: it selects both the arm of the
+union that is valid and the handler that runs. The status word the driver
+writes back carries an #strong[error bit] (#kw("8000h")), a #strong[done bit]
+(#kw("0100h")), and, on error, a DOS error number in the low byte.
+
+#sect[The Dispatch Table]
+#ix("Dispatch table")
+
+The command byte (0 through 24) indexes a table of handlers. Commands the
+FujiNet has no use for point at #kw("Unknown_cmd"), which reports
+#emph[unknown command] to DOS:
+
+#lstb(
+  "static driverFunction_t dispatchTable[] = {",
+  "  Init_cmd,           //  0  INIT          (install-time)",
+  "  Media_check_cmd,    //  1  MEDIA CHECK   (has the disk changed?)",
+  "  Build_bpb_cmd,      //  2  BUILD BPB     (describe the disk)",
+  "  Ioctl_input_cmd,    //  3  IOCTL READ    (the FUJI signature)",
+  "  Input_cmd,          //  4  READ          (sectors in)",
+  "  Input_no_wait_cmd,  //  5  (char only)",
+  "  Input_status_cmd,   //  6  (char only)",
+  "  Input_flush_cmd,    //  7  (char only)",
+  "  Output_cmd,         //  8  WRITE         (sectors out)",
+  "  Output_verify_cmd,  //  9  WRITE+VERIFY",
+  "  Output_status_cmd,  // 10  (char only)",
+  "  Output_flush_cmd,   // 11  (char only)",
+  "  Ioctl_output_cmd,   // 12  IOCTL WRITE",
+  "  Dev_open_cmd,       // 13  OPEN",
+  "  Dev_close_cmd,      // 14  CLOSE",
+  "  Remove_media_cmd,   // 15  REMOVE MEDIA",
+  "  Unknown_cmd, Unknown_cmd, Unknown_cmd,   // 16-18 reserved",
+  "  Ioctl_cmd,          // 19  GENERIC IOCTL",
+  "  Unknown_cmd, Unknown_cmd, Unknown_cmd,   // 20-22 reserved",
+  "  Get_l_d_map_cmd,    // 23  GET LOGICAL DRIVE MAP",
+  "  Set_l_d_map_cmd     // 24  SET LOGICAL DRIVE MAP",
+  "};",
+)
+
+Of these, only a handful do real work: #strong[INIT], #strong[MEDIA CHECK],
+#strong[BUILD BPB], #strong[IOCTL READ], #strong[READ], and #strong[WRITE].
+The rest are answered politely and otherwise ignored.
+
+#sect[Initialization]
+#ix("INIT command", "BPB", "List of Lists")
+
+Command 0, #strong[INIT], runs once, when DOS loads the driver at boot. It is
+the busiest handler. Abridged, it:
+
+#lstb(
+  "uint16_t Init_cmd(SYSREQ far *req)",
+  "{",
+  "  // 1. Announce ourselves (DOS version via INT 21h AH=30h).",
+  "  consolef(\"\\nFujiNet driver \" VERSION \" ... on MS-DOS %i.%i\\n\", ...);",
+  "",
+  "  // 2. Turn the CONFIG.SYS line into environment variables",
+  "  //    (FUJI_PORT=, FUJI_BPS=, NOTIME) for getenv().",
+  "  parse_config(req->init.bpb_ptr);",
+  "  environ = (char **) &config_env;",
+  "",
+  "  // 3. Open the serial port and identify the UART.",
+  "  fujicom_init();",
+  "  check_uart();",
+  "",
+  "  // 4. Prove the FujiNet is really there; bail out if not.",
+  "  err = get_fujinet_version();",
+  "  if (!err) err = get_set_time(!getenv(\"NOTIME\"));",
+  "  if (err) {                       // nothing answered:",
+  "    req->init.num_units = 0;        //   claim zero drives,",
+  "    req->init.end_ptr   = 0;        //   keep no memory resident",
+  "    return ERROR_BIT;",
+  "  }",
+  "",
+  "  // 5. Hand DOS a BPB for each of the 8 disks (see below).",
+  "  req->init.num_units = FN_MAX_DEV;",
+  "  // ... fill fn_bpb_table[idx], point fn_bpb_pointers[idx] at it ...",
+  "  req->bpb.table = MK_FP(getCS(), fn_bpb_pointers);",
+  "",
+  "  // 6. Report which drive letters we landed on, then arm INT F5.",
+  "  find_drive_letter(req->init.num_units);",
+  "  setf5();",
+  "  return OP_COMPLETE;",
+  "}",
+)
+
+A few details repay a closer look.
+
+#subsect[The BIOS Parameter Block]
+Step 5 gives DOS a #strong[BPB] — a BIOS Parameter Block — describing each
+disk's geometry. Rather than ask the FujiNet, the driver simply describes a
+familiar #strong[360 KB 5.25-inch floppy]: 512-byte sectors, two sectors per
+cluster, two FATs, 112 root entries, #kw("0x2d0") (720) sectors, media
+descriptor #kw("0xFD"). Whatever image is later mounted, DOS reads its real
+boot sector through BUILD BPB and adjusts.
+
+#subsect[Finding the Drive Letter]
+Step 6's #kw("find_drive_letter") performs a small piece of DOS archaeology to
+report the letters the FujiNet's disks received. It asks for the
+#strong[List of Lists] (the undocumented internal table at the head of DOS) and
+reads the running block-device count from it:
+
+#lstb(
+  "void find_drive_letter(uint8_t num_units)",
+  "{",
+  "  uint8_t far *lol;",
+  "  _asm {",
+  "    mov ah, 52h            // INT 21h AH=52h: get List of Lists",
+  "    int 21h                //   -> ES:BX",
+  "    mov word ptr lol,   bx",
+  "    mov word ptr lol+2, es",
+  "  }",
+  "  // byte at offset 0x20 = number of block devices so far,",
+  "  // which is also the index of our first drive letter.",
+  "  char first = lol[0x20] + 'A';",
+  "  consolef(\"FujiNet attached to drives %c:-%c:\\n\",",
+  "           first, first + num_units - 1);",
+  "}",
+)
+
+#sect[Reading and Writing Sectors]
+#ix("READ command", "WRITE command", "Sector addressing")
+
+The two commands DOS leans on hardest are #strong[READ] (4) and
+#strong[WRITE] (8). Both carry a #kw("SYSREQ_IO") arm: a buffer, a sector
+count, and a starting sector. The driver loops, turning each DOS sector into a
+disk-device command on the FujiBus.
+
+#kw("READ") translates almost directly to the disk-device READ of Section 4.3
+— the 32-bit sector goes into AUX1–AUX4 with the #kw("C1234") field
+descriptor, and 512 bytes come back:
+
+#lstb(
+  "uint16_t Input_cmd(SYSREQ far *req)",
+  "{",
+  "  uint8_t far *buf = req->io.buffer_ptr;",
+  "  uint32_t sector  = (req->length > 22) ? req->io.start_sector_32",
+  "                                        : req->io.start_sector;",
+  "  uint32_t sector_max = fn_bpb_table[req->unit].num_sectors;",
+  "",
+  "  for (idx = 0; idx < req->io.count; idx++, sector++) {",
+  "    if (sector >= sector_max)            // off the end of the image?",
+  "      return ERROR_BIT | NOT_FOUND;",
+  "    if (!fuji_bus_call(FUJI_DEVICEID_DISK + req->unit,",
+  "                       FUJICMD_READ, FUJI_FIELD_C1234,",
+  "                       U16_LSB(U32_LSW(sector)), U16_MSB(U32_LSW(sector)),",
+  "                       U16_LSB(U32_MSW(sector)), U16_MSB(U32_MSW(sector)),",
+  "                       NULL, 0, &buf[idx * SECTOR_SIZE], SECTOR_SIZE))",
+  "      break;                             // serial error: stop here",
+  "  }",
+  "  req->io.count = idx;                   // tell DOS how many we did",
+  "  return idx ? OP_COMPLETE : (ERROR_BIT | GENERAL_FAIL);",
+  "}",
+)
+
+The #kw("U16_LSB(U32_LSW(...))") nest just slices the 32-bit sector into four
+bytes for AUX1–AUX4. On any serial failure the loop stops and reports the
+partial count, exactly as DOS expects of real hardware.
+
+#kw("WRITE") is the mirror image, with one guard in front: it refuses a disk
+that was mounted read-only, returning DOS's #emph[write protect] error so the
+familiar #emph[Write protect error writing drive X] appears:
+
+#lstb(
+  "uint16_t Output_cmd(SYSREQ far *req)",
+  "{",
+  "  if (disk_slots[req->unit].mode != SLOT_READWRITE)",
+  "    return ERROR_BIT | WRITE_PROTECT;    // read-only image",
+  "  // ... identical loop, FUJICMD_WRITE, buffer -> FujiNet ...",
+  "}",
+)
+
+#sect[Media Check and BPB]
+#ix("MEDIA CHECK command", "BUILD BPB command")
+
+Two smaller commands keep DOS's idea of the disk honest.
+
+#strong[MEDIA CHECK] (1) answers a single question: has the disk changed since
+DOS last looked? The driver asks the FujiNet for the slot's #strong[mount
+time] and compares it with the value from before. If they differ, a new image
+has been mounted, and the driver tells DOS to throw away its cached directory
+and FAT:
+
+#lstb(
+  "  fuji_bus_call(FUJI_DEVICEID_FUJINET, FUJICMD_STATUS, FUJI_FIELD_A1,",
+  "                STATUS_MOUNT_TIME, 0, 0, 0, NULL, 0,",
+  "                mount_status, sizeof(mount_status));",
+  "  new_status = mount_status[req->unit * 2];",
+  "  if (!new_status)            req->media.return_info =  0; // unsure",
+  "  else if (old != new_status) req->media.return_info = -1; // changed",
+  "  else                        req->media.return_info =  1; // unchanged",
+)
+
+This is what lets you mount a different disk image in CONFIG and have it appear
+under the same drive letter without rebooting.
+
+#strong[BUILD BPB] (2) hands DOS the disk's real geometry. The driver reads
+sector 0 — the boot sector — of the freshly mounted image and copies the BPB
+out of it, from the standard offset #kw("0x0B"):
+
+#lstb(
+  "  fuji_bus_call(FUJI_DEVICEID_DISK + req->unit, FUJICMD_READ,",
+  "                FUJI_FIELD_C1234, 0, 0, 0, 0, NULL, 0, buf, SECTOR_SIZE);",
+  "  _fmemcpy(fn_bpb_pointers[req->unit], &buf[0x0b], sizeof(DOS_BPB));",
+)
+
+#sect[The IOCTL Signature]
+#ix("IOCTL", "Device identification")
+
+How does a utility such as #kw("FMOUNT") know which drive letters belong to the
+FujiNet? Through #strong[IOCTL READ] (command 3). A program opens the drive,
+issues a control read, and the driver answers with a four-byte signature and
+the unit number:
+
+#lstb(
+  "uint16_t Ioctl_input_cmd(SYSREQ far *req)",
+  "{",
+  "  fuji_ioctl_query far *query = (fuji_ioctl_query far *) req->io.buffer_ptr;",
+  "  _fmemcpy(query->signature, \"FUJI\", 4);   // the secret handshake",
+  "  query->unit = req->unit;",
+  "  return OP_COMPLETE;",
+  "}",
+)
+
+Any program that reads #kw("FUJI") back from a drive knows it is talking to a
+FujiNet, and which of the eight units it is. That is the whole mechanism by
+which the command-line tools find their device.
+
+
+// ============================================================
+// SECTION 8 — INSIDE FUJIPRN.SYS
+// ============================================================
+#chapter("Inside FUJIPRN.SYS", num: 8, tab: "FUJIPRN.SYS",
+  subs: ("A Character Device", "Capturing Output", "The INT 17h Hook",
+         "The Buffer", "Auto-Flush: Timer and Idle"))
+#ix("FUJIPRN.SYS", "Device driver, character", "Printer")
+
+The companion driver, #kw("FUJIPRN.SYS"), makes the FujiNet's printer device
+(ID #kw("40h")) appear to DOS as the printer #kw("LPT1"). Everything a program
+prints — through DOS or through the BIOS — is captured, buffered, and
+forwarded to the FujiNet, which renders it (to a PDF, for instance). It is a
+smaller driver than #kw("FUJINET.SYS"), but it shows two techniques worth
+study: hooking the BIOS printer interrupt, and flushing safely from idle time.
+
+#sect[A Character Device]
+#ix("Character device header")
+
+Where #kw("FUJINET.SYS") is a block driver, #kw("FUJIPRN.SYS") is a
+#strong[character] driver — a single stream, not a set of disks. Its header
+differs in just two places: the attribute word sets bit 15 (#kw("8000h")) to
+mark a character device, and the name/unit field carries an eight-character
+#strong[device name] rather than a unit count:
+
+#lstb(
+  "_SYS_HEADER segment word public 'SYS_HEADER'",
+  "        org     0",
+  "_sys_hdr_ label near",
+  "        extrn   Strategy_:near",
+  "        extrn   Interrupt_:near",
+  "        dd      -1                       ; link to next driver",
+  "        dw      8000h                    ; bit 15 = character device",
+  "        dw      Strategy_",
+  "        dw      Interrupt_",
+  "        db      'L','P','T','1',' ',' ',' ',' '   ; device name",
+)
+
+Because it names itself #kw("LPT1"), DOS routes the printer stream to it. The
+strategy and interrupt routines, the request packet, and the dispatch table
+are the same machinery as in #kw("FUJINET.SYS") (Section 7); only the handlers
+differ. Most are no-ops — a character printer has nothing to say about media or
+sectors — so this section follows only the few that matter.
+
+#sect[Capturing Output]
+#ix("OUTPUT command")
+
+When DOS writes to the printer it calls #strong[OUTPUT] (command 8), one byte
+at a time. The handler simply feeds the byte to the buffer:
+
+#lstb(
+  "uint16_t Output_cmd(SYSREQ far *req)",
+  "{",
+  "  if (!prn_buf_add(req->io.buffer_ptr[0]))",
+  "    return ERROR_BIT | NOT_READY;",
+  "  return OP_COMPLETE;",
+  "}",
+)
+
+#strong[CLOSE] (14) and #strong[OUTPUT FLUSH] (11) push whatever is buffered to
+the FujiNet at once; #strong[OUTPUT STATUS] (10) always answers #emph[ready].
+Everything else returns #emph[unknown command].
+
+#sect[The INT 17h Hook]
+#ix("INT 17h", "BIOS printer")
+
+DOS is not the only way to print. Many programs call the BIOS printer service,
+#kw("INT 17h"), directly — bypassing the driver entirely. To catch them too,
+#kw("FUJIPRN.SYS") installs its own #kw("INT 17h") handler at INIT time and
+answers the three BIOS printer functions itself:
+
+#lstb(
+  "int int17(uint16_t direction, uint16_t cmdchar, ...)",
+  "{",
+  "  unsigned char ah = cmdchar >> 8;     // BIOS function in AH",
+  "  unsigned char al = cmdchar & 0xFF;   // character in AL",
+  "  switch (ah) {",
+  "  case 0:  prn_buf_add(al);  return 0x9000;  // print AL; status = ready",
+  "  case 1:                    return 0x9000;  // init printer",
+  "  case 2:                    return 0x9000;  // read status",
+  "  }",
+  "  return 0;",
+  "}",
+)
+
+Each returns #kw("90h") in #kw("AH") — the BIOS status bits for
+#emph[selected, acknowledged, not busy] — so callers believe a real, ready
+printer answered. Function 0 also buffers the character, exactly as the DOS
+path does, so the two routes converge on the same buffer.
+
+The handler is reached through a small assembly wrapper that preserves
+registers, sets #kw("DS") to the driver's segment, calls the C function, and
+returns with #kw("IRET"):
+
+#lstb(
+  "INTERRUPT MACRO func              ; build an interrupt wrapper",
+  "        push    bx",
+  "        ... push cx dx si di bp ds es ...",
+  "        push    cs",
+  "        pop     ds                ; DS = CS (our data segment)",
+  "        call    func",
+  "        ... pop es ds bp di si dx cx bx ...",
+  "        iret",
+  "ENDM",
+  "        INTERRUPT  int17_",
+)
+
+#sect[The Buffer]
+#ix("Print buffer", "Flushing")
+
+Sending one byte per network packet would be painfully slow, so the driver
+gathers bytes in a 255-byte buffer and forwards them in bursts. A burst is a
+single FujiBus WRITE to the printer device:
+
+#lstb(
+  "int flush_prn_buf(void)",
+  "{",
+  "  int ok = 1;",
+  "  if (prn_buf_len > 0) {",
+  "    ok = fujiF5_write(FUJI_DEVICEID_PRINTER, FUJICMD_WRITE,",
+  "                      FUJI_FIELD_NONE, 0, 0, prn_buf, prn_buf_len);",
+  "    if (ok) { prn_buf_len = 0; memset(prn_buf, 0, PRN_BUF_SIZE); }",
+  "  }",
+  "  return ok;",
+  "}",
+)
+
+A byte is added, and the buffer flushed when it nears full:
+
+#lstb(
+  "int prn_buf_add(unsigned char c)",
+  "{",
+  "  if (prn_buf_len >= PRN_BUF_SIZE)       // full: flush first",
+  "    if (!flush_prn_buf()) return 0;",
+  "  prn_buf[prn_buf_len++] = c;",
+  "  if (!buffering_enabled)                // DOS < 3.0: flush every byte",
+  "    return flush_prn_buf();",
+  "  last_activity = timer_counter;         // note the time, for auto-flush",
+  "  if (prn_buf_len >= PRN_BUF_FLUSH)       // 250 of 255: flush",
+  "    flush_prn_buf();",
+  "  return 1;",
+  "}",
+)
+
+But a document rarely ends on a buffer boundary. The last few bytes of a print
+job would sit in the buffer forever unless something flushed them — which is
+what the timer is for.
+
+#sect[Auto-Flush: Timer and Idle]
+#ix("INT 08h", "INT 28h", "InDOS flag", "Re-entrancy")
+
+The driver flushes the tail of a job automatically, a few seconds after the
+printing stops. Doing so safely is the subtle part, because a flush calls into
+DOS to talk to the serial port, and #strong[DOS is not re-entrant] — calling
+it from a hardware interrupt while it is already busy will corrupt it.
+
+The solution uses two interrupts and one flag. At INIT the driver hooks the
+#strong[timer tick] (#kw("INT 08h"), 18.2 times a second) and the #strong[DOS
+idle] interrupt (#kw("INT 28h")), and records the address of DOS's
+#strong[InDOS flag] — a byte DOS keeps non-zero while it is inside itself:
+
+#lstb(
+  "void install_timer_handler(void)",
+  "{",
+  "  _asm { mov ah, 34h    int 21h     // INT 21h AH=34h: address of",
+  "         mov indos_off, bx  mov indos_seg, es }  //   the InDOS flag",
+  "  indos_flag = MK_FP(indos_seg, indos_off);",
+  "",
+  "  // chain onto INT 08h (timer) and INT 28h (DOS idle)",
+  "  old = _dos_getvect(0x08); ...; _dos_setvect(0x08, timer_vect);",
+  "  old = _dos_getvect(0x28); ...; _dos_setvect(0x28, idle_vect);",
+  "",
+  "  _asm { mov ah, 30h  int 21h  mov buffering_enabled, al } // DOS ver",
+  "  buffering_enabled = (buffering_enabled >= 3) ? 1 : 0;    // need 3.0+",
+  "}",
+)
+
+Every timer tick, the driver checks whether the buffer has been idle for five
+seconds. If so — and only if DOS is #emph[not] currently busy — it flushes. If
+DOS #emph[is] busy, it cannot flush now, so it sets a flag and waits for the
+idle interrupt:
+
+#lstb(
+  "void timer_tick(void)        // INT 08h, 18.2 Hz",
+  "{",
+  "  timer_counter++;",
+  "  if (prn_buf_len > 0 && (timer_counter - last_activity) >= AUTO_FLUSH_TICKS) {",
+  "    if (indos_flag && *indos_flag == 0) {   // safe: DOS is idle",
+  "      flush_prn_buf();",
+  "      last_activity = timer_counter;",
+  "    } else {",
+  "      flush_pending = 1;       // DOS busy -- let INT 28h do it",
+  "    }",
+  "  }",
+  "}",
+"",
+  "void idle_flush(void)         // INT 28h, raised by DOS when idle",
+  "{",
+  "  flush_pending = 0;",
+  "  flush_prn_buf();            // here it is always safe to call DOS",
+  "}",
+)
+
+DOS raises #kw("INT 28h") precisely when it is sitting idle and willing to be
+re-entered — the one safe moment for a background task to call it. By deferring
+to that moment whenever it finds DOS busy, the driver flushes the tail of every
+print job without ever risking the system. The timer wrappers are ordinary
+interrupt stubs that set #kw("DS"), call the C routine, and #strong[chain] to
+the previous handler rather than returning:
+
+#lstb(
+  "timer_vect_ PROC NEAR",
+  "        ... push registers; push cs; pop ds ...",
+  "        call    timer_tick_",
+  "        ... pop registers ...",
+  "        jmp     dword ptr cs:[_old_timer_off]   ; chain to old INT 08h",
+  "timer_vect_ ENDP",
+)
+
+Chaining matters: the system clock and every other timer client must still see
+the tick. The driver does its small work and passes the interrupt along.
+
+
+// ============================================================
+// SECTION 9 — APPENDICES
+// ============================================================
+#chapter("Appendices", num: 9, tab: "Appendix",
   subs: ("Network Error Codes", "Status Request Types",
          "Field Descriptors", "The FujiBus Frame"))
 

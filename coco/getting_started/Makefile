@@ -42,6 +42,7 @@ images:
 	python3 tools/make_loading.py \
 	    $(HOME)/Workspace/fujinet-config/src/coco/cfgload/cfgload.c \
 	    images/loading-splash.png
+	python3 tools/make_program_shots.py
 	python3 tools/stl2png.py $(CASE) $(CABLE) --depth-edge 0.45 \
 	    --azim 325 --elev 20 --width 1600 --out images/cocofuji-hero.png
 	python3 tools/stl2png.py $(CASE) --depth-edge 0.45 \

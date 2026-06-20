@@ -1,6 +1,6 @@
 # Getting Started with FujiNet for the Apple II
 
-*Easy-to-follow instructions on setting up and using FujiNet and its CONFIG program with the Apple II family — the Apple //c, IIc Plus, IIGS, and any Apple II with a SmartPort. Written for first-time FujiNet users; no networking experience required.*
+*Easy-to-follow instructions on setting up and using FujiNet and its CONFIG program with the Apple II family — the Apple IIc, IIc Plus, IIGS, and any Apple II with a SmartPort. Written for first-time FujiNet users; no networking experience required.*
 
 ![FujiNet on an Apple IIc](images/cover-photo.jpg)
 
@@ -90,11 +90,11 @@ disk connector and wakes and sleeps with the machine.
 ### Native SmartPort (just plug in)
 
 * **Apple IIGS**
-* **Apple //c** — *except* the very first ROM (version 255)
+* **Apple IIc** — *except* the very first ROM (version 255)
 * **Apple IIc Plus**
 * **Laser 128**
 
-To check a //c's ROM: power on, press `CTRL-RESET` for a BASIC prompt, and type
+To check a IIc's ROM: power on, press `CTRL-RESET` for a BASIC prompt, and type
 `PRINT PEEK(64447)`. An answer of **255** is the original ROM — no SmartPort
 (Apple offered a free upgrade in 1985, so many machines have a newer ROM). **0**,
 **3**, or **4** all include SmartPort; **5** means a IIc Plus.
@@ -108,11 +108,17 @@ To check a //c's ROM: power on, press `CTRL-RESET` for a BASIC prompt, and type
   [softSP](https://github.com/oliverschmidt/softsp), or a DIY (E)EPROM for a
   Grappler+ or Super Serial Card. Use **v6 or newer**. The FujiNet connects to
   the partnered drive controller's disk header/port.
-* **Apple Liron card** (the UniDisk 3.5 controller) — genuine period SmartPort.
-  SmartPort drives only; no Disk II emulation. Connect via the DB-19 adapter.
+* **A genuine SmartPort card** — the original **Apple Liron** (UniDisk 3.5
+  controller), or a modern equivalent like A2Heaven's
+  [Liron Reborn](https://www.a2heaven.com/webshop/index.php?rt=product/product&product_id=186)
+  or the open-source [SmartDiskII](https://github.com/btb/SmartDiskII) (a Liron
+  with the IWM replaced by Disk II circuitry). SmartPort drives only; no Disk II
+  emulation. Connect via the DB-19 adapter or an IDC20 cable.
 * **[Yellowstone](https://www.bigmessowires.com/yellowstone)** — modern universal
   disk controller. IDC20 cable **only** (no DB-19 adapter), and it runs in either
-  SmartPort *or* Disk II mode, not both at once.
+  SmartPort *or* Disk II mode, not both at once. Because it handles the disks
+  itself rather than passing the bus through, it serves FujiNet **disk drives
+  only** — not the network, printer, modem, or CP/M devices.
 
 > ⚠️ **Ribbon cable warning.** When connecting to a Disk II-style controller
 > header, an IDC20 plug offset by one row or column of pins **will damage
@@ -123,7 +129,7 @@ To check a //c's ROM: power on, press `CTRL-RESET` for a BASIC prompt, and type
 
 > ⚠️ **Never plug anything into an Apple's disk port while the power is on.**
 
-**//c, IIc Plus, IIGS, Laser 128:**
+**IIc, IIc Plus, IIGS, Laser 128:**
 
 1. Switch off the Apple and everything attached to it.
 2. Fit the DB-19 adapter to the FujiNet's IDC20 connector (directly or through a
@@ -154,7 +160,7 @@ FujiNet alone on the port. Daisy chains work — the time-honored rule applies:
 
 | Machine | How CONFIG boots |
 |---|---|
-| **//c, IIc Plus** | Automatically at power-on (internal drive empty) |
+| **IIc, IIc Plus** | Automatically at power-on (internal drive empty) |
 | **IIGS** | Open the Control Panel (`CTRL`-`Open Apple`-`ESC`) → **Slots** → set **Slot 5** to *Smart Port* and **Startup Slot** to *5* (or *Scan*), then reboot |
 | **II Plus / IIe** | Press `CTRL-RESET`, type `PR#5` (your softSP slot) and press `RETURN` |
 
@@ -310,13 +316,15 @@ Back on the main screen, `TAB` into the drive list to manage what's mounted:
 ## Booting Your Software
 
 With a bootable image in **drive 1**, press `ESC` on the main screen. CONFIG
-prints `RESTARTING...` and the Apple reboots straight into your disk, exactly
-as if you'd swapped floppies and hit reset. Power-cycle or reset again and
-CONFIG returns.
+prints `RESTARTING...` and restarts the Apple itself, booting straight into
+your disk just as a fresh power-on would. To return to CONFIG later, power the
+Apple off and on again — a plain `CTRL-RESET` won't do it, since on an Apple II
+that drops you into BASIC or the monitor rather than rebooting the machine.
 
-> 💡 ProDOS 8 can only see four SmartPort drives at once (two in the main slot,
-> two in a phantom slot). Drives 5–8 are there for GS/OS and other
-> forward-thinking software. Keep your boot disk in drive 1.
+> 💡 How many of the eight drives software sees depends on the operating system.
+> ProDOS 2.x — including the recommended 2.4.3 — handles up to fourteen SmartPort
+> drives, so all eight FujiNet slots are usable. Only the older ProDOS 1.x was
+> limited to four. Keep your boot disk in drive 1 and you're safe either way.
 
 ## The Disk II Side
 
@@ -379,7 +387,7 @@ it there (ProDOS's filer, or `INIT` under DOS 3.3).
 
 Found something on a network library you'd like to keep locally?
 
-1. Highlight the file in the browser and press `C`.
+1. Highlight the disk image in the browser and press `C`.
 2. Choose the destination host (your SD card, say) and press `RETURN`.
 3. Walk to the destination folder, then press `C` again to start the copy.
 
@@ -463,9 +471,9 @@ game and you're seated at the table.
 ## More Things FujiNet Can Be
 
 * **Printer.** Captures printing from SmartPort-aware software and renders it
-  (ImageWriter, Epson, Okimate, and more — collected from the web control
-  panel). On a //c, printing through FujiNet takes a custom ROM; ask the
-  community.
+  as a PDF, emulating an Epson-compatible dot-matrix printer — collected from
+  the web control panel. On a IIc, printing through FujiNet takes a custom ROM;
+  ask the community.
 * **Clock.** SmartPort-aware software can read real network time.
 * **Modem.** Answers Hayes commands and "dials" telnet BBSes.
 * **CP/M.** A complete emulated CP/M machine (RunCPM) with storage on the
@@ -479,7 +487,7 @@ game and you're seated at the table.
 * A floppy is in the internal drive — remove it and reset.
 * IIGS: Slot 5 must be *Smart Port* and Startup Slot *5* (or *Scan*).
 * II+/IIe: CONFIG doesn't auto-boot — `CTRL-RESET`, then `PR#5`.
-* //c: check the ROM (`PRINT PEEK(64447)`; 255 = no SmartPort in ROM).
+* IIc: check the ROM (`PRINT PEEK(64447)`; 255 = no SmartPort in ROM).
 * Ribbon cables: aligned, fully seated, no stray pins.
 
 **The scan finds no networks, or won't connect**
@@ -494,7 +502,7 @@ game and you're seated at the table.
 **A mounted disk won't boot**
 * The Apple boots SmartPort drive 1 — is your disk there?
 * Is the image bootable at all? Many are data disks.
-* DOS 3.3 / WOZ software needs the Disk II side and `PR#6`, not SmartPort.
+* DOS 3.3 / WOZ software needs the Disk II side and `PR#6` (or the slot your Disk II controller card is in), not SmartPort.
 
 **I can't save onto a disk**
 * Mounted read-only? `TAB` to drives, highlight, press `W`.
@@ -503,7 +511,8 @@ game and you're seated at the table.
 
 **Small oddities that are not problems**
 * Lowercase hostnames reappear in capitals.
-* ProDOS 8 sees only four of the eight SmartPort drives.
+* Only four of the eight SmartPort drives appear? You're on ProDOS 1.x, which
+  caps out at four. ProDOS 2.x (2.4.3 recommended) sees all eight.
 * The `D` drives-toggle only appears when a Disk II controller is detected.
 
 ## Key Reference Charts

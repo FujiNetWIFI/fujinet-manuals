@@ -21,15 +21,15 @@
 // images/ — placeholders render automatically until then.
 // (See FIGURES.md for the shot list.)
 #let photos = (
-  "cover-photo.jpg": false,
-  "parts-spread.jpg": false,
-  "fujiapple-front.jpg": false,
-  "fujiapple-rear.jpg": false,
-  "db19-adapter.jpg": false,
-  "hookup-iic.jpg": false,
-  "hookup-iigs.jpg": false,
-  "liron-card.jpg": false,
-  "softsp-diskii.jpg": false,
+  "cover-photo.jpg": true,
+  "parts-spread.jpg": true,
+  "fujiapple-front.jpg": true,
+  "fujiapple-rear.jpg": true,
+  "db19-adapter.jpg": true,
+  "hookup-iic.jpg": true,
+  "hookup-iigs.jpg": true,
+  "liron-card.jpg": true,
+  "softsp-diskii.jpg": true,
   "microsd.jpg": false,
 )
 
@@ -43,7 +43,7 @@
 // ---------- palette -----------------------------------------
 #let paper  = rgb("#f6f0dd")   // cream stock
 #let ink    = rgb("#2b2620")   // letterpress near-black
-#let red    = rgb("#b3271e")   // the Apple manual warm red
+#let red    = rgb("#f43b50")   // the Apple manual warm red (coral)
 #let ph-bg  = rgb("#ebe3c9")   // photo placeholder fill
 #let scr-bg = rgb("#0d120e")   // monitor glass
 #let scr-fg = rgb("#5fec87")   // green phosphor (Monitor IIc)
@@ -63,9 +63,9 @@
 // repeat string s, n times
 #let rp(s, n) = range(n).map(_ => s).join("")
 
-// the period spelling "Apple //c" — as a string, since "//" starts
-// a comment in Typst markup; boxed so it never wraps mid-name
-#let iic = box("//c")
+// "Apple IIc" — Apple's own manuals write "IIc", not "//c". Boxed so
+// the name never wraps across a line.
+#let iic = box("IIc")
 
 // running-head / TOC marks
 #let chmark(label, title) = metadata((kind: "chapter", label: label, title: title))
@@ -125,7 +125,7 @@
 
 // --- section head: Helvetica Bold over a thick red rule that
 //     runs from the page edge to the end of the column ---
-#let sect(title) = block(above: 1.7em, below: 1em, breakable: false, {
+#let sect(title) = block(above: 1.7em, below: 1em, breakable: false, sticky: true, {
   smark(title)
   text(font: f-head, weight: 700, size: 10.5pt, fill: ink, title)
   v(1.5pt)
@@ -133,7 +133,7 @@
 })
 
 // --- sub-head: Helvetica Bold with a short red underline ---
-#let subsect(title) = block(above: 1.4em, below: 0.75em, breakable: false, context {
+#let subsect(title) = block(above: 1.4em, below: 0.75em, breakable: false, sticky: true, context {
   let t = text(font: f-head, weight: 700, size: 9.5pt, fill: ink, title)
   let w = measure(t).width
   t
@@ -174,14 +174,19 @@
   fill: rgb("#fbf6e8"), stroke: 0.75pt + ink.lighten(15%), radius: 2.8pt,
   inset: (x: 3.4pt, y: 2.4pt),
   text(font: f-head, weight: 400, size: 6.2pt, tracking: 0.3pt, fill: ink, upper(l))))
-// the open-apple key, drawn with the genuine MouseText glyph
+// the open-apple key, drawn with the genuine MouseText glyph (nudged
+// up so it centres in the cap like the lettered keys)
 #let key-oa = box(baseline: 24%, rect(
   fill: rgb("#fbf6e8"), stroke: 0.75pt + ink.lighten(15%), radius: 2.8pt,
-  inset: (x: 3.4pt, y: 1.6pt),
-  text(font: f-scrn, size: 6.6pt, fill: ink, "\u{F813}")))
+  inset: (x: 3.4pt, y: 2.4pt),
+  move(dy: -1.1pt, text(font: f-scrn, size: 6.6pt, fill: ink, "\u{F813}"))))
 
 // --- "you type it" text, in the Apple II charset ---
 #let tt(s) = text(font: f-scrn, size: 7pt, fill: ink, s)
+// inverse-video run of the Apple II charset, on paper (ink box, paper
+// glyphs) — for naming an inverse key inline, e.g. the "E" in "Edit"
+#let ttinv(s) = box(fill: ink, outset: (y: 0.6pt), inset: (x: 0.3pt),
+  text(font: f-scrn, size: 7pt, fill: paper, s))
 
 // --- photographs & placeholders ---
 #let phimg(file, desc, height: 2.2in) = {
@@ -236,8 +241,10 @@
     ls.pos().map(l => if l == "" { par(text(" ")) } else { par(l) }).join()
   })))
 
-// screen caption (numbered like figures, but for typeset screens)
-#let scrcap(num, title) = block(above: 1.3em, below: 0.4em, {
+// screen caption (numbered like figures, but for typeset screens);
+// sticky so the caption never widows at the foot of a page — it
+// travels to the next page with its screen
+#let scrcap(num, title) = block(above: 1.3em, below: 0.4em, sticky: true, {
   text(font: f-body, size: 9.4pt, fill: ink)[Figure #num. #title]
   v(3pt)
   line(length: 100%, stroke: 0.9pt + red)
@@ -609,19 +616,24 @@ SmartPort — available ready-made (the KBOOHK softSP card, or an
 A2Pico running softSP), or as a DIY EPROM for a Grappler+ or Super
 Serial Card. The FujiNet then connects to the drive controller
 card's disk connector. Use softSP v6 or newer.]
-#sq[*An Apple Liron card* (the UniDisk 3.5 controller). A genuine
-period SmartPort, and it works — SmartPort drives only, no Disk II
-emulation. Connect through the DB-19 adapter.]
-#sq[*A Yellowstone card* (Big Mess o' Wires). A modern universal
-disk controller. Use an IDC20 ribbon cable only — not the DB-19
-adapter — and note it runs in either SmartPort or Disk II mode,
-not both at once.]
+#sq[*A genuine SmartPort card.* The original Apple Liron (the UniDisk
+3.5 controller) is the classic, and modern equivalents are easier to
+find: A2Heaven's *Liron Reborn*, or the open-source *SmartDiskII*
+(a Liron with the IWM swapped for Disk II circuitry). These give
+SmartPort drives only — no Disk II emulation — and connect through
+the DB-19 adapter or an IDC20 cable.]
+#sq[*A Yellowstone card* (Big Mess o' Wires). A modern universal disk
+controller. It will serve FujiNet *disk drives* — over an IDC20 cable
+only, not the DB-19 adapter, in either SmartPort or Disk II mode but
+not both at once. Because it handles the disks itself rather than
+passing the bus through, it cannot reach FujiNet's network, printer,
+modem, or CP/M devices.]
 
 #byway[An Apple III or III Plus can also play, using a Liron or
 softSP card and a driver from the FujiNet apps repository — a story
 for a different manual.]
 
-#sect("Connecting to a //c, IIc Plus, or IIGS")
+#sect("Connecting to a IIc, IIc Plus, or IIGS")
 
 #fig("2-1", "The DB-19 adapter", "db19-adapter.jpg",
   "DB-19 adapter mated to the FujiApple",
@@ -636,8 +648,8 @@ for a different manual.]
   boot that instead.
 + Switch on your monitor, then the Apple.
 
-#fig("2-2", "Plugging into the //c", "hookup-iic.jpg",
-  "hand plugging the FujiNet into the //c external disk port",
+#fig("2-2", "Plugging into the IIc", "hookup-iic.jpg",
+  "hand plugging the FujiNet into the IIc external disk port",
   height: 2.3in)
 
 On a #iic or IIc Plus, that's the whole recipe: the machine checks
@@ -678,11 +690,11 @@ The IIGS likes to be told where to boot from:
 + Triple-check ribbon cable alignment (see the Warning in
   Chapter 1).
 + Switch on the Apple, press #key("CONTROL")\-#key("RESET"), then
-  type #tt("PR#5") (use your softSP card's slot number) and press
+  type #tt("PR#5") (or your softSP card's slot number) and press
   #key("RETURN"). CONFIG boots.
 
-#fig("2-5", "softSP and a Disk II controller", "softsp-diskii.jpg",
-  "IDC20 ribbon from the controller card to the FujiNet — note the plug alignment",
+#fig("2-5", "A softSP card", "softsp-diskii.jpg",
+  "the KBOOHK softSP card, which teaches an ordinary controller to speak SmartPort",
   height: 2.3in)
 
 #important[The FujiNet draws its power from the disk connector, so
@@ -819,14 +831,14 @@ loaded in each.
 #mnote[Reading a drive line: drive number, then *R* (read-only) or
 *W* (read/write), then the host slot the image came from, then the
 image's name. The header row — D, R, H — labels those columns.]
-The bright bar is your place marker. #key("TAB") jumps it between
+The inverse bar is your place marker. #key("TAB") jumps it between
 the host list and the drive list; the arrow keys (or #key("I"),
 #key("J"), #key("K"), #key("M")) move it; the number keys jump
 straight to a slot.
 
-In the menu lines at the bottom, the bright capital letter is the
-key to press: where the screen shows #iv("E")#text(font: f-scrn,
-size: 7pt, fill: ink, "dit"), pressing #key("E") does the editing.
+In the menu lines at the bottom, the inverse capital letter is the
+key to press: where the screen shows #ttinv("E")#tt("dit"), pressing
+#key("E") does the editing.
 
 #sect("Setting Up Hosts")
 
@@ -919,15 +931,18 @@ card or your own server.]
 #sect("Booting")
 
 Back on the main screen, with a bootable image in drive 1, press
-#key("ESC"). CONFIG announces #tt("RESTARTING...") and the Apple
-reboots — straight into the disk you mounted, exactly as if you'd
-swapped floppies and hit reset. When you power-cycle or reset
-again, CONFIG returns, ready for the next adventure.
+#key("ESC"). CONFIG announces #tt("RESTARTING...") and restarts the
+Apple itself — booting straight into the disk you mounted, just as a
+fresh power-on would. To return to CONFIG later, power the Apple off
+and on again (a plain #key("CONTROL")\-#key("RESET") won't do it — on
+an Apple II that drops you into BASIC or the monitor, it doesn't
+reboot the machine).
 
-#byway[ProDOS 8 itself can only see four SmartPort drives at once
-(two in the main slot, two in a phantom slot) — drives 5 through 8
-are for GS/OS and other forward-thinking software. Mount your
-boot disk in drive 1 and nobody gets confused.]
+#byway[How many of the eight drives software sees depends on the
+operating system. ProDOS 2.x — including the recommended 2.4.3 —
+handles up to fourteen SmartPort drives, so all eight FujiNet slots
+are fair game. Only the older ProDOS 1.x was limited to four. Mount
+your boot disk in drive 1 and you're safe either way.]
 
 #sect("Managing Drives")
 
@@ -1030,7 +1045,7 @@ as you would a real blank disk.]
 #sect("Copying From Host to Host")
 
 Found something on a network library you'd like to keep locally?
-Highlight the file in the browser and press #key("C"). CONFIG asks
+Highlight the disk image in the browser and press #key("C"). CONFIG asks
 which host to copy *to* — pick your SD card — then lets you walk
 the destination's folders. When you're standing in the right
 folder, press #key("C") again and the FujiNet does the rest,
@@ -1053,7 +1068,7 @@ all by itself, no Apple memory required:
 #sq[#key("N") in the browser creates a blank image: type, size,
 name, drive.]
 #sq[New images need formatting by your OS, like any blank disk.]
-#sq[#key("C") copies a file between hosts — TNFS library to SD card
+#sq[#key("C") copies a disk image between hosts — TNFS library to SD card
 is the classic move.]
 
 // ============================================================
@@ -1137,10 +1152,10 @@ table. Yes, against real people. Yes, on your Apple II.
 #sect("The Supporting Cast")
 
 #sq[*Printer.* The FujiNet captures printing from SmartPort-aware
-software and renders it — as a PDF of an ImageWriter, an Epson, an
-Okimate with color ribbon, and more — collected from the web
-control panel. (On a #iic, printing through the FujiNet takes a
-custom ROM; ask the community.)]
+software and renders it as a PDF — emulating an Epson-compatible
+dot-matrix printer — which you collect from the web control panel.
+(On a #iic, printing through the FujiNet takes a custom ROM; ask the
+community.)]
 #sq[*Clock.* SmartPort-aware software can read the real date and
 time, fetched from the network.]
 #sq[*Modem.* The emulated modem answers Hayes commands and "dials"
@@ -1214,7 +1229,7 @@ cards are not recognized.]
 #sq[Is it bootable at all? Many images are data disks.]
 #sq[DOS 3.3 and copy-protected (WOZ) software needs the Disk II
 side, not a SmartPort drive — see Chapter 4, and boot it with
-#tt("PR#6").]
+#tt("PR#6") (or the slot your Disk II controller card is in).]
 
 #subsect("I can't save onto a disk")
 
@@ -1227,8 +1242,9 @@ image to your SD card first (Chapter 5).]
 #subsect("Small oddities that are not problems")
 
 #sq[Hostnames typed in lowercase reappear in capitals. Harmless.]
-#sq[ProDOS 8 sees only four of the eight SmartPort drives. That's
-ProDOS, not the FujiNet.]
+#sq[Booting under ProDOS 1.x and only four of the eight SmartPort
+drives appear? That's ProDOS 1.x's four-drive limit, not the
+FujiNet — ProDOS 2.x (2.4.3 recommended) sees all eight.]
 #sq[The #key("D") drives-toggle only appears when a Disk II-style
 controller is detected at boot.]
 
@@ -1256,7 +1272,7 @@ right, down, and #key("T") stands in for #key("TAB").
 
 #subsect("Main screen — host list")
 #qr(
-  ([#key("1")–#key("8")], [jump to host slot]),
+  ([#key("1") – #key("8")], [jump to host slot]),
   ([#key("E")], [edit the highlighted host (32 characters max)]),
   ([#key("RETURN")], [browse the highlighted host]),
   ([#key("TAB")], [switch to the drive list]),
@@ -1269,7 +1285,7 @@ right, down, and #key("T") stands in for #key("TAB").
 #subsect("Main screen — drive list")
 #qr(
   ([#key("E")], [eject the highlighted image]),
-  ([#key("R")\/#key("W")], [set read-only / read-write]),
+  ([#key("R") \/ #key("W")], [set read-only / read-write]),
   ([#key("TAB")], [back to the host list]),
   ([#key("ESC")], [reboot the Apple into the mounted disk]))
 
@@ -1285,8 +1301,8 @@ right, down, and #key("T") stands in for #key("TAB").
 
 #subsect("Drive picker (after selecting an image)")
 #qr(
-  ([#key("1")–#key("8")], [choose a drive]),
-  ([#key("RETURN")\/#key("R")], [insert read-only]),
+  ([#key("1") – #key("8")], [choose a drive]),
+  ([#key("RETURN") \/ #key("R")], [insert read-only]),
   ([#key("W")], [insert read/write]),
   ([#key("E")], [eject from the highlighted drive]),
   ([#key("ESC")], [back to the browser]))
