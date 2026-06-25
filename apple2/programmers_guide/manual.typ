@@ -194,23 +194,35 @@
   line(length: 100%, stroke: 0.8pt + ink)
 })
 
-// a small fielded table for payload / parameter layouts.
-// rows: ( ("Offset","Bytes","Meaning"), ... ) — first row is the header
-#let ptable(..rows) = block(above: 0.7em, below: 0.9em,
-  move(dx: -mhang, box(width: mhang + col-w,
+// a small fielded table for payload / parameter layouts. The column
+// count is inferred from the header row's arity, so 2-, 3- and 4-column
+// tables all lay out correctly. Every column is auto-sized except the
+// last, which is fractional and wraps — so put the prose in the last
+// column. The body cells are monospaced; the header is Helvetica on red.
+#let mk-table(rows) = {
+  set text(hyphenate: false)
+  let ncol = rows.first().len()
+  let cols = range(ncol - 1).map(_ => auto) + (1fr,)
   table(
-    columns: (auto, auto, 1fr),
+    columns: cols,
     inset: (x: 7pt, y: 3.4pt),
-    align: (left + horizon, left + horizon, left + horizon),
+    align: left + horizon,
     stroke: none,
     fill: (_, row) => if row == 0 { red } else if calc.odd(row) { chip-bg } else { none },
-    table.hline(y: 0, stroke: 0pt),
-    ..rows.pos().enumerate().map(((i, r)) => {
+    ..rows.enumerate().map(((i, r)) => {
       let st = if i == 0 { (font: f-head, weight: 700, size: 7.5pt, fill: paper) }
                else { (font: f-mono, size: 7pt, fill: ink) }
       r.map(cell => text(..st, cell))
     }).flatten()
-  ))))
+  )
+}
+// full-bleed payload table: reaches into the left margin, spans to the
+// column's right edge.  Use standalone (one table per line).
+#let ptable(..rows) = block(above: 0.7em, below: 0.9em,
+  pad(left: -mhang, box(width: mhang + col-w, mk-table(rows.pos()))))
+// plain table that fills whatever container holds it.  Use inside a
+// grid when two tables sit side by side.
+#let ptbl(..rows) = block(above: 0.5em, below: 0.6em, mk-table(rows.pos()))
 
 // a two-column "Returns / On error" style note line
 #let returns(body) = block(above: 0.4em, below: 0.6em, {
@@ -944,12 +956,16 @@ where #cw("x") is the channel number 1–8, #cw("PROTO") is one of the
 schemes below, and the rest is the resource. The firmware recognises:
 
 #ptable(
-  ("Scheme", "Use", "Scheme", "Use"),
-  ("TCP", "raw TCP socket", "TNFS", "remote disk filesystem"),
-  ("UDP", "datagram socket", "FTP", "file transfer"),
-  ("HTTP", "web (cleartext)", "SMB", "Windows shares"),
-  ("HTTPS", "web (TLS)", "SSH", "secure shell"),
-  ("TELNET", "telnet", "", ""),
+  ("Scheme", "Use"),
+  ("TCP", "raw TCP socket"),
+  ("UDP", "datagram socket"),
+  ("HTTP", "web server, cleartext"),
+  ("HTTPS", "web server, TLS"),
+  ("TNFS", "remote disk filesystem"),
+  ("FTP", "file transfer"),
+  ("SMB", "Windows / SMB shares"),
+  ("SSH", "secure shell"),
+  ("TELNET", "telnet"),
 )
 
 #sect("Channels and the Device Unit")
@@ -999,7 +1015,7 @@ and a terminating zero.
   ("4…", "N+1", "device spec string, NUL-terminated"),
 )
 #grid(columns: (1fr, 1fr), column-gutter: 14pt,
-  ptable(
+  ptbl(
     ("Mode", "Access"),
     ("$04", "read"),
     ("$08", "write"),
@@ -1007,7 +1023,7 @@ and a terminating zero.
     ("$0D", "HTTP POST"),
     ("$05", "HTTP DELETE"),
   ),
-  ptable(
+  ptbl(
     ("Trans", "Line endings"),
     ("$00", "none (binary)"),
     ("$01", "CR"),
@@ -1234,14 +1250,14 @@ Each takes the same payload — a device spec naming the target — so one
 example covers them all.
 
 #ptable(
-  ("Code", "Char", "Operation", "fujinet-lib"),
-  ("$21", "!", "delete file", "network_fs_delete"),
-  ("$20", "(sp)", "rename (spec is from,to)", "network_fs_rename"),
-  ("$23", "#", "lock (make read-only)", "network_fs_lock"),
-  ("$24", "$", "unlock", "network_fs_unlock"),
-  ("$2A", "*", "make directory", "network_fs_mkdir"),
-  ("$2B", "+", "remove directory", "network_fs_rmdir"),
-  ("$2C", ",", "change directory", "network_fs_cd"),
+  ("Code", "Operation", "fujinet-lib"),
+  ("$21  '!'", "delete file", "network_fs_delete"),
+  ("$20", "rename (spec is from,to)", "network_fs_rename"),
+  ("$23  '#'", "lock (make read-only)", "network_fs_lock"),
+  ("$24  '$'", "unlock", "network_fs_unlock"),
+  ("$2A  '*'", "make directory", "network_fs_mkdir"),
+  ("$2B  '+'", "remove directory", "network_fs_rmdir"),
+  ("$2C  ','", "change directory", "network_fs_cd"),
 )
 #listing("3-8", "Delete a remote file")[
 ```
@@ -1355,13 +1371,13 @@ The mode travels in the *second* argument byte.
   ("3", "1", "channel mode (see table)"),
 )
 #grid(columns: (1fr, 1fr), column-gutter: 14pt,
-  ptable(
+  ptbl(
     ("Mode", "Meaning"),
     ("0", "body (default)"),
     ("1", "collect request headers"),
     ("2", "read response headers"),
   ),
-  ptable(
+  ptbl(
     ("Mode", "Meaning"),
     ("3", "set request headers"),
     ("4", "POST: set data"),
@@ -1436,12 +1452,14 @@ Triggers a scan and returns the count of access points found, in the
 first payload byte. fujinet-lib: #cw("fuji_scan_for_networks()").
 
 #cmd("GET SCAN RESULT", "CONTROL $FC + STATUS $FC")
-A paired command. #cw("CONTROL") with the index selects an access point;
-the following #cw("STATUS") returns its name and signal.
+A paired command. The #cw("CONTROL") sends the index of the access point
+you want; the following #cw("STATUS") returns that one's name and signal.
 #ptable(
-  ("Phase", "Offset", "Bytes", "Meaning"),
-  ("CONTROL", "0–1 / 2", "2 / 1", "length $0001; AP index n"),
-  ("STATUS", "0–32 / 33", "33 / 1", "SSID (NUL-padded); RSSI (signed)"),
+  ("Phase", "Bytes", "Field"),
+  ("CONTROL", "2", "length = $0001"),
+  ("CONTROL", "1", "AP index n"),
+  ("STATUS", "33", "SSID (NUL-padded)"),
+  ("STATUS", "1", "RSSI (signed)"),
 )
 #returns[fujinet-lib: #cw("fuji_get_scan_result()").]
 
@@ -1618,9 +1636,10 @@ A paired command. #cw("CONTROL") sets the maximum length to return and a
 flags byte; the following #cw("STATUS") returns one entry. Set bit 7 of
 the flags to append a details block after the name.
 #ptable(
-  ("Phase", "Offset", "Bytes", "Meaning"),
-  ("CONTROL", "2 / 3", "1 / 1", "max length; flags ($80 = + details)"),
-  ("STATUS", "0…", "maxlen", "filename; details if requested"),
+  ("Phase", "Bytes", "Field"),
+  ("CONTROL", "1", "max length to return"),
+  ("CONTROL", "1", "flags ($80 = append details)"),
+  ("STATUS", "maxlen", "filename; details if requested"),
 )
 The optional details block, appended after the filename, is:
 #ptable(
@@ -1981,7 +2000,7 @@ command number for #cw("READ")/#cw("WRITE").
 #sect("Device Types and Calls")
 
 #grid(columns: (1fr, 1fr), column-gutter: 14pt,
-  ptable(
+  ptbl(
     ("Type", "Device"),
     ("$10", "THE_FUJI (control)"),
     ("$11", "NETWORK (N:)"),
@@ -1990,7 +2009,7 @@ command number for #cw("READ")/#cw("WRITE").
     ("$14", "printer"),
     ("$15", "modem"),
   ),
-  ptable(
+  ptbl(
     ("Cmd", "SmartPort call"),
     ("$00", "STATUS"),
     ("$04", "CONTROL"),
