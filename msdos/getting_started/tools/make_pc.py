@@ -86,54 +86,64 @@ def main():
     bz = 10.0
     case += box(bz, SU_W - bz, -2.0, 0.0, bz, SU_H - bz)
 
-    # two 5.25" diskette drive bays on the right half, front face
-    bay_w, bay_h = 150.0, 46.0
-    bay_x = SU_W - bay_w - 26.0
-    for i, bz0 in enumerate((SU_H - 30 - bay_h, SU_H - 30 - 2 * bay_h - 12)):
-        dark += box(bay_x, bay_x + bay_w, -3.0, 1.0, bz0, bz0 + bay_h)
-        # the horizontal door slot
-        dark += box(bay_x + 12, bay_x + bay_w - 12, -5.0, -3.0,
-                    bz0 + bay_h / 2 - 4, bz0 + bay_h / 2 + 4)
-        # load lever (small square, left of slot)
-        case += box(bay_x + 14, bay_x + 30, -6.0, -3.0,
-                    bz0 + bay_h / 2 - 7, bz0 + bay_h / 2 + 7)
+    # two full-height 5.25" diskette drives side by side on the right
+    # (GTO 2-8 "Component Arrangement"): a recessed opening holding two
+    # black drive faces, each with a horizontal slot and a centred
+    # vertical load lever
+    da_x0, da_x1 = 190.0, SU_W - 22.0
+    da_z0, da_z1 = 16.0, SU_H - 16.0
+    dark += box(da_x0, da_x1, -3.0, 1.0, da_z0, da_z1)   # recessed opening
+    bay_gap = 8.0
+    bay_w = (da_x1 - da_x0 - 3 * bay_gap) / 2
+    for i in range(2):
+        bx0 = da_x0 + bay_gap + i * (bay_w + bay_gap)
+        bx1 = bx0 + bay_w
+        zm = (da_z0 + da_z1) / 2
+        dark += box(bx0, bx1, -6.0, -2.0, da_z0 + 4, da_z1 - 4)  # drive face
+        # horizontal diskette slot across the face
+        dark += box(bx0 + 14, bx1 - 14, -8.5, -6.0, zm - 5, zm + 5)
+        # vertical load lever over the slot centre
+        cx = (bx0 + bx1) / 2
+        case += box(cx - 8, cx + 8, -10.0, -5.0, zm - 20, zm + 20)
 
-    # left-front cooling vents (thin vertical raised ribs)
-    for i in range(7):
-        vx = 40 + i * 16
-        case += box(vx, vx + 7, -3.0, 0.0, 34, SU_H - 34)
+    # IBM badge, top-left front
+    base += box(30, 92, -4.0, -1.0, SU_H - 42, SU_H - 22)
 
-    # little IBM logo plate, lower-left front
-    base += box(36, 96, -4.0, -1.0, 14, 30)
+    # small vent grille, lower-left front (thin vertical slits)
+    for i in range(10):
+        vx = 34 + i * 9
+        dark += box(vx, vx + 4, -2.5, 1.0, 20, 52)
 
     # ====================================================================
     # DISPLAY  (monochrome monitor, sits on top toward the back)
     # ====================================================================
-    MON_W, MON_D, MON_H = 360.0, 330.0, 300.0
+    # IBM Monochrome Display (GTO 2-8): boxy body on a shallow inset
+    # plinth, screen offset left, control column on the right of the
+    # bezel with the IBM badge up top and two knobs below
+    MON_W, MON_D, MON_H = 380.0, 330.0 , 290.0
     mon_x = (SU_W - MON_W) / 2 + 10
-    mon_y = 30.0                          # set back a little
+    mon_y = 25.0                          # set back a little
     mon_z0 = SU_H                         # sits on the system unit
-    # tilt/swivel base (smaller block under the monitor)
-    base += box(mon_x + 40, mon_x + MON_W - 40, mon_y + 40, mon_y + MON_D - 40,
-                mon_z0, mon_z0 + 26)
-    mz = mon_z0 + 26
+    # shallow inset plinth
+    base += box(mon_x + 16, mon_x + MON_W - 16, mon_y + 16, mon_y + MON_D - 16,
+                mon_z0, mon_z0 + 16)
+    mz = mon_z0 + 16
     # monitor body
     case += box(mon_x, mon_x + MON_W, mon_y, mon_y + MON_D, mz, mz + MON_H)
     # face bezel inset
-    fb = 26.0
+    fb = 20.0
     case += box(mon_x + fb, mon_x + MON_W - fb, mon_y - 3.0, mon_y,
-                mz + fb, mz + MON_H - fb - 36)
-    # the screen (dark, recessed), slightly inboard of the bezel
-    sb = 46.0
-    dark += box(mon_x + sb, mon_x + MON_W - sb - 60, mon_y - 1.0, mon_y + 6.0,
-                mz + sb, mz + MON_H - sb - 40)
-    # two control knobs, front-right below the screen
-    kx = mon_x + MON_W - 44
-    for kz in (mz + 70, mz + 40):
-        base += cyl(kx, kz, mon_y - 16.0, mon_y - 2.0, 11.0)
-    # brand plate lower-right of bezel
-    base += box(mon_x + MON_W - 96, mon_x + MON_W - 54, mon_y - 4.0, mon_y - 1.0,
-                mz + 26, mz + 46)
+                mz + fb, mz + MON_H - fb)
+    # the screen (dark), offset left of the control column
+    dark += box(mon_x + 36, mon_x + MON_W - 88, mon_y - 4.5, mon_y + 6.0,
+                mz + 42, mz + MON_H - 34)
+    # control column, right of the screen: IBM badge on top,
+    # two knobs (contrast / brightness) stacked below
+    kx = mon_x + MON_W - 52
+    base += box(kx - 16, kx + 16, mon_y - 4.0, mon_y - 1.0,
+                mz + MON_H - 62, mz + MON_H - 40)
+    for kz in (mz + 132, mz + 96):
+        base += cyl(kx, kz, mon_y - 14.0, mon_y + 2.0, 10.0)
 
     # ====================================================================
     # KEYBOARD  (in front of the system unit, on the table, wedge profile)
@@ -189,26 +199,72 @@ def main():
     save_stl(os.path.join(outdir, "pc_base.stl"), base)
 
     # ====================================================================
-    # REAR PANEL  (a flat plate with the option-card cutouts + COM DB9)
+    # REAR PANEL  (viewed from the rear; layout follows the IBM 5150
+    # Guide to Operations "Rear Panel Reference", Setup 2-7: power
+    # supply fan and power connectors at left, RF-modulator cable
+    # opening and round knockout top-centre, keyboard/cassette DIN
+    # sockets bottom-centre, five option-card slots at right)
     # ====================================================================
     rp = []
     rpd = []
     PW, PH = 500.0, 138.0
     rp += box(0, PW, 0, 4, 0, PH)
-    # five option-card slot openings across the right two-thirds
+
+    # panel screws along the top and bottom edges
+    for sx, sz in ((16, 128), (128, 128), (245, 128), (330, 128),
+                   (16, 10), (245, 10)):
+        rpd += cyl(sx, sz, -0.8, 2, 2.8, seg=14)
+
+    # power supply fan: round dark grille with horizontal louvers
+    fcx, fcz, fr = 195.0, 76.0, 34.0
+    rpd += cyl(fcx, fcz, -0.8, 5, fr, seg=40)
+    zl = fcz - 28.0
+    while zl < fcz + 28.0:
+        hw = np.sqrt(max(fr * fr - (zl - fcz) ** 2,
+                         fr * fr - (zl + 3.5 - fcz) ** 2)) - 1.5
+        rp += box(fcx - hw, fcx + hw, -1.4, -0.6, zl, zl + 3.5)
+        zl += 8.0
+
+    # recessed well, lower left, holding the two power connectors
+    # (video power outlet for the display + system power inlet)
+    rpd += box(48, 170, -0.8, 5, 16, 58)
+    for px in (58.0, 116.0):
+        rp += box(px, px + 44, -1.6, -0.8, 22, 52)      # connector body
+        for j in range(3):
+            rpd += box(px + 8 + j * 11, px + 14 + j * 11, -2.2, -1.4,
+                       33, 40)                          # the three pins
+
+    # cable opening for the RF modulator (stadium-shaped knockout)
+    rpd += box(258, 292, -0.8, 5, 106, 120)
+    rpd += cyl(258, 113, -0.8, 5, 7, seg=18)
+    rpd += cyl(292, 113, -0.8, 5, 7, seg=18)
+
+    # round cable knockout, centre
+    rpd += cyl(315, 74, -0.8, 5, 11, seg=24)
+
+    # keyboard and cassette DIN sockets, bottom centre
+    for dx in (288.0, 322.0):
+        rpd += cyl(dx, 33, -1.2, 5, 13.5, seg=24)       # socket ring
+        rp += cyl(dx, 33, -1.8, -0.6, 10.0, seg=24)     # inner face
+        rpd += cyl(dx, 33, -2.4, -1.4, 3.0, seg=12)     # centre key
+
+    # option-card cage at right: opening with five vertical slot
+    # brackets; two carry D-connectors (long axis vertical, as the
+    # cards mount them) — the 9-pin serial COM port and a 25-pin
+    rpd += box(342, 495, -1, 5, 14, 124)
+    br_w, br_gap = 24.0, 6.0
     for i in range(5):
-        sx = 150 + i * 64
-        rpd += box(sx, sx + 40, -1, 5, 24, PH - 18)
-    # power connectors / fan on the left
-    rpd += box(20, 70, -1, 5, 30, 80)                 # power inlet
-    rpd += box(84, 120, -1, 5, 30, 70)                # aux power
-    # the DB9 male serial connector protruding from one card slot
-    db = 150 + 3 * 64
-    rp += box(db + 4, db + 36, -16, -1, 52, 84)        # connector shell
-    for row, n, z in ((0, 5, 70), (1, 4, 62)):
-        for j in range(n):
-            rpd += box(db + 8 + j * 6, db + 11 + j * 6, -18, -15,
-                       z, z + 3)                       # pins
+        bx0 = 347 + i * (br_w + br_gap)
+        rp += box(bx0, bx0 + br_w, -2, -1, 16, 122)     # slot cover/bracket
+    # 9-pin D serial (COM) connector on the third bracket
+    cx = 347 + 2 * (br_w + br_gap) + br_w / 2
+    rp += box(cx - 6.5, cx + 6.5, -3.5, -2, 53, 85)     # flange
+    rpd += box(cx - 4.5, cx + 4.5, -4.3, -3.0, 58, 80)  # D mouth
+    # 25-pin D (printer) connector on the rightmost bracket
+    cx = 347 + 4 * (br_w + br_gap) + br_w / 2
+    rp += box(cx - 6.5, cx + 6.5, -3.5, -2, 40, 104)    # flange
+    rpd += box(cx - 4.5, cx + 4.5, -4.3, -3.0, 46, 98)  # D mouth
+
     save_stl(os.path.join(outdir, "pc_rear.stl"), rp)
     save_stl(os.path.join(outdir, "pc_rear_dark.stl"), rpd)
 

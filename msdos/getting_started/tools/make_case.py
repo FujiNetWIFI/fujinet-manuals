@@ -8,10 +8,12 @@ Knob and a Button.  This script:
   * recentres each half on the XY origin,
   * flips the Top over and stacks it on the Bottom to form the closed
     clamshell,
-  * mirrors the one knurled knob into the pair that flanks the DB-9,
+  * mirrors the one knurled knob into the pair that flanks the DE-9,
   * keeps the button,
-  * generates the DB-9 male connector (shell + pins) that plugs into
-    the PC's serial port, and two LED light-pipe domes,
+  * generates the DE-9 female connector (mounting flange, rounded
+    D-shaped metal shell, recessed insulator with the 9 socket holes)
+    that mates with the PC's male serial port, and two LED light-pipe
+    domes,
 
 and writes the transformed/!generated parts as STL files that the
 Makefile feeds to stl2png.py.  Output goes in this tools/ directory.
@@ -98,6 +100,59 @@ def box(x0, x1, y0, y1, z0, z1):
     return np.array(f, dtype=np.float64)
 
 
+def d_poly(wt, wb, h, r, seg=6):
+    """Rounded-trapezoid 'D' cross-section in the XZ plane (CCW),
+    wide side up: wt/wb = top/bottom half-widths, h = half-height,
+    r = corner radius.  Returns a list of (x, z) points."""
+    corners = [(wt - r, h - r, 0, 90),
+               (-(wt - r), h - r, 90, 180),
+               (-(wb - r), -(h - r), 180, 270),
+               (wb - r, -(h - r), 270, 360)]
+    pts = []
+    for cx, cz, a0, a1 in corners:
+        for i in range(seg + 1):
+            a = np.radians(a0 + (a1 - a0) * i / seg)
+            pts.append((cx + r * np.cos(a), cz + r * np.sin(a)))
+    return pts
+
+
+def poly_prism(pts, cz, y0, y1):
+    """Solid prism: polygon (x,z about cz) extruded from y0 to y1,
+    capped with a fan on both faces (polygon must be convex)."""
+    f = []
+    n = len(pts)
+    ax = sum(p[0] for p in pts) / n
+    az = sum(p[1] for p in pts) / n + cz
+    for i in range(n):
+        x0, z0 = pts[i]
+        x1, z1 = pts[(i + 1) % n]
+        a = np.array([x0, y0, cz + z0]); b = np.array([x1, y0, cz + z1])
+        c = np.array([x1, y1, cz + z1]); d = np.array([x0, y1, cz + z0])
+        f += quad(a, b, c, d)
+        f += [[np.array([ax, y0, az]), b, a]]
+        f += [[np.array([ax, y1, az]), d, c]]
+    return np.array(f, dtype=np.float64)
+
+
+def poly_tube(pout, pin, cz, y0, y1):
+    """Tube: outer/inner polygons (same point count) extruded from y0
+    to y1, with ring caps joining them on both faces."""
+    f = []
+    n = len(pout)
+    for i in range(n):
+        ox0, oz0 = pout[i]; ox1, oz1 = pout[(i + 1) % n]
+        ix0, iz0 = pin[i]; ix1, iz1 = pin[(i + 1) % n]
+        oa = np.array([ox0, y0, cz + oz0]); ob = np.array([ox1, y0, cz + oz1])
+        oc = np.array([ox1, y1, cz + oz1]); od = np.array([ox0, y1, cz + oz0])
+        ia = np.array([ix0, y0, cz + iz0]); ib = np.array([ix1, y0, cz + iz1])
+        ic = np.array([ix1, y1, cz + iz1]); id_ = np.array([ix0, y1, cz + iz0])
+        f += quad(oa, ob, oc, od)          # outer wall
+        f += quad(ia, id_, ic, ib)         # inner wall
+        f += quad(od, oc, ic, id_)         # front ring
+        f += quad(oa, ia, ib, ob)          # back ring
+    return np.array(f, dtype=np.float64)
+
+
 def cyl(cx, cy, z0, z1, r, seg=40, axis="z"):
     f = []
     for i in range(seg):
@@ -162,33 +217,31 @@ def main():
     # mirroring flips winding; reverse vertex order so normals stay sane
     knob_r = knob_r[:, ::-1, :]
 
-    # --- DB-9 male connector at the +Y (connector) end ---------------
+    # --- DE-9 female connector at the +Y (connector) end -------------
+    # A panel-mount D-sub socket as seen on the real unit: mounting
+    # flange proud of the case, a rounded D-shaped metal shell, and a
+    # recessed insulator carrying the 9 socket holes (5 over 4).
     yfront = bmax[1] - bcy                # +Y rim of the case
     zc = part_z                           # connector centred on parting plane
-    # metal shell: D-shaped, approximated by a flat trapezoidal box
-    shell = []
-    sx = 15.5                             # half width of shell
-    sh0, sh1 = zc - 5.2, zc + 5.2
-    y0, y1 = yfront - 1.0, yfront + 7.5
-    # trapezoid cross-section (wider at base) extruded along Y
-    top_w, bot_w = sx - 1.2, sx
-    pa = np.array([-bot_w, y1, sh0]); pb = np.array([bot_w, y1, sh0])
-    pc = np.array([top_w, y1, sh1]); pd = np.array([-top_w, y1, sh1])
-    qa = np.array([-bot_w, y0, sh0]); qb = np.array([bot_w, y0, sh0])
-    qc = np.array([top_w, y0, sh1]); qd = np.array([-top_w, y0, sh1])
-    shell += quad(pa, pb, pc, pd)         # front face (mouth)
-    shell += quad(qa, qd, qc, qb)         # back face
-    shell += quad(pa, pd, qd, qa)         # left
-    shell += quad(pb, qb, qc, pc)         # right
-    shell += quad(pd, pc, qc, qd)         # top
-    shell += quad(pa, qa, qb, pb)         # bottom
-    shell = np.array(shell, dtype=np.float64)
-    # 9 pins poking out of the mouth (two rows: 5 + 4)
-    pins = []
-    for (px, pz) in ([(-8 + 4 * i, zc + 1.6) for i in range(5)] +
-                     [(-6 + 4 * i, zc - 1.6) for i in range(4)]):
-        pins.append(cyl(px, pz, y1, y1 + 3.0, 0.55, seg=10, axis="y"))
-    pins = np.concatenate(pins) if pins else np.zeros((0, 3, 3))
+    # mounting flange (metal), just proud of the case wall
+    fl_y0, fl_y1 = yfront - 0.5, yfront + 1.6
+    shell = [box(-15.5, 15.5, fl_y0, fl_y1, zc - 5.2, zc + 5.2)]
+    # rounded-D metal shell, wide side up, protruding to the mating face
+    sh_y1 = fl_y1 + 7.0
+    pout = d_poly(8.4, 7.0, 4.1, 1.6)
+    pin_ = d_poly(7.3, 5.9, 3.2, 1.0)
+    shell.append(poly_tube(pout, pin_, zc, fl_y1, sh_y1))
+    shell = np.concatenate(shell)
+    # insulator, recessed behind the shell mouth
+    ins_face = sh_y1 - 1.4
+    insert = poly_prism(d_poly(7.1, 5.7, 3.0, 0.9), zc, fl_y1, ins_face)
+    # 9 socket holes (two rows: 5 over 4), dark discs on the insulator
+    holes = []
+    for (px, pz) in ([(-5.48 + 2.74 * i, zc + 1.42) for i in range(5)] +
+                     [(-4.11 + 2.74 * i, zc - 1.42) for i in range(4)]):
+        holes.append(cyl(px, pz, ins_face - 1.6, ins_face + 0.15, 0.62,
+                         seg=12, axis="y"))
+    holes = np.concatenate(holes)
 
     # --- two LED light-pipe domes near the connector end -------------
     # placed just inside the +Y rim, flanking centre (flagged for
@@ -203,7 +256,8 @@ def main():
     save_stl(os.path.join(outdir, "asm_knob_r.stl"), knob_r)
     save_stl(os.path.join(outdir, "asm_button.stl"), btn)
     save_stl(os.path.join(outdir, "asm_db9_shell.stl"), shell)
-    save_stl(os.path.join(outdir, "asm_db9_pins.stl"), pins)
+    save_stl(os.path.join(outdir, "asm_db9_insert.stl"), insert)
+    save_stl(os.path.join(outdir, "asm_db9_holes.stl"), holes)
     save_stl(os.path.join(outdir, "asm_led_white.stl"), led_w)
     save_stl(os.path.join(outdir, "asm_led_orange.stl"), led_o)
     print("wrote assembled parts to", outdir)
