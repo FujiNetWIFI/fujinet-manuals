@@ -671,8 +671,9 @@ prompt, or a catchable error under #cw("ONERR GOTO"):
 )
 
 A mistyped argument — a missing comma, a word where a number should
-be — is caught by Applesoft itself as a plain #cw("?SYNTAX ERROR"),
-and the command does not run.
+be, an argument too many — is reported as a plain
+#cw("?SYNTAX ERROR") (code 16 under #cw("ONERR")); the command does
+not run, and nothing else is disturbed.
 
 #important[Network trouble on an open channel — a dropped connection,
 a server error — does #text(style: "italic")[not] interrupt your
@@ -699,10 +700,13 @@ Opens #text(style: "italic")[channel] to the destination named by
   ("mode", "number", "4 read, 8 write, 12 read/write, 13 POST"),
   ("trans", "number", "0 none, 1 CR, 2 LF, 3 CR/LF"),
 )
-#returns[#cw("RANGE ERROR") for a bad channel. A destination that
-cannot be reached does #text(style: "italic")[not] stop the program —
-it appears as the error value in #cw("NSTATUS"), so check before you
-read.]
+#returns[#cw("RANGE ERROR") for a bad channel. For file-flavored
+protocols — TNFS and its kin — a failed open is reported at once:
+#cw("PATH NOT FOUND") if the file or directory is not there,
+#cw("I/O ERROR") for other refusals, and the channel is closed for
+you. For #cw("HTTP") and #cw("HTTPS") the request has not actually
+fired yet (see Chapter 7), so nothing can have failed: check the
+error value of #cw("NSTATUS") after your first read.]
 
 #cmd("NCLOSE", "CONTROL 'C'")
 #syntax("NCLOSE channel")
@@ -822,9 +826,10 @@ Removes the (empty) directory named by the spec.
 #syntax("NDEL spec")
 Deletes the file named by the spec.
 
-#returns[All five raise #cw("I/O ERROR") — catchable with
-#cw("ONERR") — when the server refuses: a missing path, a directory
-that isn't empty, a share without write permission.]
+#returns[All five raise catchable errors when the server refuses.
+#cw("NDIR") answers #cw("PATH NOT FOUND") for a directory that isn't
+there; the others answer #cw("I/O ERROR") — a missing path, a
+directory that isn't empty, a share without write permission.]
 
 #sect("A Working Session")
 
@@ -868,9 +873,11 @@ spec, relinks it, and clears variables — afterwards, #cw("LIST") and
 own rule for a program that replaces itself, issuing it from a running
 program would pull the program out from under its own feet.]
 
-#returns[#cw("I/O ERROR") if the file cannot be reached. #cw("PROGRAM
-TOO LARGE") if the file will not fit below #cw("HIMEM") — the partial
-load is discarded and memory is left clean, as after #cw("NEW").]
+#returns[#cw("PATH NOT FOUND") if the file is not there — and the
+program in memory is left untouched. #cw("I/O ERROR") for other
+refusals. #cw("PROGRAM TOO LARGE") if the file will not fit below
+#cw("HIMEM") — the partial load is discarded and memory is left
+clean, as after #cw("NEW").]
 
 #sect("A Library Session")
 
@@ -1031,6 +1038,12 @@ mode 0, the machinery around it is the rest:
 The common recipe — custom headers on a request — is: open, mode 3,
 #cw("NWRITE") each header line, mode 0, then read the body as usual.
 
+#byway[This recipe works because an HTTP open doesn't fire the
+request; the FujiNet waits until the first status or read, giving you
+this window to set headers or POST data. It is also why #cw("NOPEN")
+cannot report an HTTP failure immediately (Chapter 3) — at open time,
+nothing has happened yet.]
+
 // ============================================================
 // CHAPTER 8
 // ============================================================
@@ -1157,7 +1170,8 @@ These stop the command and print a message — or land in your
   ("Message", "PEEK(222)", "Raised when"),
   ("NO DEVICE CONNECTED", "3", "no FujiNet network device was found at boot"),
   ("RANGE ERROR", "2", "a channel number is not 1-15"),
-  ("I/O ERROR", "8", "the FujiNet refused a filesystem operation"),
+  ("PATH NOT FOUND", "6", "an open names a file or directory that isn't there"),
+  ("I/O ERROR", "8", "the FujiNet refused the operation"),
   ("PROGRAM TOO LARGE", "14", "an NLOAD file will not fit below HIMEM"),
   ("?SYNTAX ERROR", "16", "a command's arguments are malformed"),
 )
@@ -1171,7 +1185,9 @@ channel without interrupting the program:
   ("err", "Meaning"),
   ("1", "all is well"),
   ("136", "end of data - the far side finished cleanly"),
-  ("128-255", "trouble: connection refused, reset, not found..."),
+  ("144", "a general, fatal error"),
+  ("170", "file not found"),
+  ("128-255", "other trouble: connection refused, reset..."),
 )
 
 A robust fetch loop treats 136 as success-and-stop, anything else at
@@ -1235,6 +1251,14 @@ closes. Set both, or the first #cw("CATALOG") un-protects you.]
 open file's 1K buffer #text(style: "italic")[above] HIMEM — that is
 what the stock #cw("\$9600-\$99FF") gap is for. A resident parked
 directly at HIMEM gets a directory block written over its code.]
+
+#sq[*Never let a ROM error escape your handler.* The Applesoft
+evaluators bail out through #cw("ERROR") on bad input, which abandons
+BI's dispatch mid-command and wedges its command processing until
+reboot. The extension runs every handler under a private #cw("ONERR")
+frame aimed at a one-line decoy program whose #cw("CALL") unwinds the
+stack and fails the command properly — so a typo costs you a
+#cw("?SYNTAX ERROR"), not the machine.]
 
 The deeper story — SmartPort calls, the NETWORK device, channels and
 control codes — is the subject of the companion volume,
