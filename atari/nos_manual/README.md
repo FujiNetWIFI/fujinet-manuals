@@ -11,24 +11,33 @@ volume" is an orthographic globe drawn exactly the way the original
 draws a diskette, dark body, sector grid, colored file slabs.
 
 Audience: new Atari users **and** experienced ATARI DOS users (the
-"What NOS Doesn't Do" spread maps every DOS 2.0S menu letter to its
-NOS equivalent, and lists what's missing with workarounds).
+"The Menu" chapter sets NOS 1.0's DOS 2.0-style menu side by side
+with the original, letter by letter).
 
 ## Contents
 
 - Introducing / Beginning with NOS (booting `NOS.atr` from
-  `apps.irata.online:/Atari_8-bit/DOS/`, the prompt, overlays)
+  `apps.irata.online:/Atari_8-bit/DOS/`, boot-to-menu, overlays)
+- The Menu (all sixteen items A–P, their prompts, the DOS 2.0
+  side-by-side, where the transient menu module lives)
 - Network, Not Disk (no FMS; `D:` mapped to the `N:` handler)
 - Connecting to a Server (NCD/NPWD), The Eight Network Drives
   (shared mounts, the NCD-while-programming caution, N4: as NOS's
   service line)
 - The Protocols (from `fujinet-firmware/lib/network-protocol`:
-  TNFS, SD, FTP, HTTP(S)/WebDAV, SMB, NFS, GDRIVE + stream protocols)
-- Directory, Wild Cards, Filespecs & URLs, Saving/Loading BASIC,
-  Loading Programs, Copying, Deleting/Renaming, Text Files & NTRANS,
+  TNFS, SD, FTP, HTTP(S)/WebDAV, SMB, NFS, GDRIVE + stream
+  protocols, incl. the NOTE/POINT seek column)
+- Directory, Wild Cards (now incl. DEL with Y/N confirm and COPY),
+  Filespecs & URLs, Saving/Loading BASIC, Loading Programs,
+  Copying (one-arg + wildcard), Deleting/Renaming, Text Files &
+  NTRANS, Moving Around In a File (NOTE/POINT via XIO 37/38),
   Batch Files, AUTORUN (AppKey `db790000.key` on the FujiNet's SD)
-- What NOS Doesn't Do, Troubleshooting, Getting Help (HELP over N4:)
-- Command Reference (all 32 commands + aliases, source-derived)
+- What NOS Doesn't Do, Troubleshooting, Getting Help (HELP over N4:
+  + the card catalog of `nos/HELP/`)
+- Inside NOS (memory map, overlay system, NOS.atr disk layout,
+  writing a new overlay, the burst engine)
+- Command Reference (all 33 commands + aliases + menu letters,
+  source-derived)
 - Appendix: the complete `nos.s` source listing
 
 ## Building
@@ -44,9 +53,13 @@ Requires Typst 0.13+.
 
 Content is verified against source, not docs:
 
-- `fujinet-nhandler/nos/src/nos.s` (v0.8.0) — commands, aliases,
-  overlay architecture, AppKey creator `$DB79`, HELP URL (N4:),
-  error strings, SUBMIT echo default (quiet), NCOPY `,A` append.
+- `fujinet-nhandler/nos/src/nos.s` (v1.0.0) — commands, aliases,
+  the menu module, wildcard DEL/COPY, NOTE/POINT, burst constants,
+  overlay architecture and addresses (OVLBUF `$1900`, MEMLO
+  `$1B00`, menu `$2600`, wild `$4300`), AppKey creator `$DB79`,
+  HELP URL (N4:), error strings, SUBMIT echo default (quiet).
+- `fujinet-nhandler/nos/HELP/*` — the online help library cataloged
+  in "Getting Help" (NOS/ASM/MAP/REF/DEV/UTL shelves).
 - `fujinet-firmware/lib/network-protocol/*` — protocol list and
   capability matrix (`*_implemented` flags), FTP anonymous login,
   GDRIVE OAuth relay, SD card protocol.
