@@ -2,7 +2,7 @@
 
 *The GitHub-wiki twin of the print booklet
 `fujinet-nos-introduction.pdf`. Content verified against
-`fujinet-nhandler/nos/src/nos.s` (v1.0.0) and
+`fujinet-nhandler/nos/src/nos.s` (v1.1.0) and
 `fujinet-firmware/lib/network-protocol`.*
 
 ---
@@ -24,9 +24,11 @@ live. DOS keeps them on a diskette spinning a few inches away. NOS
 keeps them anywhere at all — on the computer in your den, or on a
 hobbyist server on the other side of the world.
 
-One thing you won't find here is anything about floppy diskettes.
-NOS doesn't use them. There is nothing to format, nothing to insert,
-and nothing to fill up.
+One thing you'll find little of here is floppy diskettes. NOS
+doesn't live on them — there is nothing to format and nothing to
+fill up. (It can *visit* them, though: new in 1.1, DIR and COPY read
+and write real ATARI DOS diskettes for ferrying files — see "The
+Diskette Comes Back.")
 
 **Got everything?** You need: an ATARI home computer; a FujiNet
 connected to your wireless network; and the NOS disk image,
@@ -54,7 +56,7 @@ drive**. You have eight, named `N1:` through `N8:`.
    waiting on one keystroke:
 
 ```
-FUJINET NETWORK OPERATING SYSTEM 1.0
+FUJINET NETWORK OPERATING SYSTEM 1.1
 COPYLEFT 2026 FUJINET
 
  A. DIRECTORY         I. CHANGE DIR
@@ -99,7 +101,7 @@ result. Answer a question with a bare RETURN and the item runs plain
 |------|---------|------|
 | A. Directory | `DIRECTORY-SEARCH SPEC?` | **DIR** |
 | B. Run Cartridge | — runs at once — | **CAR** |
-| C. Copy File | `COPY-FROM,TO?` | **NCOPY** |
+| C. Copy File | `COPY SRC,DEST (Dn:/Nn:)?` | **NCOPY** |
 | D. Delete File(s) | `DELETE FILE SPEC?` | **DEL** |
 | E. Rename File | `RENAME-OLD,NEW?` | **RENAME** |
 | F. Make Directory | `MAKE DIRECTORY?` | **MKDIR** |
@@ -126,10 +128,10 @@ card and it works through the crowd, asking about each file by name.
 
 **Where the menu lives:** the menu is not resident. Each time it
 draws, NOS reads it fresh from `NOS.atr` — ten sectors — into free
-memory at `$2600`, and your chosen command runs from *resident* code,
+memory at `$2700`, and your chosen command runs from *resident* code,
 so a command that overwrites the menu can't get lost on the way home.
-The honest price: a program tall enough to reach `$2600` (about 2.8K
-past NOS's floor at `$1B00`) gets a corner stepped on when the menu
+The honest price: a program tall enough to reach `$2700` (about 2.8K
+past NOS's floor at `$1C00`) gets a corner stepped on when the menu
 draws. The command line loads nothing up there at all.
 
 ## Network, Not Disk
@@ -139,7 +141,7 @@ of spinning plastic. NOS is built around a connection. Once a network
 drive is *mounted*, everything you know from DOS carries over.
 
 **Where did D: go?** ATARI software talks to diskettes through a
-device named `D:`. NOS contains no disk software at all — no File
+device named `D:`. NOS keeps no disk software in residence — no File
 Management System, no sectors, no formatting — but it still answers
 calls to `D:`. When a program asks `D:` for a file, NOS quietly hands
 the request to the network device, `N:` (`D1:` means `N1:`, `D2:`
@@ -152,8 +154,10 @@ Day to day, that means:
 - Drive numbers name **connections**, not hardware.
 - There are no handlers to load — NOS installs its `N:` handler at
   boot and maps `D:` to it.
-- Physical and emulated diskettes are **not** reachable from NOS
-  (see "What NOS Doesn't Do").
+- Physical and emulated diskettes are reachable through exactly one
+  door: DIR and COPY accept `D2:`–`D8:` for ferrying files — new in
+  1.1 (see "The Diskette Comes Back"). Everything else still speaks
+  network.
 
 ## Connecting to a Server
 
@@ -233,6 +237,43 @@ Advice for programmers:
   units 1–4 — that's where TYPE, NCOPY, SAVE, SUBMIT, and your own
   OPEN statements should live.
 
+## One File At a Time
+
+Here is the one habit DOS lets you keep that NOS asks you to trade.
+A DOS drive could hold several open files at once — three on a
+stock DOS 2.0, up to seven if you configured it. A network drive
+holds **one**: each `Nn:` is a single conversation with its server,
+and asking it to open a second file quietly ends the first. Most
+commands never notice (open, use, close) — the habit matters the
+day one program needs *two* files at once, reading one while
+writing another, the daily bread of assemblers and compilers. And
+because `D:` is `N:` in different clothes (`D1:` = `N1:`, `D2:` =
+`N2:`), the habit travels with every program that thinks it is
+talking to diskettes.
+
+The cure is generous: you have eight drives, and nothing stops two
+of them pointing at the *same place*. Aim a second drive at the
+folder and give each file its own door:
+
+```
+CD N1:TNFS://TMA-3/SRC/LIVEWIRE/
+CD N2:TNFS://TMA-3/SRC/LIVEWIRE/
+```
+
+Now the ATARI Macro Assembler takes its parameters the way its 1981
+manual wrote them — `D:LIVEWIRE.ASM,H=LIVEWIRE.OBJ` — the source
+streams in through drive 1 while the object streams out through
+drive 2: one folder, two doors, both conversations open at once.
+The endpoints don't have to match, either — read sources from one
+server and write objects to another entirely.
+
+NOS's own commands live by the same rule: it is why NCOPY builds
+its network destination over `N4:`, and why a wild-card copy that
+would put both ends on one drive quietly moves the destination to
+another before opening it. (`TOO MANY FILES OPEN` is a different
+complaint — the computer ran out of IOCB channels, not the drive
+out of files.)
+
 ## The Protocols
 
 A **protocol** is the language a server speaks; you choose one in the
@@ -291,7 +332,9 @@ UTILS/
 
 Sizes appear in bytes, `K`, or `M`; folders end with `/`. Hold SPACE
 to pause a long listing, ESC to stop it. Name a drive, a path, or
-both: `DIR N2:`, `DIR GAMES/`, `DIR N2:GAMES/*.XEX`.
+both: `DIR N2:`, `DIR GAMES/`, `DIR N2:GAMES/*.XEX`. And new in 1.1,
+name a *diskette*: `DIR D2:` lists a real ATARI DOS 2.0 disk,
+old-style, sector counts and all (see "The Diskette Comes Back").
 
 ## Wild Cards
 
@@ -308,10 +351,11 @@ stays careful: every matched file is offered back by name, and only a
 Y sends it away. Copying announces each file as it goes. **RENAME**
 is the lone holdout: one plain filename at a time.
 
-Fine print: NOS gathers the matched names into a 512-byte list — room
-for a few dozen names per command. If a pattern catches more files
-than that, run the command again; the list refills with the files
-that remain.
+Fine print: for network sources NOS gathers the matched names into a
+512-byte list — room for a few dozen names per command. If a pattern
+catches more files than that, run the command again; the list refills
+with the files that remain. (On a diskette — new in 1.1 — NOS matches
+DOS-style against the directory itself, 8+3, with no list limit.)
 
 ## Filespecs and URLs
 
@@ -362,9 +406,16 @@ start-to-finish is right at home already.
 - **The shortcut:** type a bare word NOS doesn't recognize and it
   tries `LOAD WORD.COM` from the current drive. Every `.COM` on the
   drive is, in effect, a NOS command.
+- **Words after the name** (new in 1.1): whatever you type after the
+  program's name rides along — `ATARIWRITER LETTER.TXT`. NOS presents
+  the line the way OS/A+, DOS XL, and SpartaDOS did (a 63-character
+  command line at `DOSVEC+63`), so cc65's `argv[]` and
+  SpartaDOS-convention programs find their parameters waiting. Typed
+  lines only — programs started from menu item L or from a batch
+  file run without parameters.
 - `REENTER` (alias `REE`) — jump back into the last loaded program
   (its run/init address). Two cautions: exiting to NOS draws the
-  menu, which borrows `$2600`–`$2AFF` — a program occupying that
+  menu, which borrows `$2700`–`$2BFF` — a program occupying that
   patch won't survive the round trip; and some programs re-initialize
   on entry. Save first.
 - `RUN A000` (menu item **M**) — call machine code by hex address
@@ -372,20 +423,23 @@ start-to-finish is right at home already.
   `RUN 0600`).
 - `CAR` (menu item **B**) — to the cartridge (or built-in BASIC) with
   memory preserved; type `DOS` there to come back. Caution for long
-  programs: coming back draws the menu at `$2600` — room for about
+  programs: coming back draws the menu at `$2700` — room for about
   2.8K of BASIC program above NOS's floor. Longer than that, SAVE
   before you visit.
 - `BASIC ON|OFF` (alias `ROM ON|OFF`; menu item **H**) — XL/XE only:
   swap built-in BASIC in/out without rebooting while holding OPTION.
   The border stays gray while ROM is in, as a reminder. `BASIC ON`
-  when already on behaves like CAR.
+  when already on behaves like CAR — and, new in 1.1, it works even
+  when the machine *booted* with BASIC off: the screen is rebuilt
+  below the ROM and BASIC cold-starts at a fresh, *empty* READY, so
+  SAVE before OFF if you mean to come back.
 - `SAVE FILE,START,END[,INIT][,RUN]` (menu item **K**) — write a
   memory range as a binary file; skip INIT but give RUN with a double
   comma: `SAVE MYPROG,2000,2FFF,,2000`.
 
 ## Copying Files
 
-Menu item **C** asks `COPY-FROM,TO?`; at the prompt:
+Menu item **C** asks `COPY SRC,DEST (Dn:/Nn:)?`; at the prompt:
 
 ```
 NCOPY MYFILE,MYFILE2
@@ -407,7 +461,62 @@ name as it goes — no confirmation. `,A` appends instead of replacing.
 `P:` prints, `E:` shows on screen. Copying a file onto itself is
 refused (`SAME FILE?`). Two cautions: active NTRANS translation
 alters what's copied (set mode 0 for binaries), and network
-destinations are built over drive `N4:`.
+destinations are built over drive `N4:`. And that `Dn:` in the
+menu's question is no typo — new in 1.1, either side of a copy may
+be a real diskette; the next section tells that story.
+
+## The Diskette Comes Back
+
+New in 1.1: **DIR** and **COPY** understand `D2:` through `D8:` —
+real drives, or disk images your FujiNet mounts — so files can move
+between your diskettes and the network. Ask for a diskette's
+directory and it answers in pure ATARI DOS: 8+3 names, sizes counted
+in *sectors*, a `*` marking a locked file, and the free count to
+close.
+
+```
+DIR D2:
+ DUP     SYS 042
+ ARTIST  BAS 023
+*LETTER  TXT 011
+598 FREE SECTORS
+```
+
+Patterns match the way DOS matched them (`DIR D2:*.BAS`), and NOS
+does the matching itself — no server involved. COPY carries files
+through the same door in *any* direction, one file or a wild-card
+crowd:
+
+```
+COPY D2:ARTIST.BAS,N1:      diskette -> network
+COPY N1:GAME.XEX,D2:        network -> diskette
+COPY D2:OLD.TXT,D3:         diskette -> diskette
+COPY D2:LETTER.TXT          one arg: to the current drive
+COPY D2:*.BAS,N1:ATTIC/     the whole box, names echoed
+```
+
+Writing is real writing: NOS allocates the sectors, links them the
+way DOS 2.0 linked them, and updates the directory — replacing a
+file of the same name exactly as DOS would (a locked file still
+refuses).
+
+The rules of the door:
+
+- Diskettes are drives **2 through 8**; drive 1 is where NOS itself
+  lives.
+- **Single density only** — the 720-sector DOS 2.0S format of the
+  810 and 1050. Enhanced and double density still need a disk DOS.
+- Only DIR and COPY know the door. To every other command — and to
+  every *program* — `D:` is still the network.
+
+When it objects, it objects in plain DOS: `FILE NOT FOUND`,
+`DISK FULL`, `DIRECTORY FULL`, `FILE LOCKED`, `DISK I/O ERROR`, or
+`BAD DEVICE (USE D2-D8/N1-N8)`.
+
+How does an OS with no disk software do this? It borrows some: a
+whole DOS 2.0S file manager — four kilobytes — rides along on
+`NOS.atr`, is read into memory at `$5000` for exactly one command,
+and hands the RAM back when the door closes. See "Inside NOS."
 
 ## Deleting and Renaming
 
@@ -500,8 +609,11 @@ complaint.
 ## Batch Files
 
 `SUBMIT FILE` (alias `@`) runs the NOS commands in a text file as if
-typed. Write batch files anywhere — ATARI editor or your PC — with
-ATARI, LF, or CR/LF line endings; SUBMIT reads them all.
+typed — with one nuance: a program *launched* from a batch line
+starts without command-line parameters, which ride only on lines you
+type (see "Loading Programs"). Write batch files anywhere — ATARI
+editor or your PC — with ATARI, LF, or CR/LF line endings; SUBMIT
+reads them all.
 
 The batch toolkit: `PRINT "MESSAGE"` speaks; `REM` (or `'` or `#`)
 comments; `@SCREEN` / `@NOSCREEN` start and stop command echo. A
@@ -542,10 +654,11 @@ cards and it stays with the card.
 
 ## What NOS Doesn't Do
 
-Everything on this short list has the same explanation: **NOS
-contains no File Management System.** It cannot read or write
-diskettes or disk images — not even the ones your FujiNet mounts in
-its disk slots. `D:` goes to the network, full stop.
+Everything on this short list has the same explanation: **NOS keeps
+no File Management System in residence.** Since 1.1, DIR and COPY
+may *borrow* one, briefly, to ferry files off a diskette (see "The
+Diskette Comes Back") — but to every other command and every
+program, `D:` goes to the network, full stop.
 
 - **No LOCK/UNLOCK** — whether a file may change is the server's
   decision; set permissions there. Write-protected files give a
@@ -555,10 +668,12 @@ its disk slots. `D:` goes to the network, full stop.
 - **No MOVE** — copy, then delete.
 - **No dates in DIR** — names and sizes only; servers know the
   dates, NOS doesn't ask yet.
-- **No diskettes at all** — when you need one: reboot into CONFIG
-  and boot the disk image; or boot a classic DOS with the FujiNet
-  `N:` handler (`n-handler.atr`) to copy between `D:` and `N:`
-  side by side; or reach SD-card files directly with `SD://`.
+- **Diskettes, within limits** — moving *files* to and from a
+  single-density diskette is now NOS's own job. What it still won't
+  do is *run* the diskette world: no booting disk software, no
+  formatting, no enhanced or double density, no sector editors. For
+  those, reboot into CONFIG and boot the disk image — or reach
+  SD-card files directly with `SD://`.
 
 And the ledger runs the other way: no diskette swapping, no 707-
 sector ceiling, a menu of ten sectors instead of a whole DUP.SYS,
@@ -582,6 +697,7 @@ another country.
 | Error 170 | File not found — check case against DIR. Also what a mistyped bare command comes to (`WORD.COM` not found). |
 | `NOT A BINARY FILE` | LOAD given a non-binary. |
 | `SAME FILE?` | NCOPY refused to copy a file onto itself. |
+| `FILE NOT FOUND` `DISK FULL` `DIRECTORY FULL` `FILE LOCKED` `DISK I/O ERROR` `BAD DEVICE (USE D2-D8/N1-N8)` | The diskette door objecting, in plain DOS — wrong drive number, wrong density, or a sick disk (see "The Diskette Comes Back"). |
 | `NO CARTRIDGE` / `NO BUILT-IN BASIC` | CAR/BASIC found nothing to switch to. |
 | `TOO MANY FILES OPEN` | No free IOCB channel. |
 | `CANT READ DIR` | A wild-card DEL/COPY couldn't open the directory to match against. |
@@ -623,18 +739,22 @@ the known bugs, kept honestly, straight from the repository.
 ## Inside NOS
 
 For the reader who wants to know how the watch ticks. (Addresses
-verified against the MADS label table for v1.0.0.)
+verified against the MADS label table for v1.1.0.)
 
 **Memory.** At boot NOS hooks DOSVEC/DOSINI, installs its `N:`
-handler (answering for `D:` too), and raises MEMLO to `$1B00` — a
-resident cost of five kilobytes even (`$0700`–`$1AFF`), less than
-DOS 2.0 asked. The top of the resident block is working space:
-`OVLBUF` at `$1900` is a 256-byte window where overlays run, and two
-128-byte buffers (`RBUF`/`TBUF`) sit above it. The command line lives
-at `$0582`. Three tenants borrow free RAM only while on duty: the
-menu (ten sectors at `$2600`), the wild-card machinery (scratch at
-`$4000`, code at `$4300`), and NCOPY's 8K burst buffer just above
-MEMLO.
+handler (answering for `D:` too), and raises MEMLO to `$1C00` — a
+resident cost of five and a quarter kilobytes (`$0700`–`$1BFF`),
+still less than DOS 2.0 asked. The top of the resident block is
+working space: `OVLBUF` at `$1A00` is a 256-byte window where
+overlays run, and two 128-byte buffers (`RBUF`/`TBUF`) sit above it.
+Just below OVLBUF, DOSVEC points at a little OS/A+-shaped COMTAB
+whose last 64 bytes are the command line handed to launched programs
+— new in 1.1, tucked into alignment padding that was already there,
+so it costs no resident RAM. The line you type lives at `$0582`.
+Four tenants borrow free RAM only while on duty: the menu (ten
+sectors at `$2700`), the wild-card machinery (scratch at `$4000`,
+code at `$4300`), the DOS 2.0S transfer module (code at `$5000`,
+scratch at `$6800`), and the 8K burst buffer just above MEMLO.
 
 **Overlays.** Two dozen commands are resident; the bigger ones —
 AUTORUN, BASIC, DIR, DUMP, FILL, HELP, NCOPY, NTRANS, REENTER, SAVE,
@@ -644,25 +764,37 @@ ATR begins at `$0700`, a routine's assembled address *is* its place
 on disk: `sector = address/128 − 13`. The resident dispatcher
 (`DO_OVERLAY`) reads the overlay into OVLBUF and jumps to it,
 remembering what it loaded so running DIR twice reads the disk once.
-Overlays execute at `$1900` though assembled higher, so branches are
+Overlays execute at `$1A00` though assembled higher, so branches are
 relative and absolute self-references are spelled
 `OVLBUF-OVL_FOO+label`. A command too big for the window chains —
-NCOPY is three overlays handing off. The menu and wild-card engine
-are *transient modules* instead: assembled at their own run addresses
-(`$2600`, `$4300`), loaded above MEMLO on demand, dispatched from
-resident trampolines that reload them afterward.
+NCOPY is three overlays handing off. The menu, the wild-card engine,
+and the DOS 2.0S transfer module are *transient modules* instead:
+assembled at their own run addresses (`$2700`, `$4300`, `$5000`),
+loaded above MEMLO on demand, dispatched from resident trampolines
+that reload them afterward.
 
-**The disk.** `NOS.atr` maps as: sectors 1–36 boot + resident kernel;
-37–40 buffer images; 41–62 command overlays; 63–72 the menu module;
-73–78 the wild-card module; and at sector 360 a *fake* VTOC with a
-hand-built directory in 361–368 whose entry names spell out the OS's
-name — so disk tools see a healthy single-density diskette.
+**The disk.** `NOS.atr` maps as: sectors 1–38 boot + resident kernel;
+39–42 buffer images; 43–64 command overlays; 65–74 the menu module;
+75–80 the wild-card module; 81–112 the DOS 2.0S transfer module; and
+at sector 360 a *fake* VTOC with a hand-built directory in 361–368
+whose entry names spell out the OS's name and version — so disk
+tools see a healthy single-density diskette.
 
 **The burst engine.** On a binary read of 128 bytes or more with data
 waiting, NOS skips the byte-at-a-time bucket brigade: one SIO frame
 carries min(bytes waiting, buffer, 8K) straight into the caller's
 memory — the exact count requested. Writes mirror it. The last byte
 of each burst rides through CIO so the bookkeeping stays honest.
+
+**The borrowed FMS.** When DIR or COPY meets a `Dn:`, a resident
+scanner reads sectors 81–112 into `$5000`: a working DOS 2.0S file
+manager — directory search, VTOC allocation, sector chains — with
+its scratch a page up at `$6800`. The floppy is driven with raw SIO,
+never through CIO, so `D:` still means `N:` to every program. The 8K
+burst buffer above MEMLO bridges the two worlds — the network side
+arrives in bursts, the diskette side goes one 125-byte sector at a
+time — and when the command ends, the module is simply forgotten,
+the RAM yours again.
 
 **Rolling your own overlay.** Add the name to the `CMD_IDX` enum and
 keyword table (`.CB "FOO"` + `CMD_IDX.FOO`) with `CMD_TAB_L/H`
@@ -689,20 +821,20 @@ case. The Menu column names the command's item on the NOS menu.
 | **@NOSCREEN** | `@NOSCREEN` | | | Stop echoing batch commands (the default state). |
 | **@SCREEN** | `@SCREEN` | | | Start echoing batch commands; `@` lines never echo. |
 | **AUTORUN** | `AUTORUN URL` \| `?` \| `""` | | | Full URL required; AppKey `/FujiNet/db790000.key` (max 64 chars); OPTION skips at boot. |
-| **BASIC** | `BASIC ON\|OFF` | ROM | H | XL/XE built-in BASIC only; warmstarts; gray border while ROM in. |
+| **BASIC** | `BASIC ON\|OFF` | ROM | H | XL/XE built-in BASIC only; gray border while ROM in. OFF warmstarts; ON works even from a BASIC-off boot (new in 1.1) — cold-starts to an empty READY. |
 | **CAR** | `CAR` | | B | To cartridge/BASIC, memory preserved; `NO CARTRIDGE` if none. |
 | **CLS** | `CLS` | | | Clear the screen. |
 | **COLD** | `COLD` | | | Coldstart; hold OPTION to keep BASIC out (XL/XE). |
 | **DEL** | `DEL [Nn:][path/]file\|pattern` | ERASE, ERA | D | Plain name deletes immediately; a pattern asks ` (Y/N)?` per match (512-byte match list per run); case-sensitive. |
-| **DIR** | `DIR [Nn:][path/][pattern]` | | A | `*`/`?` patterns; dirs always listed; SPACE pauses, ESC stops. |
+| **DIR** | `DIR [Nn:][path/][pattern]` \| `DIR Dn:[pattern]` | | A | `*`/`?` patterns; dirs always listed; SPACE pauses, ESC stops. `Dn:` (2–8) lists a DOS 2.0S diskette, old-style (new in 1.1). |
 | **DUMP** | `DUMP START [END]` | | | Hex dump, 8 bytes/line; 4 hex digits; ESC stops. |
 | **FILL** | `FILL START END XX` | | | Fill memory with byte XX. |
 | **HELP** | `HELP [TOPIC[/ARTICLE]]` | | | Fetched from GitHub over N4:. |
-| **LOAD** | `LOAD [Nn:]file` | X | L | ATARI binaries; auto-disables translation; bare `WORD` = `LOAD WORD.COM`. |
+| **LOAD** | `LOAD [Nn:]file [params]` | X | L | ATARI binaries; auto-disables translation; bare `WORD` = `LOAD WORD.COM`. Words after the name reach the program (typed lines only; new in 1.1). |
 | **MENU** | `MENU` | | | Back to the menu from the command line (reverse of item P). |
 | **MKDIR** | `MKDIR [Nn:][path/]dir` | | F | Where the protocol allows. |
 | **NCD** | `NCD [Nn:]URL` \| `path` \| `..` \| `Nn:` | CD, CWD | I | Mount / navigate / unmount; no existence check; mounts shared. |
-| **NCOPY** | `NCOPY FROM[,TO][,A]` | COPY | C | One arg copies to current drive, same name; wild-card source copies all matches, echoing names; `,A` appends; bare `Nn:`/trailing `/` keeps name; `P:`/`E:` destinations; uses N4:. |
+| **NCOPY** | `NCOPY FROM[,TO][,A]` | COPY | C | One arg copies to current drive, same name; wild-card source copies all matches, echoing names; `,A` appends; bare `Nn:`/trailing `/` keeps name; `P:`/`E:` destinations; uses N4:. Either side may be `D2:`–`D8:`, a single-density DOS 2.0S diskette, any direction (new in 1.1). |
 | **Nn:** | `Nn:` | | N | Make drive n (1–8) current; no mount check. |
 | **NPWD** | `NPWD [Nn:]` | PWD | J | Show a drive's mount URL. |
 | **NTRANS** | `NTRANS [Nn:] mode` | | | 0 none, 1 CR, 2 LF, 3 CR/LF ⇄ EOL(155); text only. |

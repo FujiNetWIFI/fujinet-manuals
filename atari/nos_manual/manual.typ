@@ -9,7 +9,7 @@
 // booklet draws diskettes, this booklet draws the network.
 //
 // Content is source-verified against fujinet-nhandler nos/src/
-// nos.s (v1.0.0) and fujinet-firmware lib/network-protocol.
+// nos.s (v1.1.0) and fujinet-firmware lib/network-protocol.
 //
 // Build: typst compile --font-path fonts manual.typ
 // ============================================================
@@ -544,7 +544,7 @@
     [FujiNet#tm is free, open-source hardware and software, built by
      enthusiasts for enthusiasts. This booklet covers NOS, the FujiNet
      Network Operating System for the Atari 8-bit computers, version
-     1.0, by Thomas Cherryhomes and Michael Sternberg. Its design
+     1.1, by Thomas Cherryhomes and Michael Sternberg. Its design
      pays tribute to the Atari peripheral manuals of 1980--1982.
      ATARI#rg and the names of ATARI peripherals are trademarks of
      their respective owners, used here in loving tribute. FujiNet is
@@ -747,7 +747,7 @@
   #v(4pt)
   #grid(columns: (3.2in, 1fr), column-gutter: 18pt,
     screen(w: 3.2in)[
-      #sf("FUJINET NETWORK OPERATING SYSTEM 1.0", size: 5.0pt)\
+      #sf("FUJINET NETWORK OPERATING SYSTEM 1.1", size: 5.0pt)\
       #sf("COPYLEFT 2026 FUJINET", size: 5.0pt)\
       #v(3pt)
       #sf(" A. DIRECTORY         I. CHANGE DIR", size: 5.0pt)\
@@ -838,7 +838,7 @@
         text(font: f-sans, size: 6.8pt, tracking: 0.4pt)[RUNS]),
       [A. Directory], sf("DIRECTORY-SEARCH SPEC?", size: 4.6pt), [#strong[DIR]],
       [B. Run Cartridge], [--- runs at once ---], [#strong[CAR]],
-      [C. Copy File], sf("COPY-FROM,TO?", size: 4.6pt), [#strong[NCOPY]],
+      [C. Copy File], sf("COPY SRC,DEST (Dn:/Nn:)?", size: 4.6pt), [#strong[NCOPY]],
       [D. Delete File(s)], sf("DELETE FILE SPEC?", size: 4.6pt), [#strong[DEL]],
       [E. Rename File], sf("RENAME-OLD,NEW?", size: 4.6pt), [#strong[RENAME]],
       [F. Make Directory], sf("MAKE DIRECTORY?", size: 4.6pt), [#strong[MKDIR]],
@@ -891,10 +891,10 @@
 
   The menu is not part of resident NOS. Each time it draws, NOS
   reads it fresh from the disk image --- ten small sectors ---
-  into a patch of free memory at \$2600, and your chosen command
+  into a patch of free memory at \$2700, and your chosen command
   runs from #emph[resident] code, so even a command that
   overwrites the menu can't get lost on the way home. The price
-  is honest and small: a program tall enough to reach \$2600 ---
+  is honest and small: a program tall enough to reach \$2700 ---
   about 2.8K past NOS's floor --- gets a corner stepped on when
   the menu draws. The command line loads nothing up there at all,
   which is one more reason #strong[P] is the power user's first
@@ -927,7 +927,7 @@
   #lsub[Where Did D: Go?]
 
   ATARI software talks to diskettes through a device named
-  #sf("D:"). NOS contains no disk software at all --- no File
+  #sf("D:"). NOS keeps no disk software in residence --- no File
   Management System, no sectors, no formatting --- but it still
   answers calls to #sf("D:"). When a program asks #sf("D:") for a
   file, NOS quietly hands the request to the network device,
@@ -946,9 +946,10 @@
   #item[There are no BASIC pokes, no handlers to load, no
     cartridges. NOS installs its #sf("N:") handler at boot, and
     maps #sf("D:") to it.]
-  #item[Physical and emulated diskettes are #emph[not] reachable
-    from NOS. If you need real disk images, boot a disk-based DOS
-    instead --- see "What NOS Doesn't Do."]
+  #item[Physical and emulated diskettes are reachable through
+    exactly one door: DIR and COPY accept #sf("D2:")--#sf("D8:")
+    for ferrying files --- new in 1.1. Everything else still
+    speaks network --- see "The Diskette Comes Back."]
 
   The next few pages teach the one genuinely new skill NOS asks of
   you: connecting a network drive to a server.
@@ -1171,6 +1172,91 @@
 #pagebreak()
 
 // ============================================================
+// ONE FILE AT A TIME  (cream) — one open file per N: unit;
+// the two-drive pattern for read+write (AMAC example)
+// ============================================================
+#secmark("One File At a Time")
+#headband("One File", "At a Time", flush: right)
+
+#grid(columns: (1fr, 1fr, 1fr), column-gutter: 14pt, [
+  Here is the one habit DOS lets you keep that NOS asks you to
+  trade. A DOS drive could hold several open files at once ---
+  three on a stock DOS 2.0, up to seven if you configured it. A
+  network drive holds #emph[one.] Each #sf("Nn:") is a single
+  conversation with its server, and asking it to open a second
+  file quietly ends the first.
+
+  For most work you will never notice: LOAD, SAVE, TYPE, and
+  their friends open one file, use it, and close it. The habit
+  matters the day one program needs #emph[two] files at once ---
+  reading one while writing another, the daily bread of
+  assemblers and compilers.
+
+  And remember from "Network, Not Disk" that #sf("D:") is
+  #sf("N:") in different clothes --- #sf("D1:") means
+  #sf("N1:"), #sf("D2:") means #sf("N2:") --- so this habit
+  travels with every program that thinks it is talking to
+  diskettes.
+], [
+  #lsub[Two Files, Two Drives]
+
+  The cure is generous: you have eight drives, and nothing stops
+  two of them pointing at the #emph[same place.] Aim a second
+  drive at the folder and give each file its own door:
+
+  #dialogue(
+    ("you type", sf("CD N1:TNFS://TMA-3/SRC/LIVEWIRE/", size: 4.6pt)),
+    ("you type", sf("CD N2:TNFS://TMA-3/SRC/LIVEWIRE/", size: 4.6pt)))
+
+  Now the ATARI Macro Assembler takes its parameters the way its
+  1981 manual wrote them:
+
+  #dialogue(
+    ("you type", sf("D:LIVEWIRE.ASM,H=LIVEWIRE.OBJ", size: 4.8pt)))
+
+  The source streams in through drive 1 while the object streams
+  out through drive 2 --- one folder, two doors, both
+  conversations open at once. The assembler never suspects it
+  has left the diskette era.
+
+  The two endpoints don't have to match, either. Read your
+  sources from one server and write the objects to another
+  entirely --- each drive minds its own conversation.
+], [
+  #lsub[NOS Obeys It Too]
+
+  NOS's own commands live by the same rule. It is why NCOPY
+  builds its network destination over #sf("N4:") --- source on
+  your drive, destination on the service line, two conversations
+  --- and why a wild-card copy that would put both ends on one
+  drive quietly moves the destination to another before opening
+  it.
+
+  One last distinction:
+  #sf("TOO MANY FILES OPEN", size: 5.2pt) is a different
+  complaint --- the computer ran out of IOCB channels, not the
+  drive out of files.
+
+  #v(0.12in)
+  #align(center, box(width: 2.3in, height: 1.35in, {
+    place(dx: 1.50in, dy: 0.28in, servbox(0.42in))
+    pipe((0.14in, 0.30in), (0.65in, 0.24in), (1.10in, 0.40in),
+      (1.58in, 0.55in), cubes-c.at(7), w: 3.4pt)
+    pipe((0.14in, 1.05in), (0.65in, 1.10in), (1.10in, 0.85in),
+      (1.58in, 0.70in), cubes-c.at(3), w: 3.4pt)
+    place(dx: 0.02in, dy: 0.20in,
+      text(font: f-scrn, size: 7pt, fill: ink, "N1:"))
+    place(dx: 0.02in, dy: 0.95in,
+      text(font: f-scrn, size: 7pt, fill: ink, "N2:"))
+  }))
+  #align(center, box(width: 2.1in,
+    text(size: 7.6pt)[Two drives, one server: the read and the
+      write each get a conversation of their own.]))
+])
+
+#pagebreak()
+
+// ============================================================
 // THE PROTOCOLS  (cream spread)
 // ============================================================
 #secmark("The Protocols")
@@ -1358,6 +1444,11 @@
 
     That last one uses a #emph[wild card] --- the subject of the
     next section.
+
+    And --- new in 1.1 --- you may name a #emph[diskette:]
+    #sf("DIR D2:") lists a real ATARI DOS 2.0 disk, old-style,
+    sector counts and all. "The Diskette Comes Back" tells that
+    story.
   ], [
     #screen(w: 3.4in)[
       #sf("N1:")#sf("DIR")\
@@ -1695,6 +1786,23 @@
   In effect, every #sf(".COM") on the current drive is a NOS
   command.
 ], [
+  #lsub[Words After the Name]
+
+  New in 1.1, whatever you type #emph[after] the name rides
+  along to the program:
+
+  #dialogue(
+    ("you type", sf("ATARIWRITER LETTER.TXT", size: 5.4pt)))
+
+  NOS presents the line the way OS/A+, DOS XL, and SpartaDOS
+  did, so programs written for any of them --- including
+  everything compiled with cc65, where it arrives as
+  #sf("argv", size: 5.8pt) --- find their parameters waiting.
+  (The trick is a 63-character copy of your line kept at
+  #sf("DOSVEC+63", size: 5.8pt); "Inside NOS" tells more.) Only
+  a #emph[typed] line travels: programs started from menu item L
+  or from a batch file run without parameters.
+
   #lsub[Coming Back]
 
   Some programs offer an "exit to DOS." With NOS underneath, that
@@ -1707,7 +1815,7 @@
 
   #strong[REENTER] (or #strong[REE]) jumps to the program's own
   restart address. Two honest cautions. The menu you land on
-  borrows the memory at \$2600--\$2AFF while it draws, so a
+  borrows the memory at \$2700--\$2BFF while it draws, so a
   program occupying that particular patch won't survive the
   round trip. And whether #emph[any] program survives is the
   program's business --- some re-initialize and wipe their slate
@@ -1728,7 +1836,7 @@
   your BASIC listing is still there when you arrive. Type
   #sf("DOS") in BASIC to come back to NOS, work a while, then
   #sf("CAR") again. One caution for long programs: coming back
-  draws the menu, which borrows the memory from \$2600 up ---
+  draws the menu, which borrows the memory from \$2700 up ---
   room for about 2.8K of BASIC program above NOS's floor. Longer
   than that, SAVE before you visit.
 
@@ -1740,7 +1848,11 @@
   machines whose banked ROM holds something other than BASIC.)
   While ROM occupies \$A000--\$BFFF, NOS keeps the screen border
   gray as a reminder; #sf("BASIC ON") when it's already on simply
-  behaves like CAR.
+  behaves like CAR. New in 1.1, it also works when the machine
+  #emph[booted] with BASIC off: NOS rebuilds the screen below the
+  ROM and cold-starts BASIC at a fresh #sf("READY"). Fresh means
+  empty --- the road back from OFF begins a new program, so SAVE
+  first.
 
   #lsub[Saving Binaries]
 
@@ -1768,8 +1880,8 @@
   The #strong[NCOPY] command (alias #strong[COPY]) makes a copy of
   a file --- on the same drive, or clear across the world from one
   server to another. It's item #strong[C] on the menu, asking
-  #sf("COPY-FROM,TO?", size: 5.8pt); at the prompt, name the
-  source, a comma, and the destination:
+  #sf("COPY SRC,DEST (Dn:/Nn:)?", size: 5.2pt); at the prompt,
+  name the source, a comma, and the destination:
 
   #dialogue(
     ("you type", sf("NCOPY MYFILE,MYFILE2", size: 5.8pt)),
@@ -1789,6 +1901,10 @@
 
   NOS refuses to copy a file exactly onto itself ---
   #sf("SAME FILE?") is its whole objection.
+
+  And that #sf("Dn:", size: 5.8pt) in the menu's question is no
+  typo: new in 1.1, either side of a copy may be a real ATARI DOS
+  diskette. The next chapter is all about it.
 ], [
   #lsub[A Handful At Once]
 
@@ -1848,6 +1964,107 @@
   #align(center, box(width: 2.0in,
     text(size: 7.6pt)[One file, two servers: NCOPY lifts it from
       the first volume and lays it onto the second.]))
+])
+
+#pagebreak()
+
+// ============================================================
+// THE DISKETTE COMES BACK  (cream, 3 columns) — DIR/COPY on
+// real DOS 2.0S diskettes via Dn:, new in 1.1
+// ============================================================
+#secmark("The Diskette Comes Back")
+#headband("The Diskette", "Comes Back", flush: right)
+
+#grid(columns: (1fr, 1fr, 1fr), column-gutter: 14pt, [
+  Somewhere near you is a box of diskettes --- games typed in
+  from magazines, letters, a decade of Saturday afternoons. New
+  in 1.1, NOS opens one door to them: #strong[DIR] and
+  #strong[COPY] understand #sf("D2:") through #sf("D8:") ---
+  real drives, or disk images your FujiNet mounts --- so those
+  files can step across to the network, and back.
+
+  Ask for a diskette's directory the old way. Item #strong[A]
+  answers a #sf("D2:", size: 5.8pt) just as gladly:
+
+  #dialogue(
+    ("you type", sf("DIR D2:") + h(3pt) + key("return")),
+    ("computer", sf(" DUP     SYS 042", size: 5.8pt)),
+    ("", sf(" ARTIST  BAS 023", size: 5.8pt)),
+    ("", sf("*LETTER  TXT 011", size: 5.8pt)),
+    ("", sf("598 FREE SECTORS", size: 5.8pt)))
+
+  The listing is pure ATARI DOS: 8+3 names, sizes counted in
+  #emph[sectors,] a #sf("*") marking a locked file, and the free
+  count to close. Patterns match the way DOS matched them ---
+  #sf("DIR D2:*.BAS", size: 5.8pt) --- and NOS does the matching
+  itself, no server involved.
+], [
+  #lsub[Ferrying Files]
+
+  COPY carries files through the same door in #emph[any]
+  direction --- disk to network, network to disk, even diskette
+  to diskette:
+
+  #dialogue(
+    ("you type", sf("COPY D2:ARTIST.BAS,N1:", size: 5.0pt)),
+    ("you type", sf("COPY N1:GAME.XEX,D2:", size: 5.0pt)),
+    ("you type", sf("COPY D2:OLD.TXT,D3:", size: 5.0pt)))
+
+  One lone argument still means "copy it #emph[here]" ---
+  #sf("COPY D2:LETTER.TXT", size: 5.6pt) lands the letter on the
+  current network drive. And a wild card empties the whole box
+  at once, announcing each file as it goes:
+
+  #dialogue(
+    ("you type", sf("COPY D2:*.BAS,N1:ATTIC/", size: 5.0pt)),
+    ("computer", sf("ARTIST.BAS", size: 5.8pt)),
+    ("", sf("JUMPMAN.BAS", size: 5.8pt)),
+    ("", sf("POKEY.BAS", size: 5.8pt)))
+
+  Writing works as hard as reading: copy #emph[onto] a diskette
+  and NOS allocates the sectors, links them the way DOS 2.0
+  linked them, and updates the directory --- replacing a file of
+  the same name, exactly as DOS would (unless that file is
+  locked, which is still the last word).
+], [
+  #lsub[The Rules of the Door]
+
+  #item[Diskettes are drives #strong[2 through 8]. Drive 1 is
+    where NOS itself lives.]
+  #item[Single density only --- the 720-sector DOS 2.0S format
+    of the 810 and 1050. Enhanced and double density still need
+    a disk DOS.]
+  #item[Only DIR and COPY know the door. To every other command
+    --- and to every #emph[program] --- #sf("D:") is still the
+    network, as "Network, Not Disk" promised.]
+
+  When it objects, it objects in plain DOS:
+  #sf("FILE NOT FOUND", size: 5.2pt),
+  #sf("DISK FULL", size: 5.2pt),
+  #sf("DIRECTORY FULL", size: 5.2pt),
+  #sf("FILE LOCKED", size: 5.2pt) --- and, for a sick or
+  write-protected diskette, #sf("DISK I/O ERROR", size: 5.2pt).
+
+  How does an OS with no disk software do all this? It borrows
+  some. A whole DOS 2.0S file manager --- four kilobytes of it
+  --- rides along on #sf("NOS.ATR"), is read into memory at
+  \$5000 for exactly one command, and hands the RAM back when
+  the door closes. "Inside NOS" has the map.
+
+  #v(0.08in)
+  #align(center, box(width: 2.2in, height: 1.1in, {
+    place(dx: 0.02in, dy: 0.08in,
+      diskette(0.85in, files: ((1, 1, 0), (2, 4, 7), (0, 6, 5))))
+    place(dx: 1.02in, dy: 0.22in, arrowcube(11pt, cubes-c.at(5)))
+    place(dx: 1.02in, dy: 0.62in,
+      arrowcube(11pt, cubes-c.at(3), rot: 180deg))
+    place(dx: 1.38in, dy: 0.14in, globe(0.40in,
+      patches: ((40, 12, -50, -8, 0), (10, -20, -20, 25, 8),
+                (-30, -58, -40, 5, 3))))
+  }))
+  #align(center, box(width: 2.1in,
+    text(size: 7.6pt)[Twenty years of diskettes, one comma away
+      from the network --- in either direction.]))
 ])
 
 #pagebreak()
@@ -2131,7 +2348,10 @@
       ("you type", sf("SUBMIT SETUP.BAT") + h(3pt) + key("return")),
       ("you type", sf("@ SETUP.BAT") + h(3pt) + key("return")))
 
-    Each line runs exactly as if you had typed it at the prompt.
+    Each line runs exactly as if you had typed it at the prompt
+    --- with one nuance: a program #emph[launched] from a batch
+    line starts without command-line parameters, which ride only
+    on lines you type (see "Loading Programs").
     And because a batch file is only text, you can write it
     #emph[anywhere] --- in an ATARI editor, or on your PC in the
     comfort of a big screen, saved straight onto the server NOS
@@ -2272,9 +2492,10 @@
   NOS wears DOS's clothes --- the menu, the letters, the prompt
   --- so it's fair to ask what it deliberately leaves out. The
   list is short, and every entry on it has the same explanation:
-  #emph[NOS contains no File Management System.] It cannot read
-  or write diskettes or disk images --- not even the ones your
-  FujiNet mounts in its disk slots. #sf("D:") goes to the
+  #emph[NOS keeps no File Management System in residence.] Since
+  1.1, DIR and COPY may #emph[borrow] one, briefly, to ferry
+  files off a diskette ("The Diskette Comes Back") --- but to
+  every other command and every program, #sf("D:") goes to the
   network, full stop.
 
   #lsub[No Lock and Unlock]
@@ -2292,20 +2513,16 @@
   #item[DIR lists names and sizes, but no dates --- servers know
     them; NOS doesn't ask yet.]
 ], [
-  #lsub[No Diskettes At All]
+  #lsub[Diskettes, Within Limits]
 
-  When you really need a diskette or an ATR disk image ---
-  yesterday's software library, a protected original, a disk-based
-  application --- use a disk operating system for disks and NOS
-  for the network:
+  Moving #emph[files] to and from a single-density diskette is
+  now NOS's own job --- "The Diskette Comes Back" tells it. What
+  NOS still won't do is #emph[run] the diskette world: no booting
+  disk software, no formatting, no enhanced or double density,
+  no sector editors. For those:
 
   #item[Reboot into your FujiNet's CONFIG, mount the disk image,
     and boot it. Coming back to NOS is one more reboot.]
-  #item[To move files between a diskette world and the network
-    world, boot a classic DOS with the FujiNet #sf("N:") handler
-    loaded (from #sf("n-handler.atr", size: 5.8pt)) --- there
-    #sf("D:") and #sf("N:") exist side by side, and DOS's own
-    copier moves files between them.]
   #item[Files on the FujiNet's SD card need no diskette at all:
     mount them directly with the #sf("SD://") protocol.]
 ], [
@@ -2682,13 +2899,16 @@ the NOS menu.
   notes: (
     [XL/XE machines with built-in BASIC only ---
      otherwise #sf("NO BUILT-IN BASIC", size: 5.4pt).],
-    [Performs a warmstart to settle the change.],
+    [OFF settles with a warmstart. ON (from off) rebuilds the
+     screen below the ROM and cold-starts BASIC --- a fresh,
+     #emph[empty] #sf("READY", size: 5.4pt), so SAVE first.],
     [While ROM is switched in, NOS keeps the screen border gray
      as a reminder.]))[
   Switches the ROM at \$A000--\$BFFF (usually built-in BASIC) in
   or out of the memory map, without rebooting while holding
-  #key("option"). #sf("BASIC ON", size: 5.9pt) when ROM is
-  already in behaves like CAR.
+  #key("option") --- and, new in 1.1, even if the machine
+  #emph[booted] with BASIC off. #sf("BASIC ON", size: 5.9pt) when
+  ROM is already in behaves like CAR.
 ]
 
 #refentry("CAR", menu: "B", syntax: ("CAR",),
@@ -2726,18 +2946,23 @@ the NOS menu.
   #sf("DEL *.BAK", size: 5.6pt)
 ]
 
-#refentry("DIR", menu: "A", syntax: ("DIR [Nn:][PATH/][PATTERN]",),
+#refentry("DIR", menu: "A",
+  syntax: ("DIR [Nn:][PATH/][PATTERN]", "DIR Dn:[PATTERN]"),
   notes: (
     [#sf("*", size: 5.9pt) matches any run of characters,
      #sf("?", size: 5.9pt) exactly one.],
     [Directories are always listed, whatever the pattern.],
+    [New in 1.1: #sf("Dn:", size: 5.9pt) (drives 2--8) lists a
+     real DOS 2.0S diskette the old way --- sector counts,
+     #sf("*", size: 5.9pt) for locked files,
+     #sf("FREE SECTORS", size: 5.4pt) to close.],
     [Hold #key("space") to pause; #key("esc") stops the
      listing.]))[
   Lists files at the current spot (or the given path) with sizes
   --- bytes, #sf("K", size: 5.9pt), or #sf("M", size: 5.9pt) ---
   and folders marked with a trailing #sf("/", size: 5.9pt).
   Examples: #sf("DIR", size: 5.6pt) #sf("DIR N2:*.XEX", size: 5.6pt)
-  #sf("DIR GAMES/", size: 5.6pt)
+  #sf("DIR D2:", size: 5.6pt)
 ]
 
 #refentry("DUMP", syntax: ("DUMP START [END]",),
@@ -2768,10 +2993,15 @@ the NOS menu.
 ]
 
 #refentry("LOAD", aliases: ("X",), menu: "L",
-  syntax: ("LOAD [Nn:][PATH/]FILE", "FILENAME"),
+  syntax: ("LOAD [Nn:][PATH/]FILE [PARAMS]", "FILENAME [PARAMS]"),
   notes: (
     [A bare unrecognized word is treated as
      #sf("LOAD WORD.COM", size: 5.4pt) from the current drive.],
+    [New in 1.1: words after the filename are handed to the
+     program, OS/A+/DOS XL/SpartaDOS style (cc65's
+     #sf("argv", size: 5.9pt); the line waits at
+     #sf("DOSVEC+63", size: 5.4pt)). Typed lines only --- menu
+     item L and batch lines pass nothing.],
     [Line-ending translation is switched off automatically for
      the load.],
     [A non-binary file stops with
@@ -2814,15 +3044,21 @@ the NOS menu.
 
 #refentry("NCOPY", aliases: ("COPY",), menu: "C",
   syntax: ("NCOPY [Nn:][PATH/]FILE[,[Nn:][PATH/]FILE][,A]",
-           "NCOPY PATTERN,DEST | NCOPY FILE,P:"),
+           "NCOPY PATTERN,DEST | NCOPY FILE,P:",
+           "NCOPY Dn:FILE,DEST | NCOPY SRC,Dn:[FILE]"),
   notes: (
     [With no destination, copies onto the #emph[current] drive,
      keeping the name. Copying a file onto itself is refused
      (#sf("SAME FILE?", size: 5.4pt)).],
     [A source pattern (#sf("*", size: 5.9pt),
      #sf("?", size: 5.9pt)) copies every match, echoing each
-     name --- no confirmation; matched names fill a 512-byte
-     list per run.],
+     name --- no confirmation; a #emph[network] source's matches
+     fill a 512-byte list per run.],
+    [New in 1.1: either side may be a diskette,
+     #sf("D2:", size: 5.9pt)--#sf("D8:", size: 5.9pt)
+     (single-density DOS 2.0S) --- any direction, even disk to
+     disk. Diskette patterns are matched by NOS itself, 8+3
+     style, with no list limit.],
     [#sf(",A", size: 5.9pt) appends to the destination instead
      of replacing it.],
     [A destination of #sf("Nn:", size: 5.9pt) alone, or ending
@@ -2964,7 +3200,7 @@ the NOS menu.
 // ============================================================
 // INSIDE NOS  (cream, 2 pages) — memory map, overlays, disk
 // layout, writing your own overlay, the burst engine.
-// Addresses verified against the MADS label table for v1.0.0.
+// Addresses verified against the MADS label table for v1.1.0.
 // ============================================================
 #secmark("Inside NOS")
 #headband("Inside", "NOS")
@@ -2986,25 +3222,31 @@ the NOS menu.
 
   At boot, NOS hooks the system's DOS vectors (DOSVEC and DOSINI,
   at \$0A and \$0C), installs its #sf("N:") handler --- answering
-  for #sf("D:") as well --- and raises MEMLO to \$1B00. That is
-  the whole resident cost: #emph[five kilobytes even,] from
-  \$0700 through \$1AFF, less than DOS 2.0 asked with its default
-  buffers. Everything from \$1B00 up belongs to you.
+  for #sf("D:") as well --- and raises MEMLO to \$1C00. That is
+  the whole resident cost: #emph[five and a quarter kilobytes,]
+  from \$0700 through \$1BFF, still less than DOS 2.0 asked with
+  its default buffers. Everything from \$1C00 up belongs to you.
 
-  The top of the resident block is working space. At \$1900 sits
+  The top of the resident block is working space. At \$1A00 sits
   #strong[OVLBUF], a 256-byte window --- two disk sectors' worth
   --- where overlay commands are brought in to run. Above it,
   two 128-byte buffers (#sf("RBUF"), #sf("TBUF")) smooth network
-  reads and writes, and the command line itself lives down in
-  page 5, at \$0582.
+  reads and writes. Just below it, DOSVEC points at a little
+  OS/A+-shaped table whose last 64 bytes are the command line
+  handed to the programs you launch --- new in 1.1, and squeezed
+  into alignment padding that was already there, so it costs
+  nothing. The line you type still lives down in page 5, at
+  \$0582.
 
-  Three tenants #emph[borrow] your memory briefly, and only while
+  Four tenants #emph[borrow] your memory briefly, and only while
   their features are on duty. The menu is ten sectors read into
-  \$2600 each time it draws. The wild-card machinery keeps its
+  \$2700 each time it draws. The wild-card machinery keeps its
   scratch at \$4000 and its code at \$4300 while a pattern is
-  being worked through. And NCOPY stages its 8K bursts in the
-  free RAM just above MEMLO. None of them leave anything resident
-  behind.
+  being worked through. The DOS 2.0S transfer module --- the
+  borrowed FMS of "The Diskette Comes Back" --- runs at \$5000,
+  scratch at \$6800, only while a diskette is in the
+  conversation. And NCOPY stages its 8K bursts in the free RAM
+  just above MEMLO. None of them leave anything resident behind.
 
   #lsub[The Overlay Game]
 
@@ -3023,23 +3265,24 @@ the NOS menu.
   #code(
     "sector = address / 128 - 13",
     ";  $0700/$80 - $0D = sector 1  (boot)",
-    ";  $2080/$80 - $0D = sector 52 (NCOPY)")
+    ";  $2180/$80 - $0D = sector 54 (NCOPY)")
 
   The resident dispatcher (#sf("DO_OVERLAY", size: 5.8pt)) looks
   up that sector in a table, reads the overlay into OVLBUF, and
   jumps to it --- remembering what it loaded, so running DIR
-  twice reads the disk once. An overlay executes at \$1900 though
+  twice reads the disk once. An overlay executes at \$1A00 though
   it was assembled at its disk address, so its branches are
   relative and any absolute self-reference is spelled with one
   idiom: #sf("OVLBUF-OVL_FOO+label", size: 5.6pt). A command too
   big for the window chains: NCOPY is three overlays that hand
   the copy from parser to opener to mover.
 
-  The menu and the wild-card engine are the second pattern:
-  #emph[transient modules,] assembled at their own run addresses
-  (\$2600 and \$4300), loaded above MEMLO on demand, and expected
-  to be stepped on --- which is why menu picks are dispatched
-  from resident trampolines that reload the module afterward.
+  The menu, the wild-card engine, and the DOS 2.0S transfer
+  module are the second pattern: #emph[transient modules,]
+  assembled at their own run addresses (\$2700, \$4300, \$5000),
+  loaded above MEMLO on demand, and expected to be stepped on ---
+  which is why menu picks are dispatched from resident
+  trampolines that reload the module afterward.
 ], [
   #box(width: 3.15in, height: 6.35in, {
     // extrusion shadow for the whole tower
@@ -3059,30 +3302,40 @@ the NOS menu.
       align(center, text(font: f-scrn, size: 5.4pt, fill: ink,
         "FREE RAM: YOURS"))))
     // tenants (addresses written on the slabs, clear of the shadow)
-    place(dx: 0.82in, dy: 0.60in, rect(width: 1.41in, height: 0.26in,
+    place(dx: 0.82in, dy: 0.50in, rect(width: 1.41in, height: 0.24in,
+      fill: cubes-c.at(6), stroke: 0.9pt + black))
+    place(dx: 0.82in, dy: 0.50in, box(width: 1.41in, height: 0.24in,
+      align(center + horizon, text(font: f-scrn, size: 4.9pt, fill: ink,
+        "FMS SCRATCH 6800"))))
+    place(dx: 0.82in, dy: 0.78in, rect(width: 1.41in, height: 0.24in,
+      fill: cubes-c.at(5), stroke: 0.9pt + black))
+    place(dx: 0.82in, dy: 0.78in, box(width: 1.41in, height: 0.24in,
+      align(center + horizon, text(font: f-scrn, size: 4.9pt, fill: white,
+        "DOS 2 FMS 5000"))))
+    place(dx: 0.82in, dy: 1.06in, rect(width: 1.41in, height: 0.24in,
       fill: cubes-c.at(9), stroke: 0.9pt + black))
-    place(dx: 0.82in, dy: 0.60in, box(width: 1.41in, height: 0.26in,
+    place(dx: 0.82in, dy: 1.06in, box(width: 1.41in, height: 0.24in,
       align(center + horizon, text(font: f-scrn, size: 4.9pt, fill: white,
         "WILD MODULE 4300"))))
-    place(dx: 0.82in, dy: 0.90in, rect(width: 1.41in, height: 0.26in,
+    place(dx: 0.82in, dy: 1.34in, rect(width: 1.41in, height: 0.24in,
       fill: cubes-c.at(4), stroke: 0.9pt + black))
-    place(dx: 0.82in, dy: 0.90in, box(width: 1.41in, height: 0.26in,
+    place(dx: 0.82in, dy: 1.34in, box(width: 1.41in, height: 0.24in,
       align(center + horizon, text(font: f-scrn, size: 4.9pt, fill: ink,
         "WILD SCRATCH 4000"))))
-    place(dx: 0.82in, dy: 1.78in, rect(width: 1.41in, height: 0.36in,
+    place(dx: 0.82in, dy: 1.92in, rect(width: 1.41in, height: 0.36in,
       fill: cubes-c.at(7), stroke: 0.9pt + black))
-    place(dx: 0.82in, dy: 1.78in, box(width: 1.41in, height: 0.36in,
+    place(dx: 0.82in, dy: 1.92in, box(width: 1.41in, height: 0.36in,
       align(center + horizon, text(font: f-scrn, size: 4.9pt, fill: white,
-        "MENU MODULE 2600"))))
-    // burst-buffer extent bracket ($1B00..$3AFF), clear of the shadow
-    place(dx: 2.62in, dy: 1.20in, line(angle: 90deg, length: 1.80in,
+        "MENU MODULE 2700"))))
+    // burst-buffer extent bracket ($1C00..$3BFF), clear of the shadow
+    place(dx: 2.62in, dy: 1.70in, line(angle: 90deg, length: 1.30in,
       stroke: 1.2pt + ink))
-    place(dx: 2.57in, dy: 1.20in, line(length: 0.05in, stroke: 1.2pt + ink))
+    place(dx: 2.57in, dy: 1.70in, line(length: 0.05in, stroke: 1.2pt + ink))
     place(dx: 2.57in, dy: 3.00in, line(length: 0.05in, stroke: 1.2pt + ink))
     // label rotated about its top-left, centered on the bracket
-    place(dx: 2.76in, dy: 1.73in, rotate(90deg, origin: top + left,
+    place(dx: 2.76in, dy: 1.88in, rotate(90deg, origin: top + left,
       reflow: false,
-      text(font: f-scrn, size: 4.9pt, fill: ink, "NCOPY 8K BURST")))
+      text(font: f-scrn, size: 4.9pt, fill: ink, "8K BURST BUFFER")))
     // RBUF / TBUF
     place(dx: 0.60in, dy: 3.00in, rect(width: 1.85in, height: 0.26in,
       fill: silver, stroke: 1.0pt + black))
@@ -3117,19 +3370,19 @@ the NOS menu.
     place(dx: 0.06in, dy: -0.02in, text(font: f-scrn, size: 5.2pt,
       fill: ink, "A000"))
     place(dx: 0.06in, dy: 2.90in, text(font: f-scrn, size: 5.2pt,
-      fill: ink, "1B00"))
+      fill: ink, "1C00"))
     place(dx: 0.02in, dy: 3.00in, text(font: f-sans, size: 4.6pt,
       fill: toc-blue, "MEMLO"))
     place(dx: 0.06in, dy: 3.24in, text(font: f-scrn, size: 5.2pt,
-      fill: ink, "1900"))
+      fill: ink, "1A00"))
     place(dx: 0.06in, dy: 3.62in, text(font: f-scrn, size: 5.2pt,
       fill: ink, "0700"))
     place(dx: 0.06in, dy: 5.64in, text(font: f-scrn, size: 5.2pt,
       fill: ink, "0000"))
   })
   #align(center, box(width: 2.9in,
-    text(size: 7.6pt)[The lay of memory under NOS 1.0 --- resident
-      kernel below MEMLO at \$1B00, and three well-mannered
+    text(size: 7.6pt)[The lay of memory under NOS 1.1 --- resident
+      kernel below MEMLO at \$1C00, and four well-mannered
       tenants that borrow the free RAM only while they work.
       (Heights not to scale.)]))
 ])
@@ -3140,68 +3393,73 @@ the NOS menu.
 #lsub[The Disk They Ride On]
 
 #box(width: 7.1in, height: 1.42in, {
-  // expanded strip: sectors 1..80 at 0.068in per sector
-  let sx(s) = 0.15in + (s - 1) * 0.068in
+  // expanded strip: sectors 1..112 at 0.052in per sector
+  let sx(s) = 0.15in + (s - 1) * 0.052in
   let seg(s0, s1, c) = place(dx: sx(s0), dy: 0.32in,
-    rect(width: (s1 - s0 + 1) * 0.068in, height: 0.5in, fill: c,
+    rect(width: (s1 - s0 + 1) * 0.052in, height: 0.5in, fill: c,
       stroke: 0.9pt + black))
-  seg(1, 36, navy)
-  seg(37, 40, silver)
-  seg(41, 62, cubes-c.at(0))
-  seg(63, 72, cubes-c.at(7))
-  seg(73, 78, cubes-c.at(9))
-  seg(79, 80, cream.darken(3%))
+  seg(1, 38, navy)
+  seg(39, 42, silver)
+  seg(43, 64, cubes-c.at(0))
+  seg(65, 74, cubes-c.at(7))
+  seg(75, 80, cubes-c.at(9))
+  seg(81, 112, cubes-c.at(5))
   // break marks, then the directory tail
-  place(dx: 5.72in, dy: 0.30in, text(font: f-head, size: 10pt, "/\u{200b}/"))
-  place(dx: 5.95in, dy: 0.32in, rect(width: 0.22in, height: 0.5in,
+  place(dx: 6.06in, dy: 0.30in, text(font: f-head, size: 10pt, "/\u{200b}/"))
+  place(dx: 6.24in, dy: 0.32in, rect(width: 0.16in, height: 0.5in,
     fill: cream.darken(3%), stroke: 0.9pt + black))
-  place(dx: 6.17in, dy: 0.32in, rect(width: 0.10in, height: 0.5in,
+  place(dx: 6.40in, dy: 0.32in, rect(width: 0.10in, height: 0.5in,
     fill: cubes-c.at(4), stroke: 0.9pt + black))
-  place(dx: 6.27in, dy: 0.32in, rect(width: 0.42in, height: 0.5in,
+  place(dx: 6.50in, dy: 0.32in, rect(width: 0.38in, height: 0.5in,
     fill: cubes-c.at(3), stroke: 0.9pt + black))
-  place(dx: 6.69in, dy: 0.32in, rect(width: 0.26in, height: 0.5in,
+  place(dx: 6.88in, dy: 0.32in, rect(width: 0.18in, height: 0.5in,
     fill: cream.darken(3%), stroke: 0.9pt + black))
   // sector numbers above
   let num(s, label) = place(dx: sx(s) - 0.02in, dy: 0.16in,
     text(font: f-scrn, size: 4.8pt, fill: ink, label))
   num(1, "1")
-  num(37, "37")
-  num(41, "41")
-  num(63, "63")
-  num(73, "73")
-  place(dx: 6.17in, dy: 0.16in, text(font: f-scrn, size: 4.8pt,
+  num(39, "39")
+  num(43, "43")
+  num(65, "65")
+  num(75, "75")
+  num(81, "81")
+  place(dx: 6.40in, dy: 0.16in, text(font: f-scrn, size: 4.8pt,
     fill: ink, "360"))
-  place(dx: 6.90in, dy: 0.16in, text(font: f-scrn, size: 4.8pt,
+  place(dx: 6.98in, dy: 0.16in, text(font: f-scrn, size: 4.8pt,
     fill: ink, "720"))
   // labels below
   let lab(x, t) = place(dx: x, dy: 0.90in,
     text(font: f-sans, size: 5.0pt, tracking: 0.3pt, fill: ink, upper(t)))
-  lab(0.65in, "boot + resident kernel")
-  lab(2.60in, "buffers")
-  lab(3.30in, "overlays")
-  lab(4.42in, "menu")
-  lab(5.05in, "wild")
-  lab(6.05in, "vtoc + directory")
+  lab(0.55in, "boot + resident kernel")
+  lab(1.98in, "buffers")
+  lab(2.66in, "overlays")
+  lab(3.58in, "menu")
+  lab(4.08in, "wild")
+  lab(4.94in, "dos 2.0s fms")
+  lab(6.20in, "vtoc + directory")
   // leader ticks
-  place(dx: 2.72in, dy: 0.82in, line(angle: 90deg, length: 0.07in,
+  place(dx: 2.23in, dy: 0.82in, line(angle: 90deg, length: 0.07in,
     stroke: 0.7pt + ink))
-  place(dx: 5.15in, dy: 0.82in, line(angle: 90deg, length: 0.07in,
+  place(dx: 4.20in, dy: 0.82in, line(angle: 90deg, length: 0.07in,
     stroke: 0.7pt + ink))
 })
 
 #v(2pt)
 #grid(columns: (1fr, 1fr), column-gutter: 20pt, [
-  #sf("NOS.ATR") is one long act of arithmetic. Sectors 1--36
-  boot and hold the resident kernel; 37--40 are the images of
-  its buffers; 41--62 carry the command overlays, one or two
+  #sf("NOS.ATR") is one long act of arithmetic. Sectors 1--38
+  boot and hold the resident kernel; 39--42 are the images of
+  its buffers; 43--64 carry the command overlays, one or two
   sectors apiece, each at the address the formula predicts;
-  63--72 are the menu module and 73--78 the wild-card module.
-  Way out at sector 360 sits a #emph[fake] VTOC, with a
-  hand-built directory in 361--368 whose entry names spell out
-  the OS's own name --- so that disk tools examining the image
-  see a healthy single-density diskette instead of fainting.
-  Nothing else on the disk is real: there is no File Management
-  System in NOS, not even for its own disk.
+  65--74 are the menu module, 75--80 the wild-card module, and
+  81--112 the DOS 2.0S transfer module --- four kilobytes of
+  borrowed file management. Way out at sector 360 sits a
+  #emph[fake] VTOC, with a hand-built directory in 361--368
+  whose entry names spell out the OS's own name and version ---
+  so that disk tools examining the image see a healthy
+  single-density diskette instead of fainting. NOS still keeps
+  no File Management System #emph[resident:] since 1.1 it
+  carries one in the trunk, and unpacks it only when a diskette
+  calls. Its own disk remains a beautiful fiction.
 
   #lsub[The Burst Engine]
 
@@ -3216,6 +3474,20 @@ the NOS menu.
   poll keeps the true byte count on the side while the classic
   path still sees the old 127-byte ceiling. This is what makes
   NCOPY and LOAD feel like a disk that spins at wireless speed.
+
+  #lsub[The Borrowed FMS]
+
+  When DIR or COPY meets a #sf("Dn:"), a resident scanner
+  notices and reads sectors 81--112 into \$5000: a working DOS
+  2.0S file manager --- directory search, VTOC allocation,
+  sector chains --- with its scratch a page up at \$6800. The
+  floppy is driven with raw SIO, never through CIO, so the
+  promise that #sf("D:") means #sf("N:") to every #emph[program]
+  stands unbroken. The 8K burst buffer above MEMLO bridges the
+  two worlds --- the network side arrives in bursts, the
+  diskette side goes one 125-byte sector at a time --- and when
+  the command ends, the module is simply forgotten, the RAM
+  yours again.
 ], [
   #lsub[Rolling Your Own Overlay]
 
@@ -3242,7 +3514,7 @@ the NOS menu.
   #code(
     "; 4. the body, sector-aligned",
     "OVL_FOO:",
-    "        ; runs at OVLBUF ($1900)!",
+    "        ; runs at OVLBUF ($1A00)!",
     "        ; branches: relative only",
     "        ; absolute self-references:",
     "        ;   OVLBUF-OVL_FOO+label",
@@ -3277,7 +3549,7 @@ the NOS menu.
 #headband("Appendix: The NOS", "Source Listing")
 
 For the advanced user, the curious, and the future contributor:
-the complete assembly source of NOS v1.0.0, #sf("nos.s", size: 6pt),
+the complete assembly source of NOS v1.1.0, #sf("nos.s", size: 6pt),
 exactly as it builds into #sf("NOS.ATR", size: 6pt). It assembles
 with MADS, and lives --- with its HELP articles, tools, and
 history --- in the #sf("fujinet-nhandler", size: 6pt) repository
@@ -3286,8 +3558,8 @@ are readers --- and the chapter "Inside NOS" is the map to carry
 into these woods. The resident kernel (boot, the
 #sf("N:", size: 6pt) handler, the command processor) comes first;
 the overlay commands follow, each aligned to the sector it
-occupies on the disk; the menu and wild-card modules and the fake
-directory bring up the rear.
+occupies on the disk; the menu, wild-card, and DOS 2.0S transfer
+modules and the fake directory bring up the rear.
 
 #v(0.5em)
 #{
