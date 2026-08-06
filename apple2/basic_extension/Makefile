@@ -1,13 +1,13 @@
 # THE FUJINET BASIC EXTENSION — command reference (mid-80s tech-ref styling)
 # Requires Typst 0.13+ (PATH or ~/.local/bin).
 #
-# The complete source listing in Appendix E is read LIVE from the extension
-# sources: `make` copies them from ../../../fujinet-nhandler/apple2-new into
+# The complete source listing in Appendix D is read LIVE from the extension
+# sources: `make` copies them from ../../../fujinet-nhandler/apple2 into
 # listing/ so the printed listing can never drift from the shipped binary.
 
 TYPST := $(shell command -v typst 2>/dev/null || echo $(HOME)/.local/bin/typst)
 PDF   := fujinet-basic-extension-apple2.pdf
-SRC   := ../../../fujinet-nhandler/apple2-new/src/apple2
+SRC   := ../../../fujinet-nhandler/apple2/src/apple2
 
 LISTINGS := listing/equ.inc listing/fujiapple.s listing/smartport.inc
 

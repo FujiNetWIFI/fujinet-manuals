@@ -4,7 +4,7 @@
 //
 // The BASIC-side companion to "Programming the FujiNet".  That
 // book teaches your assembler; this one teaches your BASIC: the
-// seventeen N-commands the extension adds to BASIC.SYSTEM, plus
+// twenty N-commands the extension adds to BASIC.SYSTEM, plus
 // the printer redirect, each with syntax, examples, and the
 // screen transcripts to prove them.
 //
@@ -15,9 +15,9 @@
 // are set in the genuine Apple II character set (Print Char 21).
 //
 // Every command, argument, message, and address in this book is
-// taken from the extension's source (fujinet-nhandler/apple2-new)
+// taken from the extension's source (fujinet-nhandler/apple2)
 // and was exercised on running hardware against fujinet-pc — see
-// the colophon.  Appendix E reprints the complete source listing,
+// the colophon.  Appendix D reprints the complete source listing,
 // copied from the tree at build time so it can never go stale.
 //
 // Build: make          (copies listing/, runs typst)
@@ -157,7 +157,7 @@
 
 // block listing: full-width tinted panel, Apple II charset, with a
 // thin red rule across the top like a punch-card header.  Breakable,
-// so long listings (Appendix E!) flow across pages.
+// so long listings (Appendix D!) flow across pages.
 #show raw.where(block: true): it => block(above: 1.1em, below: 1.1em,
   pad(left: -mhang, block(breakable: true, width: mhang + col-w,
     fill: code-bg, inset: (x: 11pt, top: 8pt, bottom: 9pt), radius: 1.5pt,
@@ -298,7 +298,7 @@
   #place(bottom + left, dx: 2.0in, dy: -0.62in, box(width: 4.6in,
     par(leading: 0.5em, justify: false,
       text(font: f-body, size: 12.5pt, fill: ink)[
-        A command reference for the seventeen network commands the
+        A command reference for the twenty network commands the
         FujiNet adds to Applesoft BASIC.])))
 ]
 
@@ -320,10 +320,10 @@
       subsect("How This Book Was Verified")
       par[Every command, argument, error message, and address in this
       reference was taken from the extension's own source — reprinted
-      in full in Appendix E, copied from the tree each time this book
+      in full in Appendix D, copied from the tree each time this book
       is typeset — and every command was exercised on running hardware
       against the FujiNet firmware. The extension lives in
-      #cw("fujinet-nhandler/apple2-new"); the firmware side of each
+      #cw("fujinet-nhandler/apple2"); the firmware side of each
       operation is in #cw("fujinet-firmware")
       (#cw("lib/device/iwm/network.cpp") and friends). The assembly-level
       story of the same machinery is told in the companion volume,
@@ -374,7 +374,7 @@
   #text(font: f-body, size: 24pt)[The FujiNet BASIC Extension]
   #v(2pt)
   #par(leading: 0.5em, text(font: f-body, size: 12.5pt, style: "italic")[
-    A command reference for Applesoft BASIC under ProDOS 8: seventeen
+    A command reference for Applesoft BASIC under ProDOS 8: twenty
     network commands and a printer, for every Apple II with a FujiNet
     on its SmartPort.])
 
@@ -435,7 +435,7 @@
 #fst.update("arabic")
 #counter(page).update(1)
 
-#mnote[Seventeen commands, one printer, no new dialect: it is still
+#mnote[Twenty commands, one printer, no new dialect: it is still
 Applesoft, still ProDOS, still the machine you know.]
 
 Somewhere between 1977 and now, the Apple II learned to talk to the
@@ -445,7 +445,7 @@ on the machine's behalf. What this book documents is the thinnest
 possible bridge between that power and the language most Apple II
 programs were ever written in.
 
-The FujiNet BASIC extension adds *seventeen network commands* to
+The FujiNet BASIC extension adds *twenty network commands* to
 Applesoft BASIC. They are not new keywords baked into a new
 interpreter — Applesoft lives in ROM, and its keyword table is carved
 in silicon. Instead they are *BASIC.SYSTEM external commands*, exactly
@@ -455,11 +455,15 @@ or issue them from a program with #cw("PRINT CHR$(4)").
 
 #sect("Where the Commands Came From")
 
-The command set is a port. The Coleco Adam's SmartBASIC got these same
-seventeen commands first, and this extension deliberately matches that
-set, name for name — #cw("NOPEN") to #cw("NHTTPMODE") — so programs and
-habits move between the machines. If you have used FujiNet from BASIC
-anywhere, you already know most of this book.
+The command set began as a port. The Coleco Adam's SmartBASIC got the
+core commands first, and this extension deliberately matches that set,
+name for name — #cw("NOPEN") through #cw("NHTTPMODE") — so programs and
+habits move between the machines. The Apple II then adds a few of its
+own: #cw("NCAT") and #cw("NCATALOG"), which print directories in the
+ProDOS #cw("CAT") and #cw("CATALOG") styles this machine expects, and
+#cw("NTYPE") and #cw("NTRANS"), for reading a text file straight to the
+screen. If you have used FujiNet from BASIC anywhere, you already know
+most of this book.
 
 #sect("What You Should Already Know")
 
@@ -468,7 +472,7 @@ With ProDOS]: variables, strings, #cw("PRINT"), #cw("ONERR"). Nothing
 here requires assembly language, PEEKs, or POKEs — the two #cw("CALL")s
 in Chapter 8 are the entire machine-language surface of this book. When
 you get curious about what is underneath, Appendix C sketches the
-machinery and Appendix E reprints every line of it.
+machinery and Appendix D reprints every line of it.
 
 #sect("How the Reference Is Laid Out")
 
@@ -488,7 +492,7 @@ from a real session, green phosphor and all.
     "]PR#6",
     "",
     "FUJINET BASIC EXTENSION INSTALLED",
-    "17 COMMANDS - NOPEN..NHTTPMODE",
+    "20 COMMANDS - NOPEN..NTYPE",
     "FUJINET NETWORK DEVICE AT SP UNIT $0B",
     "FUJINET PRINTER AT SP UNIT $0D",
     "",
@@ -511,7 +515,7 @@ Boot the disk. ProDOS starts BASIC.SYSTEM, BASIC.SYSTEM runs
 #syntax("PRINT CHR$(4);\"BRUN FUJIAPPLE\"")
 
 That single line is the whole installation. The extension announces
-itself with the banner shown above: seventeen commands are live, and
+itself with the banner shown above: twenty commands are live, and
 the FujiNet's network device (and printer, if the firmware exposes
 one) have been found on the SmartPort and remembered.
 
@@ -545,11 +549,17 @@ Type this at the #cw("]") prompt (substitute any TNFS host you like —
 #cw("FUJINET.ONLINE") is always awake):
 
 #scr(
-  "]NDIR \"N:TNFS://FUJINET.ONLINE/\"",
-  "/ APOD        DIR 001",
-  "/ CATALOGS    DIR 001",
-  "/ GAMES       DIR 286",
-  "  README      TXT 004",
+  "]NCAT \"N:TNFS://FUJINET.ONLINE/\"",
+  "/",
+  "",
+  " NAME            TYPE BLOCKS  MODIFIED",
+  "",
+  " APOD            DIR       1  17-JUL-26",
+  " CATALOGS        DIR       1  17-JUL-26",
+  " GAMES           DIR       1  17-JUL-26",
+  " README.TXT      TXT       4  17-JUL-26",
+  "",
+  "BLOCKS FREE: 65535  BLOCKS USED: 7",
   "",
   "]",
 )
@@ -616,15 +626,55 @@ to, always beginning #cw("N:").
 
 #syntax("N:protocol://host[:port]/path")
 
+The firmware speaks a long list of protocols and the extension does not
+care which — it just hands the spec across. The ones that present a
+*filesystem*, with directories you can list, walk, and read, work with
+every command in Chapter 4:
+
 #ptable(
   ("Protocol", "Talks to", "Example"),
   ("TNFS", "TNFS file servers", "N:TNFS://FUJINET.ONLINE/GAMES/"),
   ("HTTP", "web servers", "N:HTTP://IP-API.COM/JSON/"),
   ("HTTPS", "web servers, TLS", "N:HTTPS://ICANHAZIP.COM/"),
+  ("FTP", "FTP servers", "N:FTP://FTP.GNU.ORG/"),
+  ("SFTP", "SSH file transfer", "N:SFTP://USER:PASS@HOST/PATH"),
+  ("SMB", "Windows / Samba shares", "N:SMB://SERVER/SHARE/"),
+  ("NFS", "NFS exports", "N:NFS://SERVER/EXPORT/"),
+  ("S3", "Amazon S3 buckets", "N:S3://ENDPOINT/BUCKET/"),
+  ("SD", "the FujiNet's SD card", "N:SD:///GAMES/"),
+  ("GDRIVE", "Google Drive", "N:GDRIVE:///PATH/"),
+  ("ONEDRIVE", "Microsoft OneDrive", "N:ONEDRIVE:///PATH/"),
+  ("GMAIL", "read Gmail folders", "N:GMAIL:///INBOX"),
+  ("IMAPS", "read IMAP mail, TLS", "N:IMAPS://USER:PASS@HOST/INBOX"),
+)
+
+The rest are *streams* — a byte pipe with no directory. They open,
+carry data, and close; the filesystem commands do not apply:
+
+#ptable(
+  ("Protocol", "Talks to", "Example"),
   ("TCP", "raw sockets, or listen", "N:TCP://BBS.EXAMPLE.ORG:6502/"),
   ("UDP", "datagrams", "N:UDP://192.168.1.7:5000/"),
   ("TELNET", "telnet hosts", "N:TELNET://RETRO.SDF.ORG:23/"),
+  ("SSH", "SSH sessions", "N:SSH://USER@HOST:22/"),
+  ("WS / WSS", "WebSocket servers", "N:WS://ECHO.EXAMPLE.ORG/"),
+  ("CPM", "the built-in CP/M", "N:CPM://"),
 )
+
+#byway[Where a protocol needs a login it rides in the spec:
+#cw("USER:PASS@HOST") gives a password, and #cw("SFTP") and #cw("SSH")
+also accept a bare #cw("USER@HOST"), falling back to the private key the
+FujiNet keeps at #cw("/.ssh/id_ed25519") on its SD card. #cw("IMAPS")
+and #cw("S3") likewise read credentials from the userinfo (or the
+FujiNet's own configuration) when you leave them out.]
+
+#byway[#cw("GMAIL"), #cw("GDRIVE"), and #cw("ONEDRIVE") carry no
+password at all — you authorize the FujiNet once in its own web
+configuration, then address them with the empty-host, triple-slash form
+above. #cw("GMAIL") is read-only: a folder name is a Gmail label, and
+the path chooses depth — #cw("N:GMAIL:///INBOX") counts the folder,
+#cw("N:GMAIL:///INBOX/1") reads the newest message, and
+#cw("N:GMAIL:///INBOX/1/2") an attachment.]
 
 A spec appears in a command either as a quoted literal or as a *simple
 string variable* — an expression such as #cw("A$+B$") will not do:
@@ -651,6 +701,7 @@ Apple's carriage returns and the network's conventions.
     ("1", "CR (Apple)"),
     ("2", "LF (Unix)"),
     ("3", "CR/LF (internet)"),
+    ("4", "PETSCII (Commodore)"),
   ),
 )
 
@@ -793,19 +844,28 @@ looping forever.]
 // ============================================================
 #chapter("Chapter 4", "The Filesystem Commands")
 
-Five commands treat the network as a disk: list it, walk it, make and
-remove directories, delete files. They take *no channel number* — just
-a spec — because each is a complete errand: the extension runs it on a
-reserved internal channel and is done before the prompt returns.
+Six commands treat the network as a disk: list it two ways, walk it,
+make and remove directories, delete files. They take *no channel
+number* — just a spec — because each is a complete errand: the
+extension runs it on a reserved internal channel and is done before the
+prompt returns.
 
 They work on any filesystem-shaped protocol — TNFS above all, and
 anything else the firmware exposes with directories.
 
-#cmd("NDIR", "OPEN 6 + READ")
-#syntax("NDIR spec")
-Prints the directory named by the spec to the screen, one entry per
-line, sizes and all. This is the command from Chapter 1 — the fastest
-way to see whether the network is alive.
+#cmd("NCAT", "OPEN 6 · CAT")
+#syntax("NCAT spec")
+Prints the directory named by the spec to the screen in the ProDOS
+#cw("CAT") layout: a 40-column table of name, type, size in blocks, and
+date, that fits the plain text screen. This is the command from Chapter
+1 — the fastest way to see whether the network is alive.
+
+#cmd("NCATALOG", "OPEN 6 · CATALOG")
+#syntax("NCATALOG spec")
+The same listing in the wider ProDOS #cw("CATALOG") layout, which adds
+created-date, end-of-file, and subtype columns and wants an 80-column
+display. Both commands run on the reserved internal channel in directory
+mode; only the format they ask the FujiNet to send back differs.
 
 #cmd("NCD", "CONTROL ','")
 #syntax("NCD spec")
@@ -826,23 +886,88 @@ Removes the (empty) directory named by the spec.
 #syntax("NDEL spec")
 Deletes the file named by the spec.
 
-#returns[All five raise catchable errors when the server refuses.
-#cw("NDIR") answers #cw("PATH NOT FOUND") for a directory that isn't
-there; the others answer #cw("I/O ERROR") — a missing path, a
-directory that isn't empty, a share without write permission.]
+#returns[All six raise catchable errors when the server refuses.
+#cw("NCAT") and #cw("NCATALOG") answer #cw("PATH NOT FOUND") for a
+directory that isn't there; the others answer #cw("I/O ERROR") — a
+missing path, a directory that isn't empty, a share without write
+permission.]
 
 #sect("A Working Session")
 
 #scr(
   "]NMKDIR \"N:TNFS://TMA-3/SCRATCH\"",
   "",
-  "]NDIR \"N:TNFS://TMA-3/\"",
-  "/ BIN         DIR 001",
-  "/ SCRATCH     DIR 001",
-  "/ SRC         DIR 001",
-  "  HELLO           001",
+  "]NCAT \"N:TNFS://TMA-3/\"",
+  "/",
+  "",
+  " NAME            TYPE BLOCKS  MODIFIED",
+  "",
+  " BIN             DIR       1  17-JUL-26",
+  " SCRATCH         DIR       1  17-JUL-26",
+  " SRC             DIR       1  17-JUL-26",
+  " HELLO.BAS       BAS       2  17-JUL-26",
+  "",
+  "BLOCKS FREE: 65535  BLOCKS USED: 5",
   "",
   "]NRMDIR \"N:TNFS://TMA-3/SCRATCH\"",
+  "",
+  "]",
+)
+
+#sect("Viewing a Text File")
+
+Two more commands read a text file straight to the screen, so you can
+glance at a README, a web page, or a piece of mail without writing a
+#cw("NREAD") loop.
+
+#cmd("NTYPE", "OPEN 4 + READ")
+#syntax("NTYPE spec")
+Opens the spec, prints its bytes to the screen as they arrive, and
+closes it. #cw("NTYPE") does nothing to the text beyond the translation
+you set with #cw("NTRANS") — it simply reads and shows. While it runs,
+#cw("CTRL-S") pauses the scroll and #cw("CTRL-C") stops it and returns
+to the prompt. It is content with anything textual: a #cw("TNFS")
+README, an #cw("HTTPS") page, JSON, or a #cw("GMAIL") message body.
+
+#mnote[#cw("NTYPE") borrows channel 1 for the read. If you are keeping
+a connection open there, close it first.]
+
+#returns[#cw("PATH NOT FOUND") when the file is not there;
+#cw("I/O ERROR") when the server refuses.]
+
+#cmd("NTRANS", "LOCAL")
+#syntax("NTRANS ch, mode")
+Records the line-ending translation #cw("NTYPE") will use on its next
+open. The #text(style: "italic")[mode] is one of the translation
+numbers you already know from #cw("NOPEN"), plus one more for Commodore
+text:
+
+#ptbl(
+  ("mode", "Line endings"),
+  ("0", "none (binary)"),
+  ("1", "CR (Apple)"),
+  ("2", "LF (Unix)"),
+  ("3", "CR/LF (internet)"),
+  ("4", "PETSCII (Commodore)"),
+)
+
+#byway[#cw("NTRANS") sends nothing over the wire. The FujiNet can only
+choose a translation when a channel is opened, so the command just
+remembers the number for #cw("NTYPE") to hand over on its next open. The
+channel argument is accepted for symmetry with the other commands, but a
+single setting serves #cw("NTYPE"), and it begins life at #cw("0") — no
+translation.]
+
+Set the translation once, then type a file:
+
+#scr(
+  "]NTRANS 1,2",
+  "",
+  "]NTYPE \"N:TNFS://FUJINET.ONLINE/README.TXT\"",
+  "FUJINET.ONLINE PUBLIC TNFS SERVER",
+  "",
+  "BE KIND. KEEP UPLOADS UNDER 10 MB.",
+  "MORE AT FUJINET.ONLINE.",
   "",
   "]",
 )
@@ -1119,10 +1244,13 @@ value; #text(style: "italic")[n] a number.
   ("NJSONPARSE", "ch", "parse the channel's JSON document"),
   ("NJSONQUERY", "ch, v$, query", "fetch one JSON value by /path"),
   ("NCD", "spec", "set the filesystem working prefix"),
-  ("NDIR", "spec", "print a directory listing"),
+  ("NCAT", "spec", "print a 40-column CAT listing"),
+  ("NCATALOG", "spec", "print an 80-column CATALOG listing"),
   ("NMKDIR", "spec", "create a directory"),
   ("NRMDIR", "spec", "remove an empty directory"),
   ("NDEL", "spec", "delete a file"),
+  ("NTYPE", "spec", "print a text file to the screen"),
+  ("NTRANS", "ch, n", "set the translation NTYPE uses"),
   ("NLOAD", "spec", "load a program (prompt only)"),
   ("NSAVE", "spec", "save the program in memory"),
   ("NACCEPT", "ch", "accept a caller on a listening channel"),
@@ -1139,7 +1267,7 @@ value; #text(style: "italic")[n] a number.
 
 #sect("NOPEN Modes and Translation")
 
-#grid(columns: (1fr, 1fr), column-gutter: 14pt,
+#block(breakable: false, grid(columns: (1fr, 1fr), column-gutter: 14pt,
   ptbl(
     ("Mode", "Meaning"),
     ("4", "read"),
@@ -1153,8 +1281,9 @@ value; #text(style: "italic")[n] a number.
     ("1", "CR (Apple)"),
     ("2", "LF (Unix)"),
     ("3", "CR/LF (internet)"),
+    ("4", "PETSCII (Commodore)"),
   ),
-)
+))
 
 // ============================================================
 // APPENDIX B
@@ -1283,14 +1412,14 @@ In the tradition of the #text(style: "italic")[Monitor ROM listings]
 Apple shipped with the IIe, here is the extension, whole: every
 routine, every hard-won comment. Three files of ca65 assembly, built
 with the cc65 toolchain (#cw("make apple2") in
-#cw("fujinet-nhandler/apple2-new") produces the bootable disk). These
+#cw("fujinet-nhandler/apple2") produces the bootable disk). These
 pages are regenerated from the source tree every time the book is
 typeset, so what you read here is what you booted.
 
 #sect("equ.inc — equates and constants")
 #srclisting("listing/equ.inc")
 
-#sect("fujiapple.s — install, recognizer, and the seventeen commands")
+#sect("fujiapple.s — install, recognizer, and the twenty commands")
 #srclisting("listing/fujiapple.s")
 
 #sect("smartport.inc — the SmartPort transport")
