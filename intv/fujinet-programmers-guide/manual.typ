@@ -1832,13 +1832,34 @@ byte-by-byte, and so should you.
 // ############################################################################
 #chapter("Appendix D", "Netcat", [
   The traditional closing program of every FujiNet programmer's guide: a
-  terminal. Type a line with the disc, #kcap("ENTER") sends it, and
-  whatever comes back scrolls by. It compiles, assembles, and defaults to
-  an echo server so it demonstrates itself.
+  terminal. Type any devicespec on the on-screen keyboard, press
+  #kcap("OK"), and talk to it. It compiles, assembles, and defaults to an
+  echo server so it demonstrates itself.
 ])
+
+Netcat borrows CONFIG's own on-screen keyboard — the character grid you
+type WiFi SSIDs on — ported here as #cd("kbd.bas") with one change: the
+value display spans three rows, a 60-character tail-anchored window onto
+a 256-byte buffer, so a long URL wraps and then scrolls while you type
+it. The disc moves the highlight; the action button types the highlighted
+character; the bottom row offers #kcap("SPC") #kcap("DEL") #kcap("OK")
+#kcap("ESC"), and the keypad seconds them (0 space, #kcap("CLEAR")
+backspace, #kcap("ENTER") = OK).
+
+The URL screen dials whatever you accept — a failed connection keeps your
+text for editing, and #kcap("ESC") restores the default. In the terminal,
+the action button opens the same keyboard to compose a line
+(#kcap("OK") sends it plus CR LF), and keypad #kcap("CLEAR") hangs up and
+returns to the URL screen. The terminal keeps a 200-byte shadow of its
+cells in scratch RAM, so it repaints intact after the keyboard has been
+over it; while the keyboard is open the connection simply is not polled —
+incoming bytes wait on the FujiNet and drain when the terminal returns.
 
 #code-listing("netcat.bas — a line-mode network terminal",
   "listings/netcat.bas", size: 5.6pt)
+
+#code-listing("kbd.bas — the on-screen keyboard, from CONFIG",
+  "listings/kbd.bas", size: 5.6pt)
 
 #v(10pt)
 #align(center, text(font: f-serif, style: "italic", size: 9pt,

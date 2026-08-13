@@ -27,6 +27,7 @@ See also: [Fujinet Intellivision Mailbox Protocol](Fujinet-Intellivision-Mailbox
 13. [Error Codes](#error-codes)
 14. [The Library: fujinet.bas](#the-library-fujinetbas)
 15. [netcat.bas](#netcatbas)
+16. [kbd.bas](#kbdbas)
 
 ---
 
@@ -926,46 +927,78 @@ END
 
 ## netcat.bas
 
-The traditional closing program: a line-mode terminal. Compose a line with the disc (up/down cycles the character, left/right moves), ENTER sends it (+CR LF), CLEAR erases. Defaults to tcpbin.com's echo service, so it demonstrates itself with no server of your own.
+The traditional closing program: a line-mode terminal. Type any `N:` devicespec on the on-screen keyboard — the same character grid FujiNet CONFIG uses for WiFi SSIDs, ported as `kbd.bas` (below) with the value display widened to a **three-row, 60-character tail-anchored window over a 256-byte buffer**, so long URLs wrap and then scroll while you type. The disc moves the highlight, the action button types the highlighted character, and the bottom row offers `SPC` `DEL` `OK` `ESC` (keypad: `0` space, `CLEAR` backspace, `ENTER` = OK).
+
+`OK` on the URL screen dials; a failed connection keeps your text for editing, and `ESC` restores the default (tcpbin.com's echo service, so an untouched `OK` demonstrates the whole loop with no server of your own). In the terminal, the action button opens the keyboard to compose a line (`OK` sends it plus CR LF), and keypad `CLEAR` hangs up and returns to the URL screen. The terminal keeps a 200-byte shadow of its cells so it repaints intact after the keyboard has been over it; while the keyboard is open the connection is simply not polled — incoming bytes wait on the FujiNet and drain when the terminal returns.
+
+A ready-to-build copy of this program (with `fujinet.bas` and `kbd.bas`, Makefile and jzIntv run script) lives in the `netcat` repository under `intv/`.
 
 ```basic
-' netcat.bas -- a line-mode network terminal in IntyBASIC. Opens a TCP
-' connection through FujiNet's Network device, shows everything the far
-' end sends on rows 0-9 of the screen, and lets you compose a line with
-' the disc (the same letter-picker the games use for name entry) and send
-' it with ENTER. Default target is tcpbin.com's echo service, so what you
-' send comes straight back -- a self-test needing no server of your own.
+' netcat.bas -- a line-mode network terminal in IntyBASIC. Type any N:
+' devicespec on the on-screen keyboard (the same character grid FujiNet
+' CONFIG uses for WiFi SSIDs), connect, and everything the far end sends
+' scrolls up rows 0-9 of the screen. The action button opens the keyboard
+' again to compose a line; OK sends it (plus CR LF). The default URL is
+' tcpbin.com's echo service, so an untouched OK at the URL screen gives a
+' self-test needing no server of your own.
 '
-' Controls:  disc up/down    cycle the character under the cursor
-'            disc left/right move the cursor
-'            ENTER           send the line (plus CR LF)
-'            CLEAR           erase the line
+' URL screen:  disc + action button  pick characters on the grid
+'              OK (or keypad ENTER)  connect
+'              ESC                   restore the default URL
+'              keypad 0 / CLEAR      space / backspace
+'              The URL buffer holds 256 bytes; rows 0-2 are a 60-character
+'              window that scrolls once a long URL outgrows them.
+'
+' Terminal:    action button         open the keyboard to compose a line
+'                                    (OK sends + CR LF, ESC cancels)
+'              keypad CLEAR          hang up, back to the URL screen
+'
+' While the keyboard is open the connection is not polled; incoming bytes
+' simply wait on the FujiNet and are drained when the terminal returns.
 '
 ' Build:  intybasic netcat.bas netcat.asm && as1600 -o netcat netcat.asm
     GOTO main
 
     INCLUDE "fujinet.bas"
+    INCLUDE "kbd.bas"
 
-    CONST COL_WHITE  = 7
-    CONST COL_YELLOW = 6
     CONST TERM_CELLS = 200      ' rows 0-9 are the terminal
-    CONST EDIT_ROW   = 220      ' row 11 is the composer
-    CONST EDIT_LEN   = 18
+    CONST STATUS_ROW = 220      ' row 11: status + key hints
 
-' The devicespec, as ASCII DATA (20 bytes): "N:TCP://TCPBIN.COM:4242/"
+    ' Scratch RAM, ours, above fujinet.bas's buffers (which end at $917F).
+    CONST SC_URL  = $9200       ' devicespec, 256 bytes (255 chars + NUL)
+    CONST SC_LINE = $9300       ' composed line, 253 bytes (252 + NUL)
+    CONST SC_TERM = $9400       ' 200-byte shadow of the terminal cells
+
+' The default devicespec (24 bytes): "N:TCP://TCPBIN.COM:4242/"
 lit_spec:
     DATA 78,58,84,67,80,58,47,47,84,67,80,66,73,78
     DATA 46,67,79,77,58,52,50,52,50,47
     CONST LEN_SPEC = 24
 
-    DIM term_pos, nc_i, nc_c, nc_cr
-    DIM ed_cur, ed_len, ed_i, ed_c
-    DIM ed_buf(18)
-    DIM inp_lock, #nc_color
+    DIM term_pos, nc_i, nc_c, nc_cr, nc_row, tc_i
+
+' ---------------------------------------------------------------------------
+' term_clear_row: blank the terminal row term_pos sits in, screen and
+' shadow both -- called on entering a fresh row so wrapped-around output
+' never interleaves with a stale line. Uses its own loop variable (tc_i):
+' it's called from term_putc/term_newline while those run inside the
+' receive loop's "FOR nc_i = 0 TO #net_gotlen - 1" in main -- reusing nc_i
+' here would clobber that outer loop's counter on every line break.
+' ---------------------------------------------------------------------------
+term_clear_row: PROCEDURE
+    nc_row = (term_pos / 20) * 20
+    FOR tc_i = 0 TO 19
+        #BACKTAB(nc_row + tc_i) = CS_BLACK
+        POKE (SC_TERM + nc_row + tc_i), 32
+    NEXT tc_i
+END
 
 ' ---------------------------------------------------------------------------
 ' term_putc: draw ASCII nc_c at the terminal cursor, handling CR/LF and
-' wrap-around. GROM cards 0-94 cover ASCII 32-126 directly in MODE 0.
+' wrap-around, mirroring every cell into SC_TERM so the display can be
+' repainted after the keyboard has been over it. GROM cards 0-94 cover
+' ASCII 32-126 directly.
 ' ---------------------------------------------------------------------------
 term_putc: PROCEDURE
     IF nc_c = 13 THEN nc_cr = 1 : GOSUB term_newline : RETURN
@@ -977,54 +1010,118 @@ term_putc: PROCEDURE
     END IF
     nc_cr = 0
     IF nc_c < 32 OR nc_c > 126 THEN RETURN
-    #BACKTAB(term_pos) = (nc_c - 32) * 8 + COL_WHITE
+    #BACKTAB(term_pos) = (nc_c - 32) * 8 + COL_NORMAL
+    POKE (SC_TERM + term_pos), nc_c
     term_pos = term_pos + 1
-    IF term_pos >= TERM_CELLS THEN GOSUB term_home
+    IF term_pos >= TERM_CELLS THEN term_pos = 0
+    IF (term_pos % 20) = 0 THEN GOSUB term_clear_row
 END
 
 term_newline: PROCEDURE
     term_pos = (term_pos / 20) * 20 + 20
-    IF term_pos >= TERM_CELLS THEN GOSUB term_home
+    IF term_pos >= TERM_CELLS THEN term_pos = 0
+    GOSUB term_clear_row
 END
 
-' Wrap back to the top and blank the first row -- a crude circular
-' terminal, but 4K of scroll code has no place in an example program.
-term_home: PROCEDURE
+' ---------------------------------------------------------------------------
+' term_init / term_repaint: reset the pane, or redraw all 200 cells from
+' the shadow after the keyboard borrowed the screen.
+' ---------------------------------------------------------------------------
+term_init: PROCEDURE
     term_pos = 0
-    FOR nc_i = 0 TO 19
-        #BACKTAB(nc_i) = 0
+    nc_cr = 0
+    FOR nc_i = 0 TO TERM_CELLS - 1
+        POKE (SC_TERM + nc_i), 32
+    NEXT nc_i
+END
+
+term_repaint: PROCEDURE
+    FOR nc_i = 0 TO TERM_CELLS - 1
+        nc_c = PEEK(SC_TERM + nc_i) AND 255
+        IF nc_c < 32 OR nc_c > 126 THEN nc_c = 32
+        #BACKTAB(nc_i) = (nc_c - 32) * 8 + COL_NORMAL
     NEXT nc_i
 END
 
 ' ---------------------------------------------------------------------------
-' ed_draw: paint the composer row: 18 character cells + a send arrow.
+' seed_url: (re)load the default devicespec into SC_URL.
 ' ---------------------------------------------------------------------------
-ed_draw: PROCEDURE
-    FOR ed_i = 0 TO EDIT_LEN - 1
-        #nc_color = COL_WHITE
-        IF ed_i = ed_cur THEN #nc_color = COL_YELLOW
-        ed_c = ed_buf(ed_i)
-        IF ed_c = 32 THEN ed_c = 95   ' show blanks as underscores
-        #BACKTAB(EDIT_ROW + ed_i) = (ed_c - 32) * 8 + #nc_color
-    NEXT ed_i
+seed_url: PROCEDURE
+    FOR nc_i = 0 TO LEN_SPEC - 1
+        POKE (SC_URL + nc_i), PEEK(VARPTR lit_spec(0) + nc_i) AND 255
+    NEXT nc_i
+    POKE (SC_URL + LEN_SPEC), 0
+END
+
+' ---------------------------------------------------------------------------
+' url_screen: full-screen URL editor on the character grid. Returns with
+' fn_ok = 1 and the accepted devicespec NUL-terminated in SC_URL. ESC
+' restores the default and keeps editing (there is nothing to cancel to).
+' ---------------------------------------------------------------------------
+url_screen: PROCEDURE
+us_again:
+    CLS
+    PRINT AT STATUS_ROW COLOR COL_DIM, "TYPE URL - OK DIALS "
+    #ge_dst = SC_URL
+    #g_max = 256
+    GOSUB grid_entry
+    IF fn_ok = 0 THEN
+        GOSUB seed_url
+        GOTO us_again
+    END IF
+    IF g_len = 0 THEN
+        GOSUB seed_url
+        GOTO us_again
+    END IF
+END
+
+' ---------------------------------------------------------------------------
+' compose_line: the same grid over the terminal screen. On OK, sends the
+' line plus CR LF out the open channel. Restores the terminal afterward.
+' ---------------------------------------------------------------------------
+compose_line: PROCEDURE
+    CLS
+    PRINT AT STATUS_ROW COLOR COL_DIM, "OK SENDS - ESC BACK "
+    POKE SC_LINE, 0             ' fresh line every time
+    #ge_dst = SC_LINE
+    #g_max = 253
+    GOSUB grid_entry
+
+    IF fn_ok THEN
+        #fn_txlen = 0
+        #fn_src = SC_LINE : ls_max = 253 : GOSUB fn_strlen : GOSUB fn_putstr
+        POKE (FN_TX + #fn_txlen), 13
+        POKE (FN_TX + #fn_txlen + 1), 10
+        fn_len = #fn_txlen + 2
+        GOSUB net_write
+    END IF
+
+    CLS
+    GOSUB term_repaint
+    PRINT AT STATUS_ROW COLOR COL_DIM, "BTN TYPE - CLR URL  "
 END
 
 main:
     MODE 0, 0, 0, 0, 0 : WAIT
     CLS
-    PRINT AT EDIT_ROW COLOR COL_WHITE, "                    "
-    PRINT AT 200 COLOR COL_YELLOW, "FUJINET NETCAT      "
-
+    PRINT AT 0 COLOR COL_NORMAL, "FUJINET NETCAT"
+    PRINT AT 40, "CONNECTING TO FUJINET"
     GOSUB fn_wait_mailbox
     IF fn_ok = 0 THEN
-        PRINT AT 0 COLOR COL_WHITE, "NO CARTRIDGE MAILBOX"
+        PRINT AT 40, "NO CARTRIDGE MAILBOX "
         GOTO halt
     END IF
+    GOSUB seed_url
 
-    ' Open the connection: devicespec into FN_TX, then OPEN in
-    ' read-write mode with no translation (we handle CR LF ourselves).
+dial:
+    GOSUB url_screen
+
+    ' Open the accepted devicespec: read-write, no translation (we handle
+    ' CR LF ourselves).
+    CLS
+    PRINT AT 0 COLOR COL_NORMAL, "DIALING..."
     #fn_txlen = 0
-    #fn_src = VARPTR lit_spec(0) : fn_len = LEN_SPEC : GOSUB fn_putstr
+    #fn_src = SC_URL : ls_max = 255 : GOSUB fn_strlen : GOSUB fn_putstr
     mb_dev = NET_DEVICEID
     mb_cmd = NETCMD_OPEN
     mb_nparam = 2
@@ -1032,100 +1129,360 @@ main:
     pm_i = 1 : pm_size = 1 : #pm_val = OPEN_TRANS_NONE : GOSUB fn_param
     GOSUB fn_transact
     IF fn_ok = 0 THEN
-        PRINT AT 0 COLOR COL_WHITE, "CONNECT FAILED      "
-        GOTO halt
+        PRINT AT 40 COLOR COL_ERROR, "CONNECT FAILED"
+        PRINT AT 60 COLOR COL_DIM, "PRESS BUTTON TO EDIT"
+con_wait:
+        WAIT
+        GOSUB in_poll
+        IF in_btn = 0 THEN GOTO con_wait
+        GOTO dial                  ' SC_URL still holds the typo -- fix it
     END IF
 
-    term_pos = 0
-    nc_cr = 0
-    ed_cur = 0
-    inp_lock = 0
-    FOR ed_i = 0 TO EDIT_LEN - 1
-        ed_buf(ed_i) = 32
-    NEXT ed_i
-    GOSUB ed_draw
+    CLS
+    GOSUB term_init
+    GOSUB term_clear_row
+    PRINT AT STATUS_ROW COLOR COL_DIM, "BTN TYPE - CLR URL  "
 
-loop:
+term_loop:
     WAIT
 
     ' --- receive: anything waiting? read up to 64 bytes and print it ---
     GOSUB net_status
-    IF fn_ok THEN
-        IF #net_avail > 0 THEN
-            #net_readlen = #net_avail
-            IF #net_readlen > 64 THEN #net_readlen = 64
-            GOSUB net_read
-            IF fn_ok THEN
-                FOR nc_i = 0 TO #net_gotlen - 1
-                    nc_c = PEEK(FN_RX + nc_i) AND 255
-                    GOSUB term_putc
-                NEXT nc_i
-            END IF
+    IF fn_ok = 0 THEN
+        PRINT AT STATUS_ROW COLOR COL_ERROR, "CONNECTION LOST     "
+lost_wait:
+        WAIT
+        GOSUB in_poll
+        IF in_btn = 0 THEN GOTO lost_wait
+        GOSUB net_close            ' free the unit regardless
+        GOTO dial
+    END IF
+    IF #net_avail > 0 THEN
+        #net_readlen = #net_avail
+        IF #net_readlen > 64 THEN #net_readlen = 64
+        GOSUB net_read
+        IF fn_ok THEN
+            FOR nc_i = 0 TO #net_gotlen - 1
+                nc_c = PEEK(FN_RX + nc_i) AND 255
+                GOSUB term_putc
+            NEXT nc_i
         END IF
     END IF
 
-    ' --- compose ---
-    IF inp_lock > 0 THEN inp_lock = inp_lock - 1 : GOTO loop
-
-    IF CONT1.RIGHT THEN
-        ed_cur = ed_cur + 1
-        IF ed_cur >= EDIT_LEN THEN ed_cur = 0
-        inp_lock = 8 : GOSUB ed_draw
-        GOTO loop
+    ' --- input ---
+    GOSUB in_poll
+    IF in_btn THEN GOSUB compose_line
+    IF in_key = KEYPAD_CLEAR THEN
+        GOSUB net_close
+        GOTO dial
     END IF
-    IF CONT1.LEFT THEN
-        IF ed_cur = 0 THEN ed_cur = EDIT_LEN
-        ed_cur = ed_cur - 1
-        inp_lock = 8 : GOSUB ed_draw
-        GOTO loop
-    END IF
-    IF CONT1.UP THEN
-        ed_c = ed_buf(ed_cur) + 1
-        IF ed_c > 126 THEN ed_c = 32
-        ed_buf(ed_cur) = ed_c
-        inp_lock = 6 : GOSUB ed_draw
-        GOTO loop
-    END IF
-    IF CONT1.DOWN THEN
-        ed_c = ed_buf(ed_cur) - 1
-        IF ed_c < 32 THEN ed_c = 126
-        ed_buf(ed_cur) = ed_c
-        inp_lock = 6 : GOSUB ed_draw
-        GOTO loop
-    END IF
-
-    IF CONT1.KEY = 10 THEN
-        ' CLEAR: wipe the line
-        FOR ed_i = 0 TO EDIT_LEN - 1
-            ed_buf(ed_i) = 32
-        NEXT ed_i
-        ed_cur = 0
-        inp_lock = 10 : GOSUB ed_draw
-        GOTO loop
-    END IF
-
-    IF CONT1.KEY = 11 THEN
-        ' ENTER: trim trailing blanks, stage line + CR LF in FN_TX, send.
-        ed_len = EDIT_LEN
-        WHILE ed_len > 0 AND ed_buf(ed_len - 1) = 32
-            ed_len = ed_len - 1
-        WEND
-        FOR ed_i = 0 TO ed_len - 1
-            POKE (FN_TX + ed_i), ed_buf(ed_i)
-        NEXT ed_i
-        POKE (FN_TX + ed_len), 13
-        POKE (FN_TX + ed_len + 1), 10
-        fn_len = ed_len + 2
-        GOSUB net_write
-        FOR ed_i = 0 TO EDIT_LEN - 1
-            ed_buf(ed_i) = 32
-        NEXT ed_i
-        ed_cur = 0
-        inp_lock = 10 : GOSUB ed_draw
-    END IF
-    GOTO loop
+    GOTO term_loop
 
 halt:
     WAIT
     GOTO halt
+```
+
+---
+
+## kbd.bas
+
+The on-screen keyboard netcat uses, ported from `fujinet-config/intv`'s `input.bas`:
+
+```basic
+' kbd.bas -- edge-detected input + on-screen character-grid keyboard,
+' ported from fujinet-config/intv (input.bas + the scr_recolor helper from
+' screen.bas), with one change: the value display spans THREE rows (0-2)
+' instead of one, a 60-character tail-anchored window onto a buffer of up
+' to 256 bytes -- long N: URLs wrap across the rows and scroll once they
+' outgrow them.
+'
+' All 95 printable characters (32-126) fit in 6 rows x 16 columns, so the
+' cursor position IS the character (ch = 32 + gy*16 + gx) -- no SHIFT/SYM
+' paging. A row of action buttons (SPC/DEL/OK/ESC) sits below the grid.
+' The keypad works too: 0 = space, CLEAR = backspace, ENTER = accept.
+'
+' grid_entry contract (same as fujinet-config's): caller sets #ge_dst
+' (destination buffer) and #g_max (its size, including the NUL) BEFORE
+' calling, and primes the buffer -- NUL at offset 0 for a fresh field, or
+' existing NUL-terminated text to edit (it is preserved and editable).
+' #ge_dst is mutated live REGARDLESS of accept or cancel. Returns fn_ok =
+' 1 (OK button or keypad ENTER) or 0 (ESC button only); g_len holds the
+' final length and #ge_dst is NUL-terminated there. g_len is an 8-bit
+' variable, so the ceiling is #g_max = 256 (255 characters + NUL) -- one
+' character shy of what the mailbox TX window could carry to an OPEN, and
+' #g_max must be the 16-bit variable it is: as an 8-bit variable, 256
+' would silently wrap to 0 and disable grid_append's overflow guard.
+'
+' Screen layout used by grid_entry (rows 9 and 11 are never touched, so
+' the caller can keep hints there):
+'   rows 0-2   value window (60 cells, tail-anchored, green cursor block)
+'   rows 3-8   the character grid
+'   row  10    SPC / DEL / OK / ESC
+
+    ' Color-stack mode foreground colors.
+    CONST CS_BLACK      = 0
+    CONST CS_BLUE       = 1
+    CONST CS_RED        = 2
+    CONST CS_TAN        = 3
+    CONST CS_DARKGREEN  = 4
+    CONST CS_GREEN      = 5
+    CONST CS_YELLOW     = 6
+    CONST CS_WHITE      = 7
+
+    CONST COL_NORMAL   = CS_WHITE
+    CONST COL_HILIGHT  = CS_YELLOW
+    CONST COL_DIM      = CS_BLUE
+    CONST COL_ERROR    = CS_RED
+    CONST COL_VALUE    = CS_TAN
+    CONST COL_CURSOR   = CS_GREEN
+
+    CONST SCREEN_COLS = 20
+    DEF FN screenpos(aColumn, aRow) = (((aRow)*SCREEN_COLS)+(aColumn))
+
+    ' Disc directions (as reported by in_poll).
+    CONST DISC_UP     = $0004
+    CONST DISC_RIGHT  = $0002
+    CONST DISC_DOWN   = $0001
+    CONST DISC_LEFT   = $0008
+
+    ' Keypad, as decoded by CONT.KEY.
+    CONST KEYPAD_0      = 0
+    CONST KEYPAD_CLEAR  = 10
+    CONST KEYPAD_ENTER  = 11
+    CONST KEYPAD_NONE   = 12
+
+    ' Grid geometry. Value rows 0-2; charset rows 3-8; actions row 10.
+    CONST VAL_ROW0        = 0
+    CONST VAL_ROWS        = 3
+    CONST VAL_CELLS       = 60    ' VAL_ROWS * SCREEN_COLS
+    CONST GRID_ROW0       = 3
+    CONST GRID_COL0       = 2
+    CONST GRID_ROWS       = 6
+    CONST GRID_COLS       = 16
+    CONST GRID_ACTION_ROW = 10
+    CONST GRID_ACT_COL0   = 2    ' SPC
+    CONST GRID_ACT_COL1   = 7    ' DEL
+    CONST GRID_ACT_COL2   = 12   ' OK
+    CONST GRID_ACT_COL3   = 17   ' ESC
+
+    CONST IN_REPEAT_DELAY = 18   ' frames held before auto-repeat (~0.3s)
+    CONST IN_REPEAT_RATE  = 6    ' frames between repeats (~0.1s)
+
+    DIM in_disc, in_pdisc, in_rdelay
+    DIM in_braw, in_btn, in_pbtn
+    DIM in_key, in_pkey
+
+' ---------------------------------------------------------------------------
+' in_poll: call once per frame (after WAIT). Sets, per call:
+'   in_disc - DISC_UP/DOWN/LEFT/RIGHT on a fresh press or an auto-repeat
+'             tick while held; 0 otherwise.
+'   in_btn  - 1 on a fresh action-button press (any of B0/B1/B2).
+'   in_key  - the decoded keypad value on a fresh press, else KEYPAD_NONE.
+' Uses the unqualified CONT.* pseudo-variables (both controllers OR'd).
+' ---------------------------------------------------------------------------
+in_poll: PROCEDURE
+    in_disc = 0
+    IF CONT.UP THEN in_disc = DISC_UP
+    IF CONT.DOWN THEN in_disc = DISC_DOWN
+    IF CONT.LEFT THEN in_disc = DISC_LEFT
+    IF CONT.RIGHT THEN in_disc = DISC_RIGHT
+
+    IF in_disc <> 0 THEN
+        IF in_disc <> in_pdisc THEN
+            in_rdelay = IN_REPEAT_DELAY
+        ELSE
+            IF in_rdelay > 0 THEN
+                in_rdelay = in_rdelay - 1
+                in_disc = 0
+            ELSE
+                in_rdelay = IN_REPEAT_RATE
+            END IF
+        END IF
+    END IF
+    in_pdisc = 0
+    IF CONT.UP THEN in_pdisc = DISC_UP
+    IF CONT.DOWN THEN in_pdisc = DISC_DOWN
+    IF CONT.LEFT THEN in_pdisc = DISC_LEFT
+    IF CONT.RIGHT THEN in_pdisc = DISC_RIGHT
+
+    in_braw = 0
+    IF CONT.B0 OR CONT.B1 OR CONT.B2 THEN in_braw = 1
+    IF in_braw <> 0 AND in_pbtn = 0 THEN
+        in_btn = 1
+    ELSE
+        in_btn = 0
+    END IF
+    in_pbtn = in_braw
+
+    in_key = KEYPAD_NONE
+    IF CONT.KEY <> KEYPAD_NONE AND CONT.KEY <> in_pkey THEN
+        in_key = CONT.KEY
+    END IF
+    in_pkey = CONT.KEY
+END
+
+' ---------------------------------------------------------------------------
+' grid_entry -- see the header comment for the contract.
+' ---------------------------------------------------------------------------
+    DIM g_x, g_y, g_px, g_py, g_len, g_ch, ga_idx
+    DIM #ge_dst, #g_max
+    DIM k_row, k_col, k_i, k_c, k_max, k_color
+    DIM #k_word
+
+grid_entry: PROCEDURE
+    GOSUB grid_draw_charset
+    GOSUB grid_draw_actions
+
+    g_len = 0
+    WHILE (g_len < #g_max - 1) AND ((PEEK(#ge_dst + g_len) AND 255) <> 0)
+        g_len = g_len + 1
+    WEND
+    GOSUB grid_draw_value
+
+    g_x = 0 : g_y = 0
+    g_px = 255 : g_py = 255
+
+    DO WHILE 1
+        WAIT
+        GOSUB grid_draw_cursor
+        GOSUB in_poll
+
+        IF in_disc = DISC_UP AND g_y > 0 THEN g_y = g_y - 1
+        IF in_disc = DISC_DOWN AND g_y < GRID_ROWS THEN g_y = g_y + 1
+        IF in_disc = DISC_LEFT AND g_x > 0 THEN g_x = g_x - 1
+        IF in_disc = DISC_RIGHT THEN
+            IF g_y = GRID_ROWS THEN
+                IF g_x < 3 THEN g_x = g_x + 1
+            ELSE
+                IF g_x < GRID_COLS - 1 THEN g_x = g_x + 1
+            END IF
+        END IF
+        IF g_y = GRID_ROWS AND g_x > 3 THEN g_x = 3
+
+        IF in_key = KEYPAD_0 THEN g_ch = 32 : GOSUB grid_append
+        IF in_key = KEYPAD_CLEAR THEN GOSUB grid_backspace
+        IF in_key = KEYPAD_ENTER THEN
+            fn_ok = 1
+            EXIT DO
+        END IF
+
+        IF in_btn <> 0 THEN
+            IF g_y < GRID_ROWS THEN
+                g_ch = 32 + g_y * GRID_COLS + g_x
+                IF g_ch <= 126 THEN GOSUB grid_append
+            ELSE
+                IF g_x = 0 THEN g_ch = 32 : GOSUB grid_append
+                IF g_x = 1 THEN GOSUB grid_backspace
+                IF g_x = 2 THEN
+                    fn_ok = 1
+                    EXIT DO
+                END IF
+                IF g_x = 3 THEN
+                    fn_ok = 0
+                    EXIT DO
+                END IF
+            END IF
+        END IF
+    LOOP
+END
+
+' grid_draw_charset: paints all 96 cells (95 real chars + one always-blank).
+grid_draw_charset: PROCEDURE
+    FOR g_y = 0 TO GRID_ROWS - 1
+        FOR g_x = 0 TO GRID_COLS - 1
+            g_ch = 32 + g_y * GRID_COLS + g_x
+            IF g_ch > 126 THEN g_ch = 32
+            #BACKTAB((GRID_ROW0 + g_y) * SCREEN_COLS + GRID_COL0 + g_x) = (g_ch - 32) * 8 + COL_VALUE
+        NEXT g_x
+    NEXT g_y
+END
+
+grid_draw_actions: PROCEDURE
+    PRINT AT screenpos(GRID_ACT_COL0, GRID_ACTION_ROW) COLOR COL_DIM,"SPC"
+    PRINT AT screenpos(GRID_ACT_COL1, GRID_ACTION_ROW) COLOR COL_DIM,"DEL"
+    PRINT AT screenpos(GRID_ACT_COL2, GRID_ACTION_ROW) COLOR COL_DIM," OK"
+    PRINT AT screenpos(GRID_ACT_COL3, GRID_ACTION_ROW) COLOR COL_DIM,"ESC"
+END
+
+' grid_recolor: change only the COLOR of k_max+1 already-drawn cells on row
+' k_row starting at column k_col -- the glyphs underneath stay. (The
+' scr_recolor helper from fujinet-config's screen.bas, renamed so a program
+' including this file can keep its own s_* variables.)
+grid_recolor: PROCEDURE
+    FOR k_i = 0 TO k_max
+        #k_word = (#BACKTAB(k_row * SCREEN_COLS + k_col + k_i) AND $FFF8) + k_color
+        #BACKTAB(k_row * SCREEN_COLS + k_col + k_i) = #k_word
+    NEXT k_i
+END
+
+' grid_draw_cursor: un-highlight the previous cell (g_px/g_py), highlight
+' the current one (g_x/g_y). g_px=255 on the very first call skips the
+' un-highlight.
+grid_draw_cursor: PROCEDURE
+    IF g_px <> 255 THEN
+        IF g_py = GRID_ROWS THEN
+            ga_idx = g_px : GOSUB grid_action_col
+            k_row = GRID_ACTION_ROW : k_max = 2 : k_color = COL_DIM
+            GOSUB grid_recolor
+        ELSE
+            g_ch = 32 + g_py * GRID_COLS + g_px
+            IF g_ch > 126 THEN g_ch = 32
+            #BACKTAB((GRID_ROW0 + g_py) * SCREEN_COLS + GRID_COL0 + g_px) = (g_ch - 32) * 8 + COL_VALUE
+        END IF
+    END IF
+
+    IF g_y = GRID_ROWS THEN
+        ga_idx = g_x : GOSUB grid_action_col
+        k_row = GRID_ACTION_ROW : k_max = 2 : k_color = COL_HILIGHT
+        GOSUB grid_recolor
+    ELSE
+        g_ch = 32 + g_y * GRID_COLS + g_x
+        IF g_ch > 126 THEN g_ch = 32
+        #BACKTAB((GRID_ROW0 + g_y) * SCREEN_COLS + GRID_COL0 + g_x) = (g_ch - 32) * 8 + COL_HILIGHT
+    END IF
+
+    g_px = g_x : g_py = g_y
+END
+
+' grid_action_col: given ga_idx (0-3), sets k_col to that action button's
+' starting column.
+grid_action_col: PROCEDURE
+    IF ga_idx = 0 THEN k_col = GRID_ACT_COL0
+    IF ga_idx = 1 THEN k_col = GRID_ACT_COL1
+    IF ga_idx = 2 THEN k_col = GRID_ACT_COL2
+    IF ga_idx = 3 THEN k_col = GRID_ACT_COL3
+END
+
+' grid_draw_value: tail-anchored 60-cell window (rows 0-2) onto #ge_dst,
+' with a trailing cursor block. A value longer than 59 characters scrolls:
+' the window always shows the tail, where typing is happening.
+grid_draw_value: PROCEDURE
+    k_i = 0
+    IF g_len > VAL_CELLS - 1 THEN k_i = g_len - (VAL_CELLS - 1)
+    FOR k_col = 0 TO VAL_CELLS - 1
+        k_c = 32
+        IF k_i + k_col < g_len THEN k_c = PEEK(#ge_dst + k_i + k_col) AND 255
+        IF k_c < 32 OR k_c > 126 THEN k_c = 32
+        #BACKTAB(VAL_ROW0 * SCREEN_COLS + k_col) = (k_c - 32) * 8 + COL_VALUE
+    NEXT k_col
+    IF g_len - k_i < VAL_CELLS THEN
+        #BACKTAB(VAL_ROW0 * SCREEN_COLS + (g_len - k_i)) = (95 - 32) * 8 + COL_CURSOR
+    END IF
+END
+
+grid_append: PROCEDURE
+    IF g_len >= #g_max - 1 THEN RETURN
+    POKE (#ge_dst + g_len), g_ch
+    g_len = g_len + 1
+    POKE (#ge_dst + g_len), 0
+    GOSUB grid_draw_value
+END
+
+grid_backspace: PROCEDURE
+    IF g_len = 0 THEN RETURN
+    g_len = g_len - 1
+    POKE (#ge_dst + g_len), 0
+    GOSUB grid_draw_value
+END
 ```
