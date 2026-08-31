@@ -1,0 +1,318 @@
+
+
+                ;****************************************************************************
+                ;
+                ;  BOOTFUJI.ASM - CP/M cold boot loader for Altair CP/M using a FujiNet
+                ;    RS232 virtual disk drive via the FujiBus protocol (FEP-004, SLIP-framed).
+                ;
+                ;    ROMFUJI (the PROM at FC00) reads the two 128-byte boot sectors - track 0
+                ;    physical sectors 0 and 2 - into RAM at 0000 and jumps here.  This loader
+                ;    then reads the entire CP/M system image (CCP+BDOS+BIOS = 100 CP/M sectors)
+                ;    from FujiNet drive A and enters the BIOS cold start at BIOSBAS.
+                ;
+                ;        RUN FC00 -> ROMFUJI -> 0000 (this) -> C400 (BIOSFUJI) -> A>
+                ;
+                ;    The FujiNet disk is a flat 512-byte LBA block device: READ sector N
+                ;    returns the 512 bytes at image offset N*512 - there is no track concept
+                ;    and no 137-byte hard-sector read.  The Altair image is stored in raw
+                ;    hard-sector format (137-byte physical sectors laid end to end, each
+                ;    [3-byte header][128-byte CP/M data][6-byte trailer]).  To load the
+                ;    system this loader must "deblock": read 512-byte LBA blocks and pick the
+                ;    128-byte CP/M payloads out of them, honoring the 137-byte stride and the
+                ;    fact that a payload can straddle a 512-byte block boundary.
+                ;
+                ;    Because the system image is loaded strictly SEQUENTIALLY (physical
+                ;    sectors 3..102), the deblocking is done as a linear walk of the flat
+                ;    image rather than a per-sector divide: a running source pointer marches
+                ;    through the current 512-byte block, and when it reaches the end of the
+                ;    block the next LBA block is fetched.  Every byte - data and the 9-byte
+                ;    inter-payload gap alike - passes through getb, so block boundaries are
+                ;    always crossed exactly and the block accounting stays correct even when a
+                ;    payload spans two blocks.  (The general random-access track/sector ->
+                ;    LBA/offset conversion lives in DBLKFUJI.ASM, for BIOSFUJI's read/write.)
+                ;
+                ;    This loader must fit in the two boot sectors (256 bytes).  To get FujiBus
+                ;    (SLIP + checksum) AND the deblocking walk into that budget it exploits:
+                ;
+                ;      * No SLIP escaping on SEND.  The 10-byte read request only ever holds
+                ;        dev(31) cmd(52) len(0A,00) cksum descr(07) LBA(0..27) 00 00 00.  None
+                ;        of the fixed bytes is C0 or DB, cksum = 094h+LBA is 94h..AFh, and LBA
+                ;        is 0..27 - so the frame never needs escaping and ships raw between two
+                ;        C0 delimiters.  (SLIP escaping IS still done on RECEIVE - the 512 data
+                ;        bytes are arbitrary CP/M code and may contain C0/DB.)
+                ;      * Checksum by a single ADI.  The request checksum is the carry-add-back
+                ;        sum of the 10 bytes = 094h+LBA; the carry never fires for LBA<=27, so
+                ;        no checksum loop is needed - just ADI CKBASE.
+                ;      * Page-aligned receive buffer.  rcvBuf is placed so the 512 data bytes
+                ;        land at 0400h..05FFh; "end of block" is then a one-byte compare of the
+                ;        source pointer's high byte against 06h, not a 16-bit compare.
+                ;      * All hot-loop state in registers (DE=dest, C=sectors left, B=bytes);
+                ;        getb preserves BC/DE across the rare block reload.
+                ;
+                ;    Assumes ROMFUJI has already initialized 88-2SIO Port 1 (I/O 12h/13h) to
+                ;    FujiBus framing (8N1, div16, /RTS low); this loader re-asserts it anyway.
+                ;
+                ;    Version History
+                ;    Ver   Date        Description
+                ;    ---   ---------   ---------------------
+                ;    1.0   06/07/2026  Derived from BOOTSER.ASM (Mike Douglas, 10/28/23) for
+                ;                      FujiNet RS232 / FUJICOM disk I/O (128-byte sectors).
+                ;    2.0   08/23/2026  Rewritten for FujiBus / FEP-004: flat 512-byte LBA disk,
+                ;                      SLIP framing, sequential deblocking walk of 137-byte
+                ;                      hard sectors.  Fits the 256-byte boot budget (252 bytes).
+                ;
+                ;--------------------------------------------------------------------------
+                ;
+                ;    To patch this loader together with BIOSFUJI into a CP/M image saved from
+                ;    MOVCPM8M (e.g., CPM56.COM):
+                ;
+                ;       A>DDT CPM56.COM
+                ;       -IBIOSFUJI.HEX
+                ;       -R5C80             (overlay BIOS; jump table lands at 2080)
+                ;       -IBOOTFUJI.HEX
+                ;       -R900              (load this loader at 0900 in the image)
+                ;       -M980,9FF,A00      (split loader onto disk sectors 0 and 2)
+                ;       -G0                (Go zero, not "oh")
+                ;       A>SYSGEN
+                ;
+                ;****************************************************************************
+                
+ 0038 =         MEMSIZE  equ    56              ;memory size in K bytes
+                
+                ;-----------------------------
+                ; CP/M size and locations
+                ;-----------------------------
+ 0800 =         CCPLEN   equ    0800h           ;CCP length (CP/M 2.2 fixed)
+ 0E00 =         BDOSLEN  equ    0E00h           ;BDOS length (CP/M 2.2 fixed)
+ 1C00 =         BIOSLEN  equ    1C00h           ;BIOS reserved length
+                
+ AE00 =         CCPBASE  equ    MEMSIZE*1024 - BIOSLEN - BDOSLEN - CCPLEN   ;AE00
+ C400 =         BIOSBAS  equ    CCPBASE + CCPLEN + BDOSLEN                  ;C400
+                
+                ;-----------------------------
+                ; Disk geometry / load extent
+                ;-----------------------------
+ 0080 =         CSECLEN  equ    128             ;CP/M sector length in bytes
+ 0089 =         PSECLEN  equ    137             ;physical (137-byte) hard-sector length
+ 0003 =         SYSDATA  equ    3               ;offset of 128-byte data payload in a phys sector
+ 0200 =         LBALEN   equ    512             ;FujiNet LBA block size (bytes)
+ 0003 =         WBSSEC   equ    3               ;first CP/M sector (0-indexed phys sector) on trk 0
+ 0064 =         SYSSECS  equ    (CCPLEN+BDOSLEN+BIOSLEN)/CSECLEN            ;100 sectors
+                
+ 019E =         FIRSTOFF equ    WBSSEC*PSECLEN+SYSDATA   ;flat byte offset of first payload = 414
+                
+                ;-----------------------------
+                ; 88-2SIO Port 1 -> FujiNet
+                ;-----------------------------
+ 0012 =         SIO2CTL  equ    12h             ;MC6850 control/status register
+ 0013 =         SIO2DAT  equ    13h             ;MC6850 data register
+ 0001 =         SIORDRF  equ    01h             ;receive data register full
+ 0002 =         SIOTDRE  equ    02h             ;transmit data register empty
+ 0015 =         SIO2INI  equ    15h             ;0001 0101 = div16, 8N1, /RTS low, no ints
+                
+                ;-----------------------------
+                ; FujiBus protocol constants
+                ;-----------------------------
+ 0052 =         FUJIRD   equ    52h             ;DISKCMD_READ  ('R')
+ 0006 =         FBACK    equ    06h             ;FUJICMD_ACK
+ 0007 =         FBDESC   equ    07h             ;descriptor: one u32 param
+ 0031 =         FUJIDRV0 equ    31h             ;device ID for drive A (FujiNet slot 1)
+ 0094 =         CKBASE   equ    FUJIDRV0+FUJIRD+FBDESC+10 ;fixed part of the request checksum = 094h
+                
+ 00C0 =         SLIPEND  equ    0C0h            ;SLIP frame delimiter
+ 00DB =         SLIPESC  equ    0DBh            ;SLIP escape
+ 00DC =         SLIPXE   equ    0DCh            ;escaped END  (follows ESC)
+ 00DD =         SLIPXD   equ    0DDh            ;escaped ESC  (follows ESC)
+                
+                ;-----------------------------
+                ; RAM scratch (outside the 256-byte boot image; clear of stack and 0000..00FF)
+                ;   rcvBuf placed so the 512 data bytes land page-aligned at 0400h..05FFh, so
+                ;   end-of-block is a single high-byte compare against 06h.
+                ;-----------------------------
+ 03F6 =         srcPtr   equ    03F6h           ;current source pointer into the loaded block
+ 03F8 =         curLBA   equ    03F8h           ;current LBA block number (0..27)
+ 03FA =         rcvBuf   equ    03FAh           ;reply lands here; +6 = 0400h = 512 data bytes
+ 0200 =         STACK    equ    0200h           ;stack grows down from here (into 0100..01FF)
+                
+                ;--------------------------------------------------------------------------
+                ;  Entry point - loaded at 0000 by ROMFUJI (phys sectors 0 and 2).
+                ;--------------------------------------------------------------------------
+ 0000                   org     0
+                
+ 0000 F3        start   di                      ;disable interrupts
+ 0001 310002            lxi     sp,STACK         ;stack grows down from STACK
+                
+ 0004 3E03              mvi     a,03h            ;master reset the FujiNet 2SIO port
+ 0006 D312              out     SIO2CTL
+ 0008 3E15              mvi     a,SIO2INI        ;8N1, div16, /RTS low (FujiBus)
+ 000A D312              out     SIO2CTL
+                
+ 000C AF                xra     a                ;curLBA = 0 and read LBA block 0
+ 000D 32F803            sta     curLBA
+ 0010 CD6A00            call    rdblk            ;A = 0 -> 512 bytes at rcvBuf+6 (0400h)
+                
+ 0013 219E05            lxi     h,rcvBuf+6+FIRSTOFF   ;srcPtr -> first payload byte (phys sec 3)
+ 0016 22F603            shld    srcPtr
+ 0019 1100AE            lxi     d,CCPBASE        ;DE -> where CP/M loads (stays in DE throughout)
+ 001C 0E64              mvi     c,SYSSECS        ;C = CP/M sectors remaining (100)
+                
+                ;--------------------------------------------------------------------------
+                ; Copy each 128-byte CP/M payload to (DE), then skip the 9-byte inter-payload
+                ;    gap (6-byte trailer + 3-byte header).  getb fetches the next flat source
+                ;    byte, transparently reading the next 512-byte LBA block when needed, and
+                ;    preserves B, C and DE across that reload.
+                ;--------------------------------------------------------------------------
+ 001E 0680      loop    mvi     b,CSECLEN        ;B = 128 data bytes
+ 0020 CD4000    cpy     call    getb
+ 0023 12                stax    d                ;store to (DE)
+ 0024 13                inx     d
+ 0025 05                dcr     b
+ 0026 C22000            jnz     cpy
+                
+ 0029 0D                dcr     c                ;one more sector done
+ 002A CA3500            jz      fin              ;all sectors loaded -> enter BIOS
+ 002D 0609              mvi     b,PSECLEN-CSECLEN ;skip the 9-byte gap to the next payload
+ 002F CD3800            call    skip
+ 0032 C31E00            jmp     loop
+                
+ 0035 C300C4    fin     jmp     BIOSBAS          ;whole system loaded - enter BIOS cold start
+                
+                ;--------------------------------------------------------------------------
+                ; skip - advance the source pointer B bytes (through getb, so block boundaries
+                ;    are still crossed exactly).  Discards the bytes.  Preserves C, DE.
+                ;--------------------------------------------------------------------------
+ 0038 CD4000    skip    call    getb
+ 003B 05                dcr     b
+ 003C C23800            jnz     skip
+ 003F C9                ret
+                
+                ;--------------------------------------------------------------------------
+                ; getb - fetch the next flat source byte into A and advance srcPtr.  When the
+                ;    pointer reaches the end of the current 512-byte block (high byte = 06h),
+                ;    read the next LBA block first.  Preserves B, C, D, E.
+                ;--------------------------------------------------------------------------
+ 0040 2AF603    getb    lhld    srcPtr
+ 0043 7C                mov     a,h
+ 0044 FE06              cpi     06h              ;past 05FFh -> end of the 512-byte data block?
+ 0046 C25300            jnz     gb1
+ 0049 C5                push    b                ;protect sector/byte counters and dest ptr
+ 004A D5                push    d
+ 004B CD5900            call    nextblk          ;read next block; srcPtr := rcvBuf+6
+ 004E D1                pop     d
+ 004F C1                pop     b
+ 0050 2AF603            lhld    srcPtr           ;reload HL (nextblk moved srcPtr)
+ 0053 7E        gb1     mov     a,m
+ 0054 23                inx     h
+ 0055 22F603            shld    srcPtr
+ 0058 C9                ret
+                
+                ;--------------------------------------------------------------------------
+                ; nextblk - advance to the next LBA block: curLBA++, read it, srcPtr := start.
+                ;--------------------------------------------------------------------------
+ 0059 3AF803    nextblk lda     curLBA
+ 005C 3C                inr     a
+ 005D 32F803            sta     curLBA
+ 0060 CD6A00            call    rdblk
+ 0063 210004            lxi     h,rcvBuf+6
+ 0066 22F603            shld    srcPtr
+ 0069 C9                ret
+                
+                ;--------------------------------------------------------------------------
+                ; rdblk - Read one 512-byte LBA block (LBA in A) from FujiNet drive A into
+                ;    rcvBuf via FujiBus.  Retries the request until a valid ACK reply arrives.
+                ;    On return the 512 data bytes are at rcvBuf+6 (0400h).  Clobbers A,B,H,L.
+                ;--------------------------------------------------------------------------
+ 006A 329F00    rdblk   sta     tmpl+6           ;patch LBA (byte 0 of the u32 param)
+ 006D C694              adi     CKBASE           ;request checksum = 094h + LBA (no carry, LBA<=27)
+ 006F 329D00            sta     tmpl+4
+ 0072 3EC0      rdb0    mvi     a,SLIPEND        ;send: C0 <10 raw bytes> C0  (no escaping needed)
+ 0074 CDA300            call    txb
+ 0077 219900            lxi     h,tmpl
+ 007A 060A              mvi     b,10
+ 007C 7E        rds     mov     a,m
+ 007D CDA300            call    txb
+ 0080 23                inx     h
+ 0081 05                dcr     b
+ 0082 C27C00            jnz     rds
+ 0085 3EC0              mvi     a,SLIPEND
+ 0087 CDA300            call    txb
+ 008A CDC800            call    rxframe          ;receive the reply frame into rcvBuf
+ 008D C27200            jnz     rdb0             ;timeout -> retry
+ 0090 3AFB03            lda     rcvBuf+1         ;reply command must be ACK
+ 0093 FE06              cpi     FBACK
+ 0095 C27200            jnz     rdb0             ;NAK / garbage -> retry
+ 0098 C9                ret
+                
+                ;--------------------------------------------------------------------------
+                ; tmpl - 10-byte FujiBus read request template (part of the loaded image).
+                ;    Bytes 4 (checksum) and 6 (LBA) are patched per read by rdblk.
+                ;--------------------------------------------------------------------------
+ 0099 31520A0000tmpl    db      FUJIDRV0,FUJIRD,10,0,0,FBDESC,0,0,0,0
+                
+                ;--------------------------------------------------------------------------
+                ; txb - Send the byte in A to FujiNet (Port 1); poll transmit-ready.
+                ;    Preserves all registers (A returns holding the byte sent).
+                ;--------------------------------------------------------------------------
+ 00A3 F5        txb     push    psw
+ 00A4 DB12      txbw    in      SIO2CTL
+ 00A6 E602              ani     SIOTDRE
+ 00A8 CAA400            jz      txbw
+ 00AB F1                pop     psw
+ 00AC D313              out     SIO2DAT
+ 00AE C9                ret
+                
+                ;--------------------------------------------------------------------------
+                ; rxb - Receive one byte from FujiNet (Port 1) with ~1 s timeout.
+                ;    On exit: Z=true and A=byte on success; Z=false on timeout.  Preserves
+                ;    BC, DE, HL.  (The 8080 IN does not disturb the flags set by XRA A.)
+                ;--------------------------------------------------------------------------
+ 00AF C5        rxb     push    b
+ 00B0 01C3A2            lxi     b,41667          ;~1 second at 2 MHz
+ 00B3 DB12      rxbl    in      SIO2CTL
+ 00B5 E601              ani     SIORDRF
+ 00B7 C2C300            jnz     rxbg
+ 00BA 0B                dcx     b
+ 00BB 78                mov     a,b
+ 00BC B1                ora     c
+ 00BD C2B300            jnz     rxbl
+ 00C0 C1                pop     b
+ 00C1 3C                inr     a                ;A was 0 -> Z=false = timeout
+ 00C2 C9                ret
+ 00C3 C1        rxbg    pop     b
+ 00C4 AF                xra     a                ;Z=true
+ 00C5 DB13              in      SIO2DAT          ;A = received byte (flags preserved)
+ 00C7 C9                ret
+                
+                ;--------------------------------------------------------------------------
+                ; rxframe - Receive a SLIP frame into rcvBuf, un-escaping.  Skips to the first
+                ;    END (C0), then decodes until the next END.  A well-formed reply is 518
+                ;    bytes and fills rcvBuf (03FAh) exactly through 05FFh (data at 0400h).
+                ;    On exit: Z=true on a complete frame; Z=false on timeout.  Preserves DE.
+                ;--------------------------------------------------------------------------
+                rxframe
+ 00C8 CDAF00    rf0     call    rxb              ;wait for frame start
+ 00CB C0                rnz                      ;timeout
+ 00CC FEC0              cpi     SLIPEND
+ 00CE C2C800            jnz     rf0
+ 00D1 21FA03            lxi     h,rcvBuf
+ 00D4 CDAF00    rf1     call    rxb
+ 00D7 C0                rnz                      ;timeout mid-frame
+ 00D8 FEC0              cpi     SLIPEND
+ 00DA CAFA00            jz      rfdone
+ 00DD FEDB              cpi     SLIPESC
+ 00DF CAE700            jz      rfesc
+ 00E2 77        rfput   mov     m,a
+ 00E3 23                inx     h
+ 00E4 C3D400            jmp     rf1
+ 00E7 CDAF00    rfesc   call    rxb
+ 00EA C0                rnz
+ 00EB FEDC              cpi     SLIPXE
+ 00ED CAF500            jz      rfpe
+ 00F0 3EDB              mvi     a,SLIPESC        ;else escaped ESC (DB DD) -> DB
+ 00F2 C3E200            jmp     rfput
+ 00F5 3EC0      rfpe    mvi     a,SLIPEND        ;escaped END (DB DC) -> C0
+ 00F7 C3E200            jmp     rfput
+ 00FA AF        rfdone  xra     a                ;A=0 Z=true = complete frame
+ 00FB C9                ret
+                
+ 00FC                   end
