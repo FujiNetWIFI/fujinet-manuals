@@ -81,24 +81,23 @@
   v(0.28in)
 }
 
+// sticky: a section heading may never be the last block on a page.
+// `above:` collapses/trims like the weak v() it replaces.
 #show heading.where(level: 2): it => {
-  v(1.1em, weak: true)
-  block(below: 0.6em, {
+  block(above: 1.1em, below: 0.6em, sticky: true, {
     text(font: f-head, weight: 700, size: 13.5pt, fill: slate,
       [#context counter(heading).display("1.1")#h(10pt)#it.body])
   })
 }
 
 #show heading.where(level: 3): it => {
-  v(0.8em, weak: true)
-  block(below: 0.45em,
+  block(above: 0.8em, below: 0.45em, sticky: true,
     text(font: f-head, weight: 700, size: 11pt, fill: steel,
       [#context counter(heading).display("1.1.1")#h(8pt)#it.body]))
 }
 
 #show heading.where(level: 4): it => {
-  v(0.6em, weak: true)
-  block(below: 0.35em,
+  block(above: 0.6em, below: 0.35em, sticky: true,
     text(font: f-head, weight: 700, size: 10pt, fill: ink, it.body))
 }
 
@@ -150,6 +149,11 @@
 
 #show figure.where(kind: "lst"): set figure(numbering: "1")
 #show figure.where(kind: "fig"): set figure(numbering: "1")
+// let oversized tables and listings split across pages (table.header
+// rows repeat on the continuation) instead of overflowing the margin;
+// diagram figures ("fig") stay whole.
+#show figure.where(kind: table): set block(breakable: true)
+#show figure.where(kind: "lst"): set block(breakable: true)
 
 // table base style
 #set table(stroke: (x, y) => (
@@ -383,7 +387,7 @@
     grid(columns: (1fr, auto, 1fr),
       align(left)[fujinet-firmware · lib/network-protocol],
       align(center)[#counter(page).display("1")],
-      align(right)[Rev. 1 · 2026])
+      align(right)[Rev. 2 · 2026])
   },
 )
 
@@ -416,7 +420,7 @@
     v(8pt)
     grid(columns: (1fr, 1fr), row-gutter: 5pt,
       [28 schemes · 25 protocol adapters],
-      align(right)[Revision 1 · August 2026],
+      align(right)[Revision 2 · September 2026],
       [One devicespec · one lifecycle · every machine],
       align(right)[The FujiNet Project],
     )
@@ -460,7 +464,7 @@
   v(4pt)
   set text(font: f-mono, size: 8.5pt, fill: ink)
   grid(columns: (auto, 1fr), row-gutter: 3pt, column-gutter: 10pt,
-    [fujinet-firmware], [`lib/network-protocol` — the protocol adapters (commit `8b61bde69`, Aug 2026)],
+    [fujinet-firmware], [`lib/network-protocol` — the protocol adapters (commits `c026d9a12` + `07e53c764`, Sep 2026)],
     [fujinet-lib], [v4.11.2 — `fujinet-network.h`, the C API used in the examples],
     [fujinet-nhandler], [the Atari `N:` handler and NOS; the Apple II BASIC.SYSTEM extension],
     [smartbasic-1.x], [the ADAM SmartBASIC 1.x FujiNet statements],
@@ -596,7 +600,7 @@ invalid devicespec.
     [`SSH.COPYID`], [`NetworkProtocolSSHCopyId`], [install that key on a server],
     [`CLIPBOARD`], [`NetworkProtocolClipboard`], [the FujiNet's clipboard and its history],
     [`CPM`], [`NetworkProtocolCPM`], [a CP/M 2.2 machine running inside the FujiNet],
-    [`GMAIL`], [`NetworkProtocolGMAIL`], [a Gmail mailbox, read-only],
+    [`GMAIL`], [`NetworkProtocolGMAIL`], [a Gmail mailbox — read, compose, reply],
     [`IMAPS`], [`NetworkProtocolIMAPS`], [any IMAP mailbox over TLS, read-only],
     [`GCAL`], [`NetworkProtocolGCAL`], [Google Calendar — read, compose, edit],
     [`ICAL`, `WEBCAL`, `ICALH`], [`NetworkProtocolICAL`], [published iCalendar feeds, read-only],
@@ -3040,15 +3044,17 @@ CLOSE
   [Four adapters and two shared frameworks that put a mailbox and a
    calendar behind the devicespec: folders, messages, and attachments
    mapped onto the path; day, week, month, and agenda views rendered for
-   your screen width; and — newest of all — composing and editing
-   calendar events from an 8-bit machine.])
+   your screen width; and — newest of all — sending mail, replying in
+   thread, and creating and editing calendar events from an 8-bit
+   machine.])
 
 = The Mailbox Model
 
 GMAIL and IMAPS are one machine with two engines. The shared base class
-maps a mailbox onto the devicespec path and renders everything your
-machine reads; the providers only fetch. Everything in this chapter is
-true of both.
+maps a mailbox onto the devicespec path, renders everything your machine
+reads, and parses everything it writes; the providers fetch — and, where
+they can, send. Everything in this chapter is true of both, with one
+exception called out where it matters: only GMAIL can send.
 
 == The path is the query
 
@@ -3061,10 +3067,13 @@ true of both.
     [`/FOLDER/N`], [4], [message N's body (its primary text part)],
     [`/FOLDER/N`], [6], [message N's *attachment index*],
     [`/FOLDER/N/A`], [4], [attachment A's raw data (A = 0 is the body again)],
+    [`/`], [8], [*compose* a new message (write, then close)],
+    [`/FOLDER/N`], [8], [*reply* to message N],
   ),
   [The mailbox grammar. N is the message's position in the folder — the
-   providers define which end is 1. Any other path depth is 165; any
-   write mode is 135 — mailboxes are read-only.])
+   providers define which end is 1. Any other path depth is 165; append
+   and read-write are refused with 135; write works only on providers
+   that can send — GMAIL yes, IMAPS no.])
 
 Two query parameters page the index: `?range=START-END` (inclusive,
 0-based positions in the listing order) and `?newest=1` (default —
@@ -3091,17 +3100,18 @@ line. The attachment index is a simple `# name type size` table.
 
 The binary records, little-endian, NUL-padded fixed fields:
 
-#bytefield(
-  ("msgNum\nu32", 50pt), ("displayName\nchar[32]", 80pt),
-  ("emailAddress\nchar[48]", 90pt), ("subject\nchar[128]", 120pt),
-  ("timestamp\nu64", 60pt),
-)
-
-#align(center, text(font: f-head, size: 8pt, fill: slate)[
-  `MailIndexItem` — 220 bytes per message. The attachment record
-  (`MailAttachmentItem`, 313 bytes) is `attachmentNum` u8,
-  `displayName` char[128], `fileName` char[128], `mimeType` char[48],
-  `length` u64.])
+#block(breakable: false, {
+  bytefield(
+    ("msgNum\nu32", 50pt), ("displayName\nchar[32]", 80pt),
+    ("emailAddress\nchar[48]", 90pt), ("subject\nchar[128]", 120pt),
+    ("timestamp\nu64", 60pt),
+  )
+  align(center, text(font: f-head, size: 8pt, fill: slate)[
+    `MailIndexItem` — 220 bytes per message. The attachment record
+    (`MailAttachmentItem`, 313 bytes) is `attachmentNum` u8,
+    `displayName` char[128], `fileName` char[128], `mimeType` char[48],
+    `length` u64.])
+})
 
 == Reading rhythm
 
@@ -3111,6 +3121,58 @@ simply drain it to 136. There is no pagination inside one open; a new
 range means a new open. Which end of the mailbox is message 1, and what
 the folder names are, belongs to the provider chapters.
 
+== Writing a message
+
+Where the provider allows it, mode 8 turns the machine around: a
+write-mode open starts a *draft*, you write header lines and a body,
+and the close *sends* — one shot, atomically, with the verdict in the
+next status. The draft is the mail you already know, RFC822 with the
+flour still on it:
+
+```
+TO: alice@example.com
+CC: bob@example.com
+SUBJECT: Hello from an Atari
+
+Sent from my 130XE over FujiNet.
+```
+
+Header lines are `KEY: value` — the colon is required — with
+case-insensitive keys and trimmed values, ended by any line ending your
+machine likes (`$9B`, CR, LF, or CRLF, freely mixed; aux2 translation
+is never applied to a write channel, so what you write is exactly what
+the parser reads). Exactly four keys exist: `TO`, `CC`, `BCC`, and
+`SUBJECT`. `TO`, `CC`, and `BCC` *accumulate* — repeat them to add
+recipients — while a repeated `SUBJECT` is last-wins. Anything else
+rejects the draft, and one absence is deliberate: there is no `FROM`,
+because the sender is the authenticated account, and an 8-bit machine
+does not get to forge it. The first blank line ends the headers and is
+consumed; everything after it is the body, verbatim — a colon there is
+just a colon.
+
+*Replying* (write mode on `/FOLDER/N`) fills the blanks for you: an
+omitted `TO` goes to the original's `Reply-To` (or, failing that, its
+`From`), and an omitted `SUBJECT` becomes `Re:` the original's — never
+doubled into `Re: Re:`. Anything you do write wins over the defaults.
+The shortest legal reply is a blank line and a sentence. The target is
+resolved and pinned at open, so mail arriving between your open and
+your close cannot renumber it out from under you; a message number
+past the end of the folder fails the open with 170.
+
+The close's verdict arrives as the channel error in the next status:
+1 for sent; 132 for a rejected draft — an unknown key, a header line
+without a colon, no `TO` and no default to fall back on — with the
+specific reason named only in the debug log; 162 if the draft exceeded
+16 KB (nothing is sent). *Writing nothing at all is a clean abort*:
+open-then-close sends nothing and errs nothing. Reading a write channel
+answers 131, and its status never shows EOF — a draft is not a thing
+you drain. What goes out is `text/plain` in UTF-8, one part: there is
+no attachment on the sending side, and sending is the *only* write
+there is — nothing is ever marked read, moved, or deleted. (On the SIO,
+AdamNet, DriveWire, and RS-232 buses the commit's verdict is latched
+through the close into the next status; the other bus layers do not yet
+latch it — Appendix E.)
+
 = GMAIL
 
 #protocard(
@@ -3118,16 +3180,20 @@ the folder names are, belongs to the provider chapters.
   class: "NetworkProtocolGMAIL",
   family: "Mailbox (NetworkProtocolMailbox)",
   port: "443 (Gmail REST API)",
-  creds: "OAuth — the same Google grant as GDRIVE; scope gmail.readonly",
-  ops: [read-only mailbox: counts, indexes, bodies, attachments; folders
-    are Gmail labels],
+  creds: "OAuth — the same Google grant as GDRIVE; scopes gmail.readonly
+    + gmail.send",
+  ops: [read the mailbox: counts, indexes, bodies, attachments · compose
+    new mail · reply in-thread; folders are Gmail labels],
 )
 
-GMAIL reads your Gmail over Google's REST API, using the same one-time
-web-UI authorization as GDRIVE and GCAL — with the mail scope included
-in the grant. Nothing is ever marked read, moved, or sent: the adapter
-is a viewer, which is exactly what you want wired to a machine that
-cannot show an unsubscribe link.
+GMAIL speaks to your Gmail over Google's REST API, using the same
+one-time web-UI authorization as GDRIVE and GCAL — with the mail scopes
+included in the grant. Reading is still scrupulously hands-off: nothing
+is ever marked read, moved, or deleted, which is exactly what you want
+wired to a machine that cannot show an unsubscribe link. But since the
+newest firmware the adapter is no longer only a viewer — it can *send*:
+compose a fresh message, or reply to one it just showed you, threaded
+where the original lives.
 
 == Devicespec
 
@@ -3139,21 +3205,44 @@ the newest message's number equals the folder's count — so "read the
 latest" is: read the count from `/Inbox`, then open `/Inbox/<count>`.
 (The index listing still shows newest first by default; `?newest=0`
 flips it.) Bodies prefer the plain-text part and fall back to HTML;
-attachments are any parts with filenames, indexed from 1.
+attachments are any parts with filenames, indexed from 1. For writing,
+the same two shapes in mode 8: `GMAIL:///` composes, `GMAIL:///Inbox/3`
+replies to message 3.
 
-#tbl(
+== Sending
+
+The draft grammar is Chapter 28's; what GMAIL adds is where it goes. A
+committed compose is handed to Gmail's `messages.send`: Google stamps
+the `From` and the date from the authenticated account, files a copy
+under `Sent`, and delivers. A committed reply is threaded into the
+original conversation — the adapter carries the original's message id
+and references, so real mail clients see a proper reply. One caveat
+worth knowing: Gmail groups a conversation by subject as well as by
+thread, so if you override the default `Re:` subject, your reply may
+display outside the conversation it technically belongs to.
+
+Sending needs the `gmail.send` scope, which joined the shared Google
+grant alongside `gmail.readonly`. A grant issued before a scope existed
+never gains it retroactively, so an old authorization keeps reading
+happily and fails its first send with 167 — re-authorize Google in the
+web UI and it heals.
+
+#{
+show figure.where(kind: table): set block(breakable: false)
+tbl(
   table(columns: (auto, auto, 1fr),
     align: (left, right, left),
     table.header([API answer], [Code], [Reported as]),
     [401 — token invalid/expired], [212], [INVALID_USERNAME_OR_PASSWORD —
       re-authorize Google in the web UI],
     [403 — scope missing], [167], [ACCESS_DENIED — the grant predates the
-      mail scope; re-authorize],
+      mail scopes (`gmail.send`, for a write); re-authorize],
     [404 — no such label or message], [170], [FILE_NOT_FOUND],
     [no answer / 5xx], [210], [SERVICE_NOT_AVAILABLE],
     [anything else], [144], [GENERAL],
   ),
   [GMAIL error mapping.])
+}
 
 == Examples
 
@@ -3162,6 +3251,16 @@ OPEN    aux1=4 aux2=0   "GMAIL:///Inbox"        READ -> "217"
 OPEN    aux1=6 aux2=0   "GMAIL:///Inbox?range=0-9"
 READ    ...             -> ten newest, two lines each, your screen width
 OPEN    aux1=4 aux2=2   "GMAIL:///Inbox/217"    READ -> the newest body
+```
+
+```
+OPEN    aux1=8 aux2=0   "GMAIL:///"             (compose)
+WRITE   "TO: vi@example.com\x9bSUBJECT: 7pm?\x9b"
+WRITE   "\x9bpizza night. come.\x9b"
+CLOSE                   -> next STATUS: err=1, sent
+OPEN    aux1=8 aux2=0   "GMAIL:///Inbox/217"    (reply to the newest)
+WRITE   "\x9bon my way.\x9b"
+CLOSE                   -> err=1, sent — and threaded
 ```
 
 #listed(
@@ -3202,6 +3301,77 @@ int main(void)
 [`gmail-latest.c` — count first, then open the highest-numbered
  message.])
 
+#listed(
+```c
+/* gmail-send: compose and send a message. */
+#include <string.h>
+#include "fujinet-network.h"
+
+char *url = "n:gmail:///";
+char *draft =
+    "TO: alice@example.com\n"
+    "SUBJECT: Greetings from 1979\n"
+    "\n"
+    "This message left the machine by way of\n"
+    "a FujiNet. No stamp required.\n";
+
+int main(void)
+{
+    uint16_t bw; uint8_t conn, err;
+
+    if (network_init() != FN_ERR_OK) return 1;
+    if (network_open(url, OPEN_MODE_WRITE, OPEN_TRANS_NONE) != FN_ERR_OK)
+        return 1;
+    network_write(url, (uint8_t *)draft, strlen(draft));
+    network_close(url);                 /* the send */
+
+    network_status(url, &bw, &conn, &err);
+    return err == 1 ? 0 : 1;            /* 1 = sent */
+}
+```,
+[`gmail-send.c` — headers, a blank line, a body; the close is the send
+ and the next status is the verdict. aux2 is ignored on a write open,
+ so the trans mode is decoration: the parser takes any line ending as
+ written.])
+
+#listed(
+```c
+/* gmail-reply: answer the newest message in the inbox. */
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include "fujinet-network.h"
+
+uint8_t buf[32];
+char url[64];
+
+int main(void)
+{
+    int16_t n;
+    uint16_t bw; uint8_t conn, err;
+
+    if (network_init() != FN_ERR_OK) return 1;
+
+    network_open("n:gmail:///Inbox", OPEN_MODE_READ, OPEN_TRANS_NONE);
+    n = network_read("n:gmail:///Inbox", buf, sizeof(buf) - 1);
+    network_close("n:gmail:///Inbox");
+    if (n <= 0) return 1;
+    buf[n] = 0;
+
+    sprintf(url, "n:gmail:///Inbox/%d", atoi((char *)buf));
+    if (network_open(url, OPEN_MODE_WRITE, OPEN_TRANS_NONE) != FN_ERR_OK)
+        return 1;                       /* a bad N fails here: 170 */
+    network_write(url, (uint8_t *)"\nGot it -- thanks!\n", 19);
+    network_close(url);                 /* the send */
+
+    network_status(url, &bw, &conn, &err);
+    return err == 1 ? 0 : 1;
+}
+```,
+[`gmail-reply.c` — the leading blank line means "no headers": `TO` and
+ `SUBJECT` come from the message being answered, and the reply lands in
+ its thread.])
+
 = IMAPS
 
 #protocard(
@@ -3228,7 +3398,9 @@ IMAP mailbox name (`INBOX` is universal; subfolders use the server's own
 separator). Message numbers *are* IMAP sequence numbers: 1 is the
 oldest, the count is the newest — the same arithmetic as GMAIL. The
 connection is TLS from the first byte on port 993; there is no STARTTLS
-mode, so a server offering only port 143 is out of reach.
+mode, so a server offering only port 143 is out of reach. Sending is
+not among IMAPS's talents either: a mode-8 open is refused with 135 —
+Chapter 28's compose grammar is GMAIL-only for now.
 
 #tbl(
   table(columns: (auto, auto, 1fr),
@@ -3334,51 +3506,77 @@ is always off. The human index is one event per line — start time (or
 summary — followed by an indented location line when there is one. The
 packed record:
 
-#bytefield(
-  ("eventNum\nu32", 46pt), ("start\nu64", 44pt), ("end\nu64", 44pt),
-  ("flags\nu8", 34pt), ("summary\nchar[96]", 84pt),
-  ("location\nchar[64]", 70pt), ("category\nchar[32]", 60pt),
-  ("uid\nchar[64]", 50pt),
-)
-
-#align(center, text(font: f-head, size: 8pt, fill: slate)[
-  `CalEventItem` — 277 bytes; times are Unix epoch UTC, end exclusive;
-  flags: bit 0 all-day, bit 1 recurring. The calendar-list record
-  (`CalListItem`, 224 bytes) is `name` char[64], `category` char[32],
-  `id` char[128].])
+#block(breakable: false, {
+  bytefield(
+    ("eventNum\nu32", 46pt), ("start\nu64", 44pt), ("end\nu64", 44pt),
+    ("flags\nu8", 34pt), ("summary\nchar[96]", 84pt),
+    ("location\nchar[64]", 70pt), ("category\nchar[32]", 60pt),
+    ("uid\nchar[64]", 50pt),
+  )
+  align(center, text(font: f-head, size: 8pt, fill: slate)[
+    `CalEventItem` — 277 bytes; times are Unix epoch UTC, end exclusive;
+    flags: bit 0 all-day, bit 1 recurring. The calendar-list record
+    (`CalListItem`, 224 bytes) is `name` char[64], `category` char[32],
+    `id` char[128].])
+})
 
 == Writing an event
 
 A write-mode open starts a *draft*; you write field lines; the close
 commits — one shot, atomically, with the result in the next status.
-The field format is line-oriented, case-insensitive keys, any line
-ending your machine likes:
+Field lines are `KEY: value` — the colon is required — with
+case-insensitive keys, trimmed values, and any line ending your machine
+likes (`$9B`, CR, LF, or CRLF, freely mixed; as with mail, aux2
+translation is never applied to a write channel). Blank lines are
+skipped — unlike a mail draft, there is no header/body divide:
 
 ```
-SUMMARY Dentist
-START 2026-09-03 14:30
-END 2026-09-03 15:15
-LOCATION 12 Main St.
-DESCRIPTION bring the x-rays
-DESCRIPTION and the insurance card
-CATEGORY health
+SUMMARY: Dentist
+START: 2026-09-03 14:30
+END: 2026-09-03 15:15
+LOCATION: 12 Main St.
+DESCRIPTION: bring the x-rays
+DESCRIPTION: and the insurance card
+CATEGORY: health
 ```
+
+Six keys exist: `SUMMARY`, `START`, `END`, `LOCATION`, `DESCRIPTION`,
+and `CATEGORY`. `DESCRIPTION` repeats to build paragraphs; the other
+duplicate keys are last-wins; an unknown key rejects the draft, so a
+typo cannot silently drop data. Times take `YYYY-MM-DD` for a date and
+`YYYY-MM-DD HH:MM[:SS]` for a moment — a `T` may stand where the space
+is, the compact `YYYYMMDD[THHMMSS]` forms work too, and a trailing `Z`
+or `±HH:MM` offset makes the value absolute. Without one, the time
+floats: it is resolved in the request's `?tz=` timezone, default the
+FujiNet's own.
 
 Composing requires `SUMMARY` and `START`; a missing `END` defaults to
-one hour (or one day for an all-day event — a `START` with no time
+one hour (or one day for an all-day event — a `START` with no time part
 means all-day, and an all-day `END` names the *last day, inclusive*,
-the way humans talk). `DESCRIPTION` repeats to build paragraphs; other
-duplicate keys are last-wins; an unknown key rejects the draft, so a
-typo cannot silently drop data. *Editing* (write mode on `/…/N`) changes
-only the fields you send: a lone `START` moves the event and keeps its
-duration; a lone `END` stretches it; switching between all-day and timed
-requires sending `START`.
+the way humans talk). *Editing* (write mode on `/…/N`) addresses event
+N exactly as the index numbered it, resolved and pinned at open — a
+number past the period's count fails the open with 170 — and changes
+only the fields you send. With neither `START` nor `END`, the times
+are not touched at all; a lone `START` moves the event and keeps its
+duration; a lone `END` stretches it, but must stay in the event's form.
+Switching between all-day and timed requires sending `START` in the new
+form (the compose defaults then supply the length).
 
 The commit's verdict arrives as the channel error after close: 1 for
-created/updated; 132 for a rejected draft; 162 if the draft exceeded
-16 KB (nothing is sent); 170 if the edit target vanished; and *writing
-nothing at all is a clean abort* — open-then-close composes nothing and
-errs nothing.
+created/updated; 132 for a rejected draft — an unknown key, a line
+without its colon, an unparseable time, a missing `SUMMARY` or `START`
+on compose, an `END` at or before its `START`, or an all-day date paired
+with a timed one, the specific reason named only in the debug log; 162
+if the draft exceeded 16 KB (nothing is sent); 170 if the edit target
+vanished between open and close; and *writing nothing at all is a clean
+abort* — open-then-close composes nothing and errs nothing. There is no
+delete: these adapters can put an event on the calendar and move it,
+but taking one off still belongs to a bigger machine. A successful
+commit also drops the two-minute listing cache, so the next index open
+renumbers freshly — re-list before you edit again. (The verdict is
+latched through the close into the next status on the SIO, AdamNet,
+DriveWire, and RS-232 buses; the other bus layers do not yet latch it —
+Appendix E.)
 
 = GCAL
 
@@ -3417,12 +3615,18 @@ grab in every calendar.
 == Writing
 
 Compose targets one calendar: an empty selector means `primary`, a name
-or id means that calendar, and `*` is refused (165). Edits address the
-event exactly as the index numbered it. A `CATEGORY` you write is stored
-as private extended data on the event — invisible to other Google
-clients, but exactly where this adapter's reads look first, so your
-categories round-trip. All-day versus timed edits translate correctly
-into Google's two date forms.
+or id means that calendar, and `*` is refused (165) — "everywhere" is
+not a place to put an event. One naming corner: a calendar literally
+*named* `Day`, `Week`, `Month`, or `Agenda` cannot be compose-targeted
+by name, because the view scan claims that path segment — use its id.
+A `CATEGORY` you write is stored as private extended data on the event —
+invisible to other Google clients, but exactly where this adapter's
+reads look first, so your categories round-trip. Edits go up as a
+Google `PATCH`, translating correctly between Google's two date forms —
+so sending `START` in the other form really does switch an event
+between all-day and timed. And because the index expands recurring
+events into their occurrences, editing N touches *that occurrence
+only* — never the series.
 
 If the account's grant predates the calendar scopes, reads or writes
 fail with 167 and the debug log names the problem: re-authorize Google
@@ -3436,8 +3640,14 @@ Chapter 14's table (with 429 → 210).
 OPEN    aux1=6 aux2=0   "GCAL:///DAY"       READ -> today, merged
 OPEN    aux1=4 aux2=0   "GCAL:///Work/WEEK" READ -> "4"
 OPEN    aux1=8 aux2=0   "GCAL:///"          (compose to primary)
-WRITE   "SUMMARY Call Vi\x9bSTART 2026-09-02 19:00\x9b"
+WRITE   "SUMMARY: Call Vi\x9bSTART: 2026-09-02 19:00\x9b"
 CLOSE                   -> next STATUS: err=1, created
+```
+
+```
+OPEN    aux1=8 aux2=0   "GCAL:///Family/DAY/2026-09-04/2"   (edit)
+WRITE   "START: 2026-09-05 18:30\x9b"
+CLOSE                   -> err=1, moved — same length, new evening
 ```
 
 #listed(
@@ -3448,10 +3658,10 @@ CLOSE                   -> next STATUS: err=1, created
 
 char *url = "n:gcal:///Family";
 char *draft =
-    "SUMMARY Pizza night\n"
-    "START 2026-09-04 18:30\n"
-    "LOCATION home\n"
-    "CATEGORY fun\n";
+    "SUMMARY: Pizza night\n"
+    "START: 2026-09-04 18:30\n"
+    "LOCATION: home\n"
+    "CATEGORY: fun\n";
 
 int main(void)
 {
@@ -3469,6 +3679,51 @@ int main(void)
 ```,
 [`gcal-add.c` — write the draft, close to commit, read the verdict from
  status.])
+
+#listed(
+```c
+/* gcal-move: reschedule one event on the family calendar. */
+#include <stdio.h>
+#include <string.h>
+#include "fujinet-network.h"
+
+char *day = "n:gcal:///Family/DAY/2026-09-04";
+char url[80];
+uint8_t buf[512];
+
+int main(void)
+{
+    int16_t n;
+    uint16_t bw; uint8_t conn, err;
+    int ev;
+
+    if (network_init() != FN_ERR_OK) return 1;
+
+    /* list the day, numbered, so the user can pick */
+    network_open(day, 6, 0);
+    while ((n = network_read(day, buf, sizeof(buf) - 1)) > 0) {
+        buf[n] = 0;
+        printf("%s", buf);
+    }
+    network_close(day);
+
+    printf("move which event? ");
+    scanf("%d", &ev);
+
+    sprintf(url, "%s/%d", day, ev);     /* .../DAY/2026-09-04/N */
+    if (network_open(url, OPEN_MODE_WRITE, OPEN_TRANS_NONE) != FN_ERR_OK)
+        return 1;                       /* a bad N fails here: 170 */
+    network_write(url, (uint8_t *)"START: 2026-09-05 18:30\n", 24);
+    network_close(url);                 /* the commit */
+
+    network_status(url, &bw, &conn, &err);
+    return err == 1 ? 0 : 1;            /* 1 = updated */
+}
+```,
+[`gcal-move.c` — an edit is a write open on the event's index address.
+ The lone `START:` moves the event and keeps its length; everything
+ unsent — summary, location, category, even the `END` — stays as it
+ was.])
 
 = ICAL, WEBCAL, and ICALH
 
@@ -3757,12 +4012,15 @@ error table underneath.
     [`network_write(spec, buf, len)`], [write → `FN_ERR_*`],
     [`network_status(spec, &bw, &conn, &err)`], [the four status bytes,
       unpacked],
-    [`network_json_parse(spec)` · `network_json_query(spec, path, out)`],
+    [`network_json_parse(spec)` \
+     `network_json_query(spec, path, out)`],
       [the JSON three-beat (mode switch included; query → bytes or −error)],
-    [`network_http_post/put/delete(...)` ·
-     `network_http_start_add_headers/add_header/end_add_headers` ·
+    [`network_http_post/put/delete(...)` \
+     `network_http_start_add_headers/` \
+     #h(0.9em)`add_header/end_add_headers` \
      `network_http_set_channel_mode(...)`], [the whole Chapter 14 toolkit],
-    [`network_fs_rename/delete/mkdir/rmdir/lock/unlock/cd(...)`], [the
+    [`network_fs_rename/delete/mkdir/` \
+     #h(0.9em)`rmdir/lock/unlock/cd(...)`], [the
       one-shot filesystem specials],
     [`network_ioctl(cmd, a1, a2, spec, ...)`], [everything else — any
       command byte from Chapter 6],
@@ -4029,7 +4287,7 @@ wall-chart form, followed by where each platform surfaces the byte.
   [SSH.COPYID], [Y], [–], [], [], [–], [–], [–], [–], [–], [–], [–], [–], [pass required],
   [CLIPBOARD], [Y], [Y], [Y], [Y], [–], [–], [–], [–], [–], [–], [–], [–], [index 0 writable],
   [CPM], [Y], [Y], [], [Y], [–], [–], [–], [–], [–], [–], [–], [–], [console channel],
-  [GMAIL], [Y], [–], [–], [–], [Y], [–], [–], [–], [–], [–], [–], [–], [OAuth · read-only],
+  [GMAIL], [Y], [Y], [–], [–], [Y], [–], [–], [–], [–], [–], [–], [–], [OAuth · W = compose/reply],
   [IMAPS], [Y], [–], [–], [–], [Y], [–], [–], [–], [–], [–], [–], [–], [993 · read-only],
   [GCAL], [Y], [Y], [–], [Y], [Y], [–], [–], [–], [–], [–], [–], [–], [OAuth · W = compose/edit],
   [ICAL], [Y], [–], [–], [Y], [Y], [–], [–], [–], [–], [–], [–], [–], [feeds · read-only],
@@ -4076,11 +4334,12 @@ wall-chart form, followed by where each platform surfaces the byte.
   [`CLIPBOARD`], [25], [`N:CLIPBOARD:///[0-9]` · `?binary=1`],
   [`CPM`], [26], [`N:CPM://`],
   [`TEST`], [27], [`N:TEST://anything/`],
-  [`GMAIL`], [29], [`GMAIL:///Folder[/N[/A]]` · `?range=a-b` `?newest=0|1`],
+  [`GMAIL`], [29], [`GMAIL:///Folder[/N[/A]]` · `?range=a-b` `?newest=0|1` ·
+    mode 8: `/` compose, `/Folder/N` reply],
   [`IMAPS`], [30], [`IMAPS://user:pass@host[:port]/FOLDER[/N[/A]]` ·
     `?range=` `?newest=`],
   [`GCAL`], [32], [`GCAL:///[sel]/VIEW[/DATE[/N]]` · `?category=` `?count=`
-    `?days=` `?wkst=` `?tz=`],
+    `?days=` `?wkst=` `?tz=` · mode 8: `/[sel]` compose, `/…/N` edit],
   [`ICAL` `WEBCAL` `ICALH`], [33], [`ICAL://feed-host/feed-path/VIEW[/DATE[/N]]`
     · same params as GCAL],
 )
@@ -4155,6 +4414,19 @@ them. None is dangerous; all are real.
   assigned by any adapter.
 + *UDP multicast is scaffolding.* The address-class detection exists but
   nothing calls it; group membership is not implemented.
++ *The commit verdict is bus-dependent.* The mail and calendar
+  commit-on-close verdict (Chapters 28 and 31) is latched through the
+  close into the next status by the SIO, AdamNet, DriveWire, and RS-232
+  bus layers; the IEC, IWM, ComLynx, S100, and RC2014 layers do not yet
+  latch it, so a failed send or commit may not surface there.
++ *Draft rejections are one number.* Every reason a mail or calendar
+  draft can be refused — bad key, missing colon, bad time, missing
+  required field, end before start, mixed date forms — reports the same
+  132; the specific cause is named only in the debug log.
++ *No delete, no attachments out.* The mail adapters never delete, move,
+  or mark messages, and send `text/plain` only — no attachments on the
+  way out. The calendar adapters compose and edit but cannot remove an
+  event.
 
 = The Programmer's Guides
 

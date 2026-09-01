@@ -10,7 +10,7 @@ C with fujinet-lib, IntyBASIC, and FujiNet NOS.*
 > (`fujinet-network-protocol-handbook.pdf`). The two are kept in sync by
 > hand. Every scheme string, aux value, command byte, constant, and error
 > code is transcribed from the live sources: `fujinet-firmware`
-> `lib/network-protocol` (commit `8b61bde69`, Aug 2026), `fujinet-lib`
+> `lib/network-protocol` (commits `c026d9a12` + `07e53c764`, Sep 2026), `fujinet-lib`
 > v4.11.2, `fujinet-nhandler`, `smartbasic-1.x`, and the programmer's
 > guides in `fujinet-manuals`.
 
@@ -100,7 +100,7 @@ fujinet-pc) holds the buffers, speaks TLS, parses JSON, walks OAuth. An
 | `SSH.COPYID` | NetworkProtocolSSHCopyId | install it on a server |
 | `CLIPBOARD` | NetworkProtocolClipboard | the FujiNet clipboard + history |
 | `CPM` | NetworkProtocolCPM | a CP/M 2.2 machine inside the FujiNet |
-| `GMAIL` | NetworkProtocolGMAIL | a Gmail mailbox, read-only |
+| `GMAIL` | NetworkProtocolGMAIL | a Gmail mailbox — read, compose, reply |
 | `IMAPS` | NetworkProtocolIMAPS | any IMAP mailbox over TLS |
 | `GCAL` | NetworkProtocolGCAL | Google Calendar — read, compose, edit |
 | `ICAL` `WEBCAL` `ICALH` | NetworkProtocolICAL | published iCalendar feeds |
@@ -467,7 +467,8 @@ writing a new adapter.
 
 ## The Mailbox Model
 
-Shared by GMAIL and IMAPS. Read-only (writes → 135).
+Shared by GMAIL and IMAPS. Append/read-write → 135; write (mode 8)
+works only on providers that can send — GMAIL yes, IMAPS no (135).
 
 | Path | aux1 | Returns |
 |---|---|---|
@@ -476,6 +477,8 @@ Shared by GMAIL and IMAPS. Read-only (writes → 135).
 | `/FOLDER/N` | 4 | message N's body |
 | `/FOLDER/N` | 6 | attachment index |
 | `/FOLDER/N/A` | 4 | attachment data (0 = body) |
+| `/` | 8 | **compose** a new message (write, then close) |
+| `/FOLDER/N` | 8 | **reply** to message N |
 
 `?range=START-END` (0-based, default first 20, max 200) and
 `?newest=0|1` page the index. For index opens **aux2 = 255** yields
@@ -489,13 +492,48 @@ subject[128], timestamp u64 (220 bytes);
 mimeType[48], length u64 (313 bytes). Everything is staged at open;
 reads drain to 136.
 
+**Writing a message:** open mode 8 starts a draft; write RFC822-style
+header lines — `KEY: value`, colon required, keys case-insensitive —
+then a blank line, then the body verbatim; close **sends**:
+
+```
+TO: alice@example.com
+SUBJECT: Hello from an Atari
+
+Sent from my 130XE over FujiNet.
+```
+
+Only `TO`, `CC`, `BCC`, `SUBJECT` (no `FROM` — the sender is the
+authenticated account). TO/CC/BCC accumulate on repeat; SUBJECT is
+last-wins. Any EOL works (0x9B/CR/LF/CRLF, mixed); aux2 translation is
+never applied to a write channel. Replies (mode 8 on `/FOLDER/N`)
+default an omitted TO to the original's Reply-To/From and an omitted
+SUBJECT to `Re:` (never doubled); the shortest legal reply is a blank
+line and a sentence; the target is pinned at open (bad N → 170).
+Verdict in the post-close status: 1 sent, 132 rejected draft (reason in
+debug log only), 162 oversized (16 KB, nothing sent); writing nothing =
+clean abort. Sent mail is text/plain UTF-8, no attachments; reading a
+write channel → 131. Sending is the only write — nothing is marked
+read, moved, or deleted. (The post-close verdict is latched on
+SIO/AdamNet/DriveWire/RS-232; other buses don't latch it yet.)
+
 ## GMAIL
 
 `GMAIL:///Inbox[/N[/A]]` — folders are Gmail *labels*
 (case-insensitive). Message 1 = oldest; newest = the count — so "latest"
 is read `/Inbox`, then open `/Inbox/<count>`. Bodies prefer text/plain.
-Uses the shared Google grant (scope `gmail.readonly`). Map: 401 → 212
-(re-authorize), 403 → 167 (scope missing), 404 → 170, silent/5xx → 210.
+Uses the shared Google grant (scopes `gmail.readonly` + `gmail.send`).
+Map: 401 → 212 (re-authorize), 403 → 167 (scope missing), 404 → 170,
+silent/5xx → 210.
+
+**Sending** (newest firmware): mode 8 on `/` composes, on `/Inbox/N`
+replies — the mailbox draft grammar above. Gmail stamps From/date from
+the account and files a copy under Sent; replies thread via the
+original's threadId + Message-ID/References (override the `Re:` subject
+and Gmail may display the reply outside the conversation). Needs the
+`gmail.send` scope — an older grant keeps reading but fails its first
+send with 167; re-authorize in the web UI. Reading still marks, moves,
+and deletes nothing.
 
 ## IMAPS
 
@@ -503,7 +541,8 @@ Uses the shared Google grant (scope `gmail.readonly`). Map: 401 → 212
 implicit TLS (no STARTTLS). N = IMAP sequence number (1 = oldest). The
 most fine-grained login diagnostics in the book: no host → 165, no user
 → 212, TLS fail → 200, silent server → 202, odd greeting → 210, LOGIN
-rejected → 212, missing folder/message → 170, parse/fetch → 144.
+rejected → 212, missing folder/message → 170, parse/fetch → 144. No
+sending: a mode-8 open is refused with 135 (compose is GMAIL-only).
 
 ## The Calendar Model
 
@@ -527,22 +566,36 @@ indexes (as Mailbox), ignored for details. Packed record `CalEventItem`
 all-day, 2 recurring), summary[96], location[64], category[32], uid[64]
 — 277 bytes; `CalListItem` = name[64], category[32], id[128].
 
-**Writing:** open mode 8, write field lines, close commits:
+**Writing:** open mode 8, write field lines (`KEY: value` — the colon is
+required), close commits:
 
 ```
-SUMMARY Dentist
-START 2026-09-03 14:30
-END 2026-09-03 15:15
-LOCATION 12 Main St.
-DESCRIPTION bring the x-rays
-CATEGORY health
+SUMMARY: Dentist
+START: 2026-09-03 14:30
+END: 2026-09-03 15:15
+LOCATION: 12 Main St.
+DESCRIPTION: bring the x-rays
+CATEGORY: health
 ```
 
-Compose needs SUMMARY + START (date-only = all-day; missing END = +1
-hour or +1 day; all-day END is inclusive). DESCRIPTION repeats; unknown
-keys reject the draft (132). Edits change only sent fields (lone START
-keeps duration). Verdict in the post-close status: 1 ok, 132 rejected,
-162 oversized (16 KB), 170 target gone; writing nothing = clean abort.
+Six keys only: SUMMARY, START, END, LOCATION, DESCRIPTION (repeats to
+build paragraphs), CATEGORY. Blank lines are skipped (no header/body
+divide, unlike mail); any EOL works; aux2 translation never applies to
+a write channel. Times: `YYYY-MM-DD` (date-only = all-day) or
+`YYYY-MM-DD HH:MM[:SS]` — a `T` may replace the space, compact
+`YYYYMMDD[THHMMSS]` works, and a trailing `Z`/`±HH:MM` makes it
+absolute; otherwise it resolves in `?tz=` (default the FujiNet's zone).
+Compose needs SUMMARY + START (missing END = +1 hour, or +1 day
+all-day; all-day END is inclusive). Edits change only sent fields:
+neither START nor END = times untouched; lone START keeps duration
+(unless it switches all-day↔timed, then compose defaults apply); lone
+END must match the event's form. Rejections all report 132 (unknown
+key, missing colon, bad time, missing required field, END ≤ START,
+mixed date forms — reason in debug log only). Verdict in the post-close
+status: 1 ok, 132 rejected, 162 oversized (16 KB), 170 target gone
+(resolved at open); writing nothing = clean abort. **No delete.** A
+successful commit drops the 2-minute listing cache, so re-list before
+editing again. (Verdict latched on SIO/AdamNet/DriveWire/RS-232 only.)
 
 ## GCAL
 
@@ -552,8 +605,14 @@ verbatim; empty = your "shown" calendars merged; `*` = everything (max
 calendar name. Same Google grant; needs `calendar.readonly`
 (+`calendar.events` to write) — a grant never gains scopes
 retroactively; re-authorize in the web UI (scope problems → 167).
-Compose to `/` = primary; `*` refused. Written CATEGORY round-trips via
-private extended properties. Unparseable JSON → 213.
+Compose to `/` = primary; `*` refused (165). A calendar literally
+*named* `Day`/`Week`/`Month`/`Agenda` can't be compose-targeted by name
+(the view scan claims that segment) — use its id. Written CATEGORY
+round-trips via private extended properties. Edits go up as a `PATCH`
+and translate between Google's two date forms, so sending START in the
+other form switches all-day↔timed. Indexes expand recurrences, so
+editing N touches **that occurrence only, never the series**.
+Unparseable JSON → 213.
 
 ## ICAL, WEBCAL, and ICALH
 
@@ -712,7 +771,7 @@ HELP). Streams (TCP/SSH/Telnet) are the programmer's guide's department.
 | SSH.COPYID | Y | – |  |  | – | – | – | – | – | – | – | – | pass required |
 | CLIPBOARD | Y | Y | Y | Y | – | – | – | – | – | – | – | – | index 0 writable |
 | CPM | Y | Y |  | Y | – | – | – | – | – | – | – | – | console channel |
-| GMAIL | Y | – | – | – | Y | – | – | – | – | – | – | – | OAuth · read-only |
+| GMAIL | Y | Y | – | – | Y | – | – | – | – | – | – | – | OAuth · W = compose/reply |
 | IMAPS | Y | – | – | – | Y | – | – | – | – | – | – | – | 993 · read-only |
 | GCAL | Y | Y | – | Y | Y | – | – | – | – | – | – | – | OAuth · W = compose/edit |
 | ICAL | Y | – | – | Y | Y | – | – | – | – | – | – | – | feeds · read-only |
@@ -742,9 +801,9 @@ HELP). Streams (TCP/SSH/Telnet) are the programmer's guide's department.
 | `CLIPBOARD` | `N:CLIPBOARD:///[0-9]` · `?binary=1` |
 | `CPM` | `N:CPM://` |
 | `TEST` | `N:TEST://anything/` |
-| `GMAIL` | `GMAIL:///Folder[/N[/A]]` · `?range=a-b` `?newest=0\|1` |
-| `IMAPS` | `IMAPS://user:pass@host[:port]/FOLDER[/N[/A]]` |
-| `GCAL` | `GCAL:///[sel]/VIEW[/DATE[/N]]` · `?category=` `?count=` `?days=` `?wkst=` `?tz=` |
+| `GMAIL` | `GMAIL:///Folder[/N[/A]]` · `?range=a-b` `?newest=0\|1` · mode 8: `/` compose, `/Folder/N` reply |
+| `IMAPS` | `IMAPS://user:pass@host[:port]/FOLDER[/N[/A]]` · `?range=` `?newest=` (read-only) |
+| `GCAL` | `GCAL:///[sel]/VIEW[/DATE[/N]]` · `?category=` `?count=` `?days=` `?wkst=` `?tz=` · mode 8: `/[sel]` compose, `/…/N` edit |
 | `ICAL` `WEBCAL` `ICALH` | `ICAL://feed-host/feed-path/VIEW[/DATE[/N]]` · same as GCAL |
 
 # Appendix — Implementation Notes
@@ -771,6 +830,18 @@ Rough edges as of the colophon's commit, stated plainly:
    consults them), but a trap for future code.
 10. **Error 211** (`CONNECTION_ABORTED`) is defined but never raised.
 11. **UDP multicast detection** exists but is unwired; no group joins.
+12. **The commit verdict is bus-dependent** — the mail/calendar
+    commit-on-close verdict is latched into the next status by the SIO,
+    AdamNet, DriveWire, and RS-232 layers; IEC, IWM, ComLynx, S100, and
+    RC2014 do not yet latch it, so a failed send or commit may not
+    surface there.
+13. **Draft rejections are one number** — every mail or calendar draft
+    error (bad key, missing colon, bad time, missing required field, end
+    before start, mixed date forms) reports 132; the cause is named only
+    in the debug log.
+14. **No delete, no attachments out** — the mail adapters never delete,
+    move, or mark messages and send `text/plain` only; the calendar
+    adapters compose and edit but cannot remove an event.
 
 # Appendix — The Programmer's Guides
 
