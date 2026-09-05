@@ -6,7 +6,7 @@
 >
 > Every address, opcode, struct offset and code fragment here is transcribed from the live project sources: `fujinet-firmware` (`pico/astrocade/` and the RS232 device layer) at `20e89ead5`, `netcat/astrocade` at `b269a3d`, `fujinet-texasHoldEm/astrocade` at `6ed0b6e`, `fujinet-battleship/astrocade` at `5b1f976`, `fujinet-fujitzee/astrocade` at `d20d20e`, `fujinet-config/astrocade` at `d551e1a`, z88dk at `3bd06cad`.
 
-See also: [FujiNet-Network-Protocol-Handbook](FujiNet-Network-Protocol-Handbook) · [FujiNet-Programming-Guide-for-the-Intellivision](FujiNet-Programming-Guide-for-the-Intellivision) · [FujiNet-Programming-Guide-for-the-Coleco-ADAM](FujiNet-Programming-Guide-for-the-Coleco-ADAM)
+See also: [FujiNet-Network-Protocol-Handbook](FujiNet-Network-Protocol-Handbook) · [FujiNet-Programming-Guide-for-the-Intellivision](FujiNet-Programming-Guide-for-the-Intellivision)
 
 ---
 
