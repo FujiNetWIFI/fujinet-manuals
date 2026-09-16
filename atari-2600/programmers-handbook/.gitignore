@@ -1,0 +1,11 @@
+preview/
+build/
+listings/*/build/
+*.bin
+*.lst
+*.sym
+*.p
+bB.asm
+includes.bB
+2600basic_variable_redefs.h
+listings/snippets/

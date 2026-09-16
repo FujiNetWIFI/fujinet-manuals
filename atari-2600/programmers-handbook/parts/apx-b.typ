@@ -1,0 +1,30 @@
+#import "../lib.typ": *
+#set heading(numbering: "A.1")
+= Error and Status Codes
+
+#tbl((auto, auto, 1fr),
+  th[Where], th[Value], th[Meaning],
+  [ERR `$1F02`], [0], [ok],
+  [], [1], [no link to the adapter],
+  [], [2], [timeout: five seconds, or sixty for a mount or copy],
+  [], [3], [bad frame: SLIP, length or checksum],
+  [], [4], [too big for the link],
+  [REPLY_CMD `$1F03`], [`$06`], [ACK],
+  [], [`$15`], [NAK: the adapter refused the command],
+  [the library, `FNGO` and `FNACK`], [0], [FNEOK],
+  [], [`$FF`], [FNEWAIT: the cartridge never answered],
+  [], [`$EE`], [FNENAK: the adapter said NAK],
+  [], [`$FD`], [FNENOC: no cartridge answered at all],
+  [BOOT_STATE `$1F06`], [0], [idle],
+  [], [1], [transferring; BOOT_PCT counts],
+  [], [2], [staged and ready],
+  [], [`$80`], [failed; see BOOT_ERR],
+  [BOOT_ERR `$1F08`], [1], [too big (over 32K)],
+  [], [2], [truncated: the push was aborted],
+  [], [3], [no mapper: the size is not a multiple of 2K],
+  [], [4], [the store was busy],
+  [N: STATUS byte 3], [1], [success],
+  [], [136], [end of file],
+  [], [other], [the protocol's error; the HTTP status shows here],
+  [WiFi status], [3], [connected],
+  [READ_DIR_ENTRY], [`$7F`, `$7F`], [the end of the directory])

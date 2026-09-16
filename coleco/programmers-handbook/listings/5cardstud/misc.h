@@ -1,0 +1,208 @@
+#ifndef MISC_H
+#define MISC_H
+
+/* To test the game:
+ * VICE -
+ *  1. In VICE, point DRIVE 11 to a local folder
+ *  2. Edit /support/c64/emulator/fuji_mock_network.py to point to that same folder and run it
+ *  3. Uncomment the USE_EMULATOR define below. */
+
+// #define USE_EMULATOR
+
+/*
+ * Include CC65 style Joystick defines for Adam - There is a probably a better way to do this.
+ */
+
+#ifdef _CMOC_VERSION_
+#include "coco/joystick.h"
+#else
+#ifdef __ADAM__
+// conio.h must be parsed before the "#define state" below: it drags in
+// z88dk's X11 headers, which declare struct members named "state".
+#include <conio.h>
+#include "adam/joystick.h"
+#else
+#ifdef BUILD_COLECO
+// Same z88dk conio ordering hazard as the Adam, same reason.
+#include <conio.h>
+#include "coleco/joystick.h"
+#else
+#ifndef __DOS__
+#include <conio.h>
+#endif /* __DOS__ */
+#endif /* BUILD_COLECO */
+#endif /* __ADAM__ */
+#endif /* _CMOC_VERSION_ */
+#include "platform-specific/graphics.h"
+#include "platform-specific/input.h"
+#ifdef _CMOC_VERSION_
+#include <cmoc.h>
+#include <coco.h>
+#else
+#include <stdbool.h>
+#include <stdint.h>
+#endif /* _CMOC_VERSION_ */
+// FujiNet AppKey settings. These should not be changed
+#define AK_LOBBY_CREATOR_ID 1     // FUJINET Lobby
+#define AK_LOBBY_APP_ID 1         // Lobby Enabled Game
+#define AK_LOBBY_KEY_USERNAME 0   // Lobby Username key
+#define AK_LOBBY_KEY_SERVER 1     // 5 Card Stud Client registered as Lobby appkey 1
+
+// 5 Card Stud client
+#define AK_CREATOR_ID 0xE41C      // Eric Carr//s creator id
+#define AK_APP_ID 1               // 5 Card/Poker App ID
+#define AK_KEY_PREFS 0            // Preferences
+
+#define PREF_HELP 0  // 1/2 seen help screen no/yes
+#define PREF_COLOR 1 // 1/2 - Color mode (platform specific)
+//#define PREF_SOUND 2 // 1/2 - Sound Enabled yes/no
+
+#ifdef __CC65__
+#define _Packed
+#endif
+
+#ifdef _CMOC_VERSION_
+#define _Packed
+#endif
+
+#ifdef BUILD_MSX
+#define _Packed
+#endif
+
+#ifdef __ADAM__
+#define _Packed
+#endif
+
+#ifdef BUILD_COLECO
+#define _Packed
+#endif
+
+typedef _Packed struct {
+  char table    [9];
+  char name     [21];
+  char players  [6];
+} Table;
+
+typedef _Packed struct {
+  char name   [9];
+  uint8_t     status;
+  uint16_t    bet;
+  char move   [8];
+  uint16_t    purse;
+  char hand   [11];
+} Player;
+
+typedef _Packed struct {
+  char move     [3];
+  char name     [10];
+} ValidMove;
+
+typedef _Packed struct {
+  char lastResult[81];
+  uint8_t round;
+  uint16_t pot;
+  int8_t activePlayer;
+  uint8_t moveTime;
+  uint8_t viewing;
+  uint8_t validMoveCount;
+  ValidMove validMoves[5];
+  uint8_t playerCount;
+  Player players[8];
+} Game;
+
+typedef _Packed struct {
+  uint8_t count;
+  Table table[10];
+} Tables;
+
+typedef union {
+  uint8_t firstByte;
+  Game game;
+  Tables tables;
+} ClientState;
+
+
+#ifdef __WATCOMC__
+extern int inputKey;
+#else
+extern char inputKey;
+#endif
+extern unsigned char prevPlayerCount, prevRound, currentCard, cardIndex, xOffset, fullFirst, cursorX, cursorY, waitCount, wasViewing;
+extern signed char inputDirX, inputDirY;
+
+extern uint16_t prevPot, maxJifs;
+#ifdef _CMOC_VERSION_
+extern unsigned char noAnim, doAnim, finalFlip, inputTrigger;
+#else
+extern bool noAnim, doAnim, finalFlip, inputTrigger;
+#endif /* _CMOC_VERSION_ */
+/*
+  Scratch buffer sizes. The ColecoVision has 1K of RAM in total, so these are
+  cut to what each one actually has to hold rather than to a round number.
+  tempBuffer cannot go below MAX_APPKEY_LEN+1: screens.c reads app keys into it.
+*/
+#ifdef BUILD_COLECO
+#define TEMP_BUFFER_LEN 68
+#define QUERY_LEN       24
+#define URL_BUFFER_LEN  96
+#else
+#define TEMP_BUFFER_LEN 128
+#define QUERY_LEN       50
+#define URL_BUFFER_LEN  128
+#endif
+
+extern char tempBuffer[TEMP_BUFFER_LEN];
+extern char query[QUERY_LEN];
+extern char playerName[12];
+extern char serverEndpoint[50];
+
+#ifdef BUILD_COLECO
+/*
+  The ColecoVision has 1K of RAM and this union is 418 bytes of it, so the
+  state is never copied down: it is read in place out of the cartridge's reply
+  window, which is what that window is 1K and addressable for. See
+  src/coleco/vars.h and src/coleco/network.c.
+
+  It is therefore READ-ONLY -- a store here goes nowhere, the cartridge cannot
+  even see a write cycle -- and it is valid only until the next fuji_* call of
+  any kind, because every transaction repaints the window.
+*/
+#define clientState (*(ClientState *) COLECO_REPLY_WINDOW)
+#else
+extern ClientState clientState;
+#endif
+//extern GameState state;
+#define state clientState.game
+
+
+// Common local scope temp variables
+extern unsigned char h, i, j, k, x, y, xx;
+extern unsigned char playerX[8], playerY[8], moveLoc[5];
+extern signed char playerBetX[8], playerBetY[8], playerDir[8];
+extern char *hand, *requestedMove;
+extern char prefs[4];
+
+
+// Screen specific player/bet coordinates. These are declared by each platform's
+// own vars.h as well; the ColecoVision makes them const so they land in ROM
+// rather than spending 96 bytes of a 1K machine on tables nobody writes.
+#ifndef BUILD_COLECO
+extern unsigned char playerXMaster[] ;
+extern unsigned char playerYMaster[] ;
+extern char playerDirMaster[] ;
+extern char playerBetXMaster[];
+extern char playerBetYMaster[] ;
+
+// Simple hard coded arrangment of players around the table based on player count.
+// These refer to index positions in the Master arrays above
+// Downside is new players will cause existing player positions to move.
+extern char playerCountIndex[] ;
+#endif
+
+void pause(unsigned char frames);
+void clearCommonInput();
+void readCommonInput();
+void loadPrefs();
+void savePrefs();
+
+#endif /* MISC_H */

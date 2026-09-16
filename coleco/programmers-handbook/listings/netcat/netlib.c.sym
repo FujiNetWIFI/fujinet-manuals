@@ -1,0 +1,14 @@
+_net_close                      = $0047 ; addr, global, , , code_compiler, netlib.c::net_close::0::2:29
+_net_open                       = $0006 ; addr, global, , , code_compiler, netlib.c::net_open::0::1:20
+_net_present                    = $0000 ; addr, global, , , code_compiler, netlib.c::net_present::0::0:15
+_net_read                       = $00CF ; addr, global, , , code_compiler, netlib.c::net_read::0::4:58
+_net_status                     = $0057 ; addr, global, , , code_compiler, netlib.c::net_status::0::3:36
+_net_write                      = $0114 ; addr, global, , , code_compiler, netlib.c::net_write::0::5:74
+i_11                            = $0128 ; addr, local, , , code_compiler, netlib.c::net_write::0::5:74
+i_12                            = $0160 ; addr, local, , , code_compiler, netlib.c::net_write::0::5:74
+i_2                             = $0043 ; addr, local, , , code_compiler, netlib.c::net_open::0::1:20
+i_4                             = $008B ; addr, local, , , code_compiler, netlib.c::net_status::0::3:36
+i_5                             = $0086 ; addr, local, , , code_compiler, netlib.c::net_status::0::3:36
+i_7                             = $00E3 ; addr, local, , , code_compiler, netlib.c::net_read::0::4:58
+i_8                             = $0110 ; addr, local, , , code_compiler, netlib.c::net_read::0::4:58
+i_9                             = $010C ; addr, local, , , code_compiler, netlib.c::net_read::0::4:58
