@@ -1,0 +1,9 @@
+preview/
+__pycache__/
+
+# build products of listings/ --- the sources are what this book prints
+listings/*/build/
+listings/*/*.BIN
+listings/*/*.bin
+listings/*/*.dsk
+listings/os9/fnstat
