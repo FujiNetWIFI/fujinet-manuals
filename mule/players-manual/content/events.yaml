@@ -1,0 +1,65 @@
+# Exact texts from internal/rules/events_player.go and events_colony.go
+# (tools/checkfacts.py checks every one). "$%d" in the game is shown as "$…".
+# x: the multiple of the round's base amount m (m = $25 in months 1–3,
+# $50 in 4–7, $75 in 8–11, $100 in 12).
+
+good:
+  - { text: "you just received a package from your home-world relatives containing 3 food and 2 energy units.", effect: "+3 Food, +2 Energy" }
+  - { text: "a wandering space traveler repaid your hospitality by leaving two bars of smithore.", effect: "+2 Smithore" }
+  - { text: "your M.U.L.E. was judged \"best built\" at the colony fair. you won $%d.", x: 2, needs: "You own a M.U.L.E." }
+  - { text: "your M.U.L.E. won the colony tap-dancing contest. you collected $%d.", x: 4, needs: "You own a M.U.L.E." }
+  - { text: "the colony council for agriculture awarded you $%d for each food plot you have developed. the total grant is $%d.", x: 2, per: "Food plot", needs: "You have a Food M.U.L.E." }
+  - { text: "the colony awarded you $%d for stopping the wart worm infestation.", x: 4 }
+  - { text: "the museum bought your antique personal computer for $%d.", x: 8 }
+  - { text: "you won the colony swamp eel eating contest and collected $%d. (yecch!)", x: 2 }
+  - { text: "a charity from your home-world took pity on you and sent $%d.", x: 3 }
+  - { text: "your offworld investments in artificial dumbness paid $%d in dividends.", x: 6 }
+  - { text: "a distant relative died and left you a vast fortune. but after taxes you only got $%d.", x: 4 }
+  - { text: "you found a dead moose rat and sold the hide for $%d.", x: 2 }
+  - { text: "you received an extra plot of land to encourage colony development.", effect: "A free plot, chosen at random" }
+
+bad:
+  - { text: "mischievous glac-elves broke into your storage shed and stole half your food.", effect: "Lose half your Food" }
+  - { text: "one of your M.U.L.E.s lost a bolt. repairs cost you $%d.", x: -3, needs: "You own a M.U.L.E." }
+  - { text: "your mining M.U.L.E.s have deteriorated from heavy use and must be repaired. the cost is $%d.", x: -2, per: "Smithore or Crystite M.U.L.E." }
+  - { text: "the solar collectors on your energy M.U.L.E.s are dirty. cleaning cost you $%d.", x: -1, per: "Energy M.U.L.E." }
+  - { text: "your space gypsy in-laws made a mess of the town. it cost you $%d to clean it up.", x: -6 }
+  - { text: "flying cat-bugs ate the roof off your house. repairs cost $%d.", x: -4 }
+  - { text: "you lost $%d betting on the two-legged kazinga races.", x: -4 }
+  - { text: "your child was bitten by a bat lizard and the hospital bill cost you $%d.", x: -4 }
+  - { text: "you lost a plot of land because the claim was not recorded.", effect: "Lose the plot you got most recently, and any M.U.L.E. on it" }
+
+colony:
+  - id: pest
+    name: Pest Attack
+    text: "pests have attacked a food plot and ruined its entire crop."
+    effect: "One Food plot belonging to the first- or second-place player produces nothing this month."
+  - id: pirates
+    name: Space Pirates
+    text: "space pirates have raided the colony and stolen all the crystite."
+    effect: "Every player loses all their Crystite, including this month's production."
+  - id: acid
+    name: Acid Rain Storm
+    text: "an acid rain storm has increased food production and decreased energy production."
+    effect: "In one row of the map Food plots make 4 more and Energy plots 2 less. Everywhere else, Food makes 1 more and Energy 1 less."
+  - id: quake
+    name: Planetquake
+    text: "a planetquake has reduced mining production by half."
+    effect: "Smithore and Crystite production is cut in half. Half the time a mountain also slides sideways onto the plains next to it, destroying any M.U.L.E. on either plot."
+  - id: sunspot
+    name: Sunspot Activity
+    text: "sunspot activity has increased energy production."
+    effect: "Every Energy plot makes 3 more (up to the limit of 8)."
+  - id: meteorite
+    name: Meteorite
+    text: "a meteorite has struck the colony, creating a huge crystite deposit."
+    effect: "A plot (not river or town) becomes a Very High crystite deposit. Any M.U.L.E. on it is destroyed."
+  - id: radiation
+    name: Cosmic Radiation
+    text: "radiation from a cosmic storm has destroyed a M.U.L.E."
+    effect: "One M.U.L.E. belonging to the first- or second-place player is destroyed."
+  - id: fire
+    name: Fire in the Store
+    text: "a fire in the store has destroyed all food, energy and smithore."
+    effect: "The store's Food, Energy and Smithore are gone. Players' own goods are safe."
+ship: "the ship is returning. the colony's twelve months are up!"

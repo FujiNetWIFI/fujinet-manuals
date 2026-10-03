@@ -1,0 +1,29 @@
+{
+ "scenes": [
+  "02-lobby",
+  "03-summary",
+  "05-land-grant",
+  "06-land-auction-show",
+  "07-land-auction-bidding",
+  "08-develop-town",
+  "09-develop-map",
+  "10-player-event",
+  "11-production",
+  "12-colony-event",
+  "13-goods-status",
+  "15-trading",
+  "16-game-over"
+ ],
+ "icons": [
+  "plain",
+  "river",
+  "mountain1",
+  "mountain2",
+  "mountain3",
+  "town",
+  "food",
+  "energy",
+  "smithore",
+  "crystite"
+ ]
+}

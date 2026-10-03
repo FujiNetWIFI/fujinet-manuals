@@ -1,0 +1,289 @@
+# The Player's Guide, platform-neutral. Rendered three ways: manual.typ (PDF),
+# tools/build_wiki.py (GitHub wiki), tools/build_wxr.py (WordPress).
+#
+# Inline markup: **bold**, *italic*, {token} (a platform's keys: stick,
+# button, end, leave, sitout, mute; or name, file).
+# Blocks: p, h, list, steps, tips, qa, table, note, shot, gen (generated from
+# rules.yaml / events.yaml / platforms.yaml). A block may carry `only:` or
+# `except:` lists of platform ids.
+
+title: M.U.L.E.
+subtitle: The FujiNet Multiplayer Edition
+kind: Player's Guide
+
+chapters:
+
+# ---------------------------------------------------------------------------
+- id: welcome
+  title: Welcome to Planet Irata
+  blocks:
+  - p: "**M.U.L.E.** is a game of exploration and economic development. Up to four players try to settle a distant planet with the help of the M.U.L.E., a mule-like machine they will all learn to hate."
+  - p: "The colony ship has dropped you on Irata with a little money, a little food and a lot of hope. Over twelve months you will claim land, buy M.U.L.E.s, fit them out to farm, make energy or mine, and trade what they produce. You are competing with the other colonists to be the richest. But you are also stuck with them: if the colony fails, everybody loses."
+  - p: "This edition of M.U.L.E. is played over the Internet with **FujiNet**. Your {machine} plays the game on its own screen while a server keeps everyone's colony in step. The other three colonists can be playing on an Atari, an Apple, a CoCo, a PC, an Adam, an MSX, a Lynx, an Intellivision, an Astrocade or a 2600. Any seat that no person takes is played by the computer, so there is always a full colony of four."
+  - h: What You Will Need
+  - gen: needs
+  - h: About This Guide
+  - p: "The rules are those of the **Tournament Game**, the most complete version of the 1983 original: land auctions, M.U.L.E. manufacturing, Crystite and collusion are all in. The pictures in this guide were taken from the {name} edition, so what you see here is what you'll see on your screen."
+  - p: "If you have never played, read **Getting Started** and **A Month on Irata**, then jump in. The computer players are patient teachers, and nothing teaches M.U.L.E. like losing to a Mechtron."
+
+# ---------------------------------------------------------------------------
+- id: start
+  title: Getting Started
+  blocks:
+  - h: Loading the Game
+  - p: "M.U.L.E. lives on the Internet, on the TNFS server *irata.online*, so there is nothing to copy. There are two ways to start it."
+  - steps:
+    - title: From the FujiNet Lobby
+      text: "Open the **FujiNet Lobby**, the menu FujiNet uses to list its network games. Pick **M.U.L.E.** and the room **Planet IRATA**. The Lobby gives the game your name and the room, loads it, and starts it. You land straight in the room."
+    - title: By Mounting It Yourself
+      text: "If M.U.L.E. isn't in your Lobby yet, use FujiNet's configuration screen to add the host *irata.online*, then open the folder for your machine and mount the file below."
+  - gen: file
+  - gen: boot
+  - h: The First Screens
+  - p: "The title screen says **CONNECTING...** while the game finds your FujiNet. If it says **NO FUJINET FOUND**, check that the FujiNet is connected and switched on, then start again."
+  - p: "If you came from the Lobby, the game already knows your name and the room, and it joins at once. Otherwise it asks **YOUR NAME?** Type it (up to 8 letters) and finish with {end}. Then pick a room from the **CHOOSE A TABLE** list. FujiNet remembers the room you choose, so next time you start the game it takes you straight back."
+  - gen: notes
+  - h: Controls
+  - p: "Everything in M.U.L.E. is done with a direction and one button, which this guide calls *the button*. On the {machine} they are:"
+  - gen: controls
+  - p: "The leave key ({leave}) leaves the room at once while you're waiting in the lobby. During a game it asks first: press it again to leave, or anything else to carry on. When you leave a game the computer takes over your seat, so the others can finish."
+
+# ---------------------------------------------------------------------------
+- id: room
+  title: The Colony Room
+  blocks:
+  - p: "Games are played in **rooms**. Each room seats four colonists and runs one game at a time."
+  - note: "Right now there is **one room, Planet IRATA**, open to everyone. More rooms will be added. When they arrive they will show up in the Lobby and in the CHOOSE A TABLE list, and everything in this guide applies to them too."
+  - h: Waiting in the Lobby
+  - shot: { scene: 02-lobby, title: The Lobby, caption: "The room's four seats, with each colonist's name and species." }
+  - p: "When you join a room you take the first free seat and see the room's lobby, with the four seats in their colours. Use {stick} left and right to choose your species (see **Meet the Colonists**), and press {button} when you're ready."
+  - list:
+    - "The game starts **31 seconds** after the last person joins. Each new arrival starts the count again."
+    - "If every person in the room is ready, it starts after **6 seconds** instead."
+    - "Every empty seat is played by the **computer**: a Mechtron who starts with $1200."
+  - h: Joining Late, Leaving Early
+  - list:
+    - "If you join a room whose game has already started, you become a **spectator**. SPECTATOR appears on the screen, and you can watch the game but not play. When it ends, the room goes back to its lobby and you can take a seat."
+    - "If you leave in the middle of a game, the computer plays your seat for the rest of it. That also happens if your machine goes quiet for two minutes. Come back and the seat is yours again."
+    - "A minute after a game ends, the room goes back to the lobby for the next game."
+
+# ---------------------------------------------------------------------------
+- id: colonists
+  title: Meet the Colonists
+  blocks:
+  - p: "Eight species signed up for the trip to Irata. Choose one in the lobby. Every species plays by the same rules. Production, prices and luck treat them all alike. What differs is how much money you start with, and how quickly your time runs out on your development turn."
+  - gen: species-shots
+  - gen: species
+  - h: Strengths and Weaknesses
+  - list:
+    - "**The Flapper** is the beginner's colonist. It starts with **$1600**, the most of anyone, and its development turns run about **30% longer** (a full turn lasts about a minute). Good for learning the town, but the money is no excuse for wasting it."
+    - "**The Humanoid** is the expert's colonist. It starts with just **$600** and its turns are about **30% shorter** (a full turn is about half a minute). Choose it to give the others a head start, and to show off."
+    - "**The Mechtron, Gollumer, Packer, Bonzoid, Spheroid and Leggite** are the standard colonists. They start with **$1000** and get a standard turn of about 47 seconds. Which of the six you choose is up to you. They play the same, so choose for looks, or out of spite."
+    - "**The computer** always plays a Mechtron, with **$1200**. It never makes a mistake installing a M.U.L.E. and never has an off day. It also has no imagination, and it can't catch a Wampus."
+  - p: "Everyone starts with **4 units of Food and 2 of Energy**. Your colour is your seat's colour, and it marks your land, your M.U.L.E.s and your line in the auctions."
+
+# ---------------------------------------------------------------------------
+- id: land
+  title: The Land
+  blocks:
+  - p: "The colony is a map of **45 plots**: five rows of nine. The **town**, with its store, sits in the very middle. The **river** runs down the middle column. **Mountains** are scattered on either side, one, two or three peaks to a plot. Everything else is open **plains**. Hidden underground, there are deposits of **Crystite**."
+  - shot: { scene: 09-develop-map, title: The Colony, caption: "The town in the middle, the river through it, mountains and plains on either side. A coloured frame shows who owns a plot. The figure inside shows what it makes." }
+  - h: What Grows Where
+  - p: "A M.U.L.E. on a plot produces one of four goods. How much it makes depends on the ground. The numbers below are the average monthly output of one M.U.L.E., before any bonuses or luck."
+  - gen: terrain
+  - list:
+    - "**Food** grows best by the river (4), fair on the plains (2), poorly in the mountains (1)."
+    - "**Energy** is best on the plains (3), fair on the river (2), poor in the mountains (1)."
+    - "**Smithore** is mined in the mountains: 2, 3 or 4 a month for one, two or three peaks. The plains yield only 1. It can't be mined on the river."
+    - "**Crystite** depends only on what's underground (see below), on plains or mountains alike. It can't be mined on the river."
+  - h: The Four Goods
+  - gen: outfits
+  - list:
+    - "**Food** decides how long your turns are. Without enough of it you'll have only a few seconds to work in. Half of any Food left over at the end of a month spoils."
+    - "**Energy** powers your M.U.L.E.s: every M.U.L.E. that isn't making Energy uses 1 unit a month. For each unit you're short, one of your plots makes nothing. A quarter of any leftover Energy spoils."
+    - "**Smithore** is what the store builds M.U.L.E.s from, two bars to a M.U.L.E. It doesn't spoil, but you can't keep more than 50."
+    - "**Crystite** is a precious mineral that is only worth money: the store buys it after each month's Crystite auction at a price that jumps around wildly. You can't keep more than 50 of it either."
+  - h: Crystite
+  - p: "Crystite deposits are invisible until you look for them. There are four rich spots on the map. Each is **High** at its centre, **Medium** on the plots beside it, and **Low** one plot farther out. A plot's deposit (0 for none, up to 3) is how much a Crystite M.U.L.E. makes there. A meteorite can create a **Very High** deposit worth 4."
+  - p: "To find Crystite, take a sample. Go to a plot during your turn and press {button} when you aren't leading a M.U.L.E. and aren't next to the Wampus. Then carry the sample to the **Assay Office** in town, which tells you what's there."
+  - h: Bonuses
+  - list:
+    - "**Economies of scale.** For every three plots you own that make the same good, each of them makes 1 more."
+    - "**The learning curve.** A plot makes 1 more if you own a plot right beside it (above, below, left or right) that makes the same good."
+    - "**Luck.** Each month's output wobbles around these numbers, and no plot ever makes more than 8."
+
+# ---------------------------------------------------------------------------
+- id: month
+  title: A Month on Irata
+  blocks:
+  - p: "The game lasts **twelve months**, or rounds. Every month goes through the same phases in the same order, and the screen tells you which one you're in. Here they are, in order."
+  - steps:
+    - title: The Summary Report
+      shot: 03-summary
+      lead: "Before each month starts, the Status Summary shows where everybody stands."
+      text: "Each colonist's **money**, **land** and **goods** are added up into a total. The colony's total is shown at the bottom. Players are listed best first. When you have read it, press {button}. The game goes on when everybody has."
+    - title: The Transport Ship
+      shot: 04-transport-ship
+      lead: "In the first month the colony ship lands and drops you off."
+      text: "Enjoy the view. After the twelfth month it comes back to take a look at what you've done."
+    - title: Land Grant
+      shot: 05-land-grant
+      lead: "Every month each colonist gets one free plot."
+      text: "A square moves across the map, a plot at a time, skipping the town and land that's already taken. When it's over the plot you want, press {button}. The plot is outlined in your colour. You get one claim per month, and the square won't wait for you. If two players press for the same plot, the one who is further behind gets it."
+    - title: Land Auction
+      shot: 06-land-auction-show
+      lead: "Some months, extra land is auctioned."
+      text: "First any plots that players have put up for sale are auctioned, then sometimes a plot or two from the colony. The plot for sale flashes on the map. Press {button} to get on with it."
+    - title: Bidding
+      shot: 07-land-auction-bidding
+      lead: "Push up to bid. The higher you stand, the more you offer."
+      text: "Every colonist stands at the bottom of the screen. Hold {stick} up to walk up the price scale, $4 a step. Let go and you drift back down. The colony's plot goes to the highest bid at or above the starting price when time runs out. A plot a player is selling goes as soon as a bid reaches the seller's price. You can't bid more than you have."
+    - title: Development
+      shot: 08-develop-town
+      lead: "Now it's your turn to work. Press {button} to start."
+      text: "The time bar shows how long you have. A full turn needs this month's **Food**: 3 units in months 1–3, 4 in months 4–7, and 5 after that. With less food your turn is shorter, and with none it's over almost before it starts. Turns go best player first, unless the store is low on M.U.L.E.s, in which case they go in reverse. When you are finished, press {end} to end your turn early."
+    - title: In Town
+      lead: "Walk into the buildings to do business."
+      text: "The town is the store. Walk into the **corral** to buy a M.U.L.E. at the price shown. It follows you around. Lead it into one of the four **outfitters** to fit it out for **Food** ($25), **Energy** ($50), **Smithore** ($75) or **Crystite** ($100). The **Assay Office** analyses a Crystite sample. Visit the **Land Office**, then press {button} on one of your plots to put it up for sale at the next land auction. The **Pub** pays you a little gambling money and ends your turn. Changed your mind? Walk the M.U.L.E. back into the corral and you get its price back, though not the outfit."
+    - title: Installing Your M.U.L.E.
+      shot: 09-develop-map
+      lead: "Walk out of town to your land and press {button} to install your M.U.L.E."
+      text: "Your M.U.L.E. is installed when you press {button} on a plot you own. The plot then shows what it makes. Installing it on a plot that isn't yours, or with no outfit, makes it run away. If your time runs out while you're leading it, it runs away too. Smithore and Crystite M.U.L.E.s can't work on the river, and nothing goes in town. Press {button} on a plot that already has a M.U.L.E. and you swap: the new one goes in, and you're leading the old one. Walking is quickest on the plains, slower across the river and slowest over the mountains."
+    - title: Wampus Hunting
+      lead: "Something flashes in the mountains."
+      text: "That's the **Wampus**. It shows up now and then, hides, and moves on. Walk up to it while it's showing, without a M.U.L.E. in tow, and press {button} to catch it. The reward is $100 in months 1–3, $200 in months 4–7, $300 in months 8–11 and $400 in month 12. You can catch it only once a turn."
+    - title: The Pub
+      lead: "Going into the Pub ends your turn, and pays."
+      text: "You win $50 (months 1–3), $100 (4–7), $150 (8–11) or $200 (12), plus a random bonus that grows with the time you had left, up to $250 in all. Leftover time is worth something here, and nowhere else."
+    - title: Random Events
+      shot: 10-player-event
+      lead: "Sometimes good or bad luck strikes at the start of your turn."
+      text: "About one turn in four starts with a message about something that just happened to you: a prize, a gift, a bill, a theft. See **Fortunes and Misfortunes** for the full list. Luck isn't quite blind: the leader never gets good news, and the two players at the bottom never get bad news."
+    - title: Production
+      shot: 11-production
+      lead: "When everyone has had a turn, the M.U.L.E.s get to work."
+      text: "Each plot with a M.U.L.E. shows how many units it made. First, though, the colony's Food is eaten, its Energy used, and some of what's left spoils."
+    - title: The Colony Event
+      shot: 12-colony-event
+      lead: "Most months, something happens to the whole colony."
+      text: "Pests, pirates, acid rain, planetquakes and more. See **Catastrophes**. In the last month the ship returns instead."
+
+# ---------------------------------------------------------------------------
+- id: auctions
+  title: The Auctions
+  continue_steps: true
+  blocks:
+  - p: "After production comes trading. Each good is auctioned in turn: **Smithore** first, then **Crystite**, **Food** and **Energy**. A good nobody has is skipped."
+  - steps:
+    - title: Player Status
+      shot: 13-goods-status
+      lead: "First you see how much of the good each player has."
+      text: "Bars show each colonist's amount: what they had, what they used, what spoiled and what they produced. The line across the bars is your **critical level**, what you'll need next month: next month's Food, or the Energy your M.U.L.E.s will use. Above it you have a surplus to sell. Below it you're short."
+    - title: Declaring
+      shot: 14-declare
+      lead: "Decide whether you're a Buyer or a Seller."
+      text: "While the timer counts down, push {stick} up to be a **Seller** or down to be a **Buyer**. Press {sitout} to sit this good out. If you do nothing, you'll be a Seller if you have more than your critical level and a Buyer if you don't."
+    - title: Trading
+      shot: 15-trading
+      lead: "Sellers start at the top, Buyers at the bottom. Walk towards each other."
+      text: "Hold {stick} to move. A Seller walks down to lower the asking price, and a Buyer walks up to raise the bid. The dashed lines show the lowest ask and the highest bid. When a Buyer and a Seller meet, goods change hands, slowly at first and then faster, and the auction clock stops while they trade. The **store** is always there too. It sells at the top of the screen while it has stock, and buys at the bottom. You can't buy for more than the store asks, or sell for less than it pays. Ties go to the player who is further behind."
+  - h: The Critical Level
+  - p: "When you sell Food or Energy, you can't sell below your critical level. The game stops you with **SELLER AT CRITICAL LEVEL!** so you don't starve yourself out of next month's turn. Smithore and Crystite have no critical level. Sell them all if you like."
+  - h: Collusion
+  - p: "Two or more players can make a private deal. If they press {button} at nearly the same moment during trading, they **collude**: for a short while they trade only with each other, and the store is shut out. It's a fine way to help a friend or squeeze a rival."
+  - h: The Corral
+  - p: "At the end of each month the store turns Smithore into M.U.L.E.s, two bars each, up to a corral of 14. The price of a M.U.L.E. follows the price of Smithore. If nobody sells the store Smithore, there are no new M.U.L.E.s, and the ones left get expensive. Then the month ends with another Summary Report."
+
+# ---------------------------------------------------------------------------
+- id: fortunes
+  title: Fortunes and Misfortunes
+  blocks:
+  - p: "At the start of each development turn there is a little better than a one-in-four chance of a personal event. Each one can happen only **once per game**, to anybody. The amounts grow as the colony does: the base amount is **$25** in months 1–3, **$50** in 4–7, **$75** in 8–11 and **$100** in month 12."
+  - list:
+    - "The player in **first place** never gets good fortune."
+    - "The players in **third and fourth place** never get misfortune."
+    - "A player who has run out of Food and isn't in first place gets the food parcel from home, if it hasn't already been used."
+    - "Money never drops below zero."
+  - h: Good Fortune
+  - gen: events-good
+  - h: Misfortune
+  - gen: events-bad
+
+# ---------------------------------------------------------------------------
+- id: catastrophes
+  title: Catastrophes
+  blocks:
+  - p: "Every month, after the M.U.L.E.s have done their work and before the goods are counted, the colony may be hit by an event that affects everybody, or the leaders in particular. Each kind of event can happen only so many times in a game. The more of a kind are left, the likelier it is. If the event drawn has nothing to hit (no Food plots for the pests, say), the colony gets a quiet month."
+  - gen: events-colony
+  - p: "In the **twelfth month** there is no catastrophe. Instead: *the ship is returning. the colony's twelve months are up!*"
+
+# ---------------------------------------------------------------------------
+- id: economics
+  title: The Economics of M.U.L.E.
+  blocks:
+  - h: Supply and Demand
+  - p: "The store sets a **reference price** for each good before its auction. Food and Energy prices rise when the colony has less than it needs and fall when there's plenty. Smithore follows the demand for M.U.L.E.s: empty plots waiting for them push it up, and a full corral and a well-stocked store pull it down. Crystite prices are pure chance, anywhere from $50 to $149 before each auction. After an auction, the price becomes the average price people actually traded at."
+  - gen: spread
+  - p: "Prices never go below a floor (Food $30, Energy $25, Smithore $20, Crystite $50) or above $250."
+  - h: Starting Out
+  - gen: start
+  - h: Land
+  - p: "Land costs nothing in the Land Grant and something at auction. The first land auction of the game starts at $160. After that, each auction starts at $60 less than the last price paid, but never below $60. Each plot you own counts $500 towards your score, whatever you paid."
+  - h: Running Out
+  - p: "If the colony ever runs completely out of **Food** or of **Energy** (the store, every player and every M.U.L.E. making it), the colony has **failed** and the game ends at once. Nobody wins. Keep an eye on the store, even when you're winning."
+
+# ---------------------------------------------------------------------------
+- id: winning
+  title: Winning
+  blocks:
+  - p: "After the twelfth month the colony is judged and the game is over."
+  - shot: { scene: 16-game-over, title: The Final Summary, caption: "The colony is rated and the richest colonist is named." }
+  - h: Your Score
+  - list:
+    - "**Money**: every dollar you have."
+    - "**Land**: $500 for every plot. A plot with a M.U.L.E. on it also counts the M.U.L.E.'s outfit price plus $35."
+    - "**Goods**: every unit you hold, at the store's price."
+  - p: "The colonist with the highest total wins and is proclaimed the colony's **FIRST FOUNDER**."
+  - h: The Colony Rating
+  - p: "Then the federation rates the colony on everybody's totals added together. Winning a failed colony is cold comfort."
+  - gen: rating
+
+# ---------------------------------------------------------------------------
+- id: tips
+  title: Tips from the Old Hands
+  blocks:
+  - tips:
+    - "Claim land next to the river for Food and on the mountains for Smithore. Plains are fine for Energy."
+    - "Grow your own Food early. Without it your turns get so short that you can't do anything else."
+    - "Keep a little Energy on hand for every M.U.L.E. you own, or some of them will sit idle."
+    - "Put the same good on plots next to each other, and on three plots or more. The bonuses add up fast."
+    - "Smithore is the colony's bottleneck. When the corral runs low, Smithore prices climb and so do M.U.L.E. prices."
+    - "Assay before you dig. Crystite is a gamble, and a High deposit is a winning ticket."
+    - "Never walk a M.U.L.E. onto someone else's land. It won't come back."
+    - "Leftover time is worth money at the Pub, but only when it's left over."
+    - "The store always sells at the top and buys at the bottom. Beat its prices and the other players will trade with you."
+    - "When a rival is desperate for Food, consider declaring yourself a Seller. Then consider your price."
+  - h: Some Questions and Their Answers
+  - qa:
+    - q: "Why didn't I get the plot I wanted in the Land Grant?"
+      a: "Someone else wanted it too. When two players press for the same plot, the one who is further behind gets it. Or the square had already moved on."
+    - q: "My M.U.L.E. keeps running away. What can I do?"
+      a: "Install it only on your own land, give it an outfit first, and leave yourself time to walk it there. If time is short, walk it back to the corral and get your money back."
+    - q: "Sometimes I walk into the corral and can't get a M.U.L.E. Why not?"
+      a: "Either the corral is empty, or you don't have enough money. Look at the price over the corral."
+    - q: "Why can't I sell my last few units of Food?"
+      a: "You're at your critical level. The game is keeping enough for your next turn."
+    - q: "Why can't I catch the Wampus?"
+      a: "You may be leading a M.U.L.E. (Wampuses don't like them), it may be hiding, or you may already have caught it this turn."
+    - q: "Can I play with a friend on another kind of computer?"
+      a: "Yes. Every edition of the game plays in the same rooms. Just pick the same room."
+    - q: "What happens if my connection drops?"
+      a: "The computer looks after your seat until you come back. Start the game again and it rejoins your room."
+    - q: "Where do the extra rooms go?"
+      a: "There is one room, Planet IRATA, today. More are on the way, and they'll appear in the room list when they open."
+
+# ---------------------------------------------------------------------------
+- id: reference
+  title: Reference Chart
+  blocks:
+  - gen: reference

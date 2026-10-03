@@ -1,0 +1,334 @@
+# One entry per edition. `shots` is the screenshots/ folder in the game repo
+# (fujinet-multiplayer-mule); `keys` fill the {tokens} in the prose.
+#
+# Facts from: cmd/muleserver/main.go (lobby URLs), top-level `make dist`
+# (file names), clients/*/README.md and each client's input code (controls).
+
+atari:
+  name: Atari 8-bit
+  machine: Atari
+  long: Atari 400, 800, XL and XE computers
+  slug: atari
+  shots: atari
+  file: mule.atr
+  tnfs: tnfs://irata.online/mule/atari/mule.atr
+  needs:
+    - An Atari 400 or 800 with 48K, or any XL or XE computer
+    - A FujiNet for the Atari, plugged into the SIO port
+    - A joystick in port 1 (or use the keyboard)
+  boot:
+    - Mount *mule.atr* in drive slot 1 and boot. No BASIC or DOS is needed; the disk starts itself.
+    - The game loads a part at a time as each phase begins, so the FujiNet disk light flickers now and then. That is normal.
+  notes:
+    - This is the machine M.U.L.E. was written for, and this edition draws and sounds just like the 1983 original.
+    - The Atari edition talks to the server over a FujiNet network stream. You don't need to set anything up for it.
+  keys:
+    stick: the joystick (or CTRL and the arrow keys)
+    button: the trigger (or SPACE)
+    end: RETURN
+    leave: ESC
+    sitout: "0"
+    mute: CTRL-S
+  controls:
+    - [Joystick, or CTRL + arrow keys, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [Trigger or SPACE, The button]
+    - [RETURN, End your development turn]
+    - ["0", "Declaring: sit this good out"]
+    - [ESC, Leave the table]
+    - [CTRL-S, Sound off and on]
+
+apple2:
+  name: Apple II
+  machine: Apple
+  long: Apple //e (enhanced, 128K), //c and IIgs
+  slug: apple2
+  shots: apple2
+  file: mule.po
+  tnfs: tnfs://irata.online/mule/apple2/mule.po
+  needs:
+    - An enhanced Apple //e with 128K, an Apple //c, or an Apple IIgs
+    - A FujiNet for the Apple II (SmartPort)
+    - A joystick (optional; the keyboard works too)
+  boot:
+    - Mount *mule.po* on the FujiNet and boot from it. It is a 140K ProDOS disk that starts the game by itself.
+    - The game loads a part at a time from the disk as phases change.
+  notes:
+    - To use a joystick, centre it before the game starts. Otherwise the keyboard is used.
+    - Sound comes from the Apple's speaker.
+  keys:
+    stick: the arrow keys (or I J K M, or the joystick)
+    button: SPACE (or a joystick button, or an Apple key)
+    end: RETURN
+    leave: ESC
+    sitout: "0"
+    mute: CTRL-S
+  controls:
+    - [Arrow keys, I J K M, or joystick, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [SPACE, a joystick button or an Apple key, The button]
+    - [RETURN, End your development turn]
+    - ["0", "Declaring: sit this good out"]
+    - [ESC, "Leave the table (at the table list: quit)"]
+    - [CTRL-S, Sound off and on]
+
+coco:
+  name: Color Computer
+  machine: CoCo
+  long: TRS-80 Color Computer 1 and 2
+  slug: coco
+  shots: coco
+  file: mule.dsk
+  tnfs: tnfs://irata.online/mule/coco/mule.dsk
+  needs:
+    - A TRS-80 Color Computer 1 or 2 with 64K
+    - A FujiNet for the CoCo
+    - A joystick in the right port (optional)
+  boot:
+    - Mount *mule.dsk* on the FujiNet and boot. HDB-DOS runs its AUTOEXEC.BAS, which loads and starts the game.
+    - "The first screen asks IS THE BAR BLUE? A CoCo can come up with its artifact colours either way round. Answer so the bar on the screen is blue, and you can press CLEAR at any time to swap them."
+  notes:
+    - "The players are blue, orange, white, and blue-and-orange stripes."
+  keys:
+    stick: the arrow keys (or the right joystick)
+    button: SPACE (or the joystick button)
+    end: ENTER
+    leave: BREAK
+    sitout: "0"
+    mute: SHIFT-CLEAR
+  controls:
+    - [Arrow keys or right joystick, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [SPACE or joystick button, The button]
+    - [ENTER, End your development turn]
+    - ["0", "Declaring: sit this good out"]
+    - [BREAK, Leave the table]
+    - [CLEAR, Swap the artifact colours]
+    - [SHIFT-CLEAR, Sound off and on]
+
+msdos:
+  name: MS-DOS
+  machine: PC
+  long: IBM PC (CGA) and IBM PCjr
+  slug: msdos
+  shots: msdos-pcjr
+  shots_alt: msdos-cga
+  alt_name: CGA
+  file: mule.img
+  tnfs: tnfs://irata.online/mule/msdos/mule.img
+  needs:
+    - An IBM PC or compatible with 128K and a CGA, or an IBM PCjr
+    - A FujiNet for MS-DOS, with FUJINET.SYS (October 2026 or later) loaded from CONFIG.SYS
+    - A joystick (optional)
+  boot:
+    - "Load FUJINET.SYS from CONFIG.SYS. On a PCjr: DEVICE=FUJINET.SYS FUJI_PORT=2 FUJI_BPS=9600. On other PCs: DEVICE=FUJINET.SYS FUJI_PORT=1 FUJI_BPS=115200."
+    - Mount *mule.img* (a 360K disk) and boot it, or type MULE at the DOS prompt. The disk's AUTOEXEC.BAT starts the game.
+    - Pressing ESC at the table list takes you back to the FujiNet Lobby.
+  notes:
+    - "On a PCjr the game uses 16 colours; on a CGA it uses 4 (cyan, magenta and white, with striped colonists for the fourth player). The pictures in this guide are from the PCjr, with CGA versions where they look different."
+    - A 128K PCjr is a tight fit. If DOS or another resident program leaves too little room, the game falls back to 4 colours.
+  keys:
+    stick: the arrow keys (or the joystick)
+    button: SPACE (or a joystick button)
+    end: ENTER
+    leave: ESC
+    sitout: "0"
+    mute: F1
+  controls:
+    - [Arrow keys (keypad 7 9 1 3 for diagonals) or joystick, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [SPACE or a joystick button, The button]
+    - [ENTER, End your development turn]
+    - ["0", "Declaring: sit this good out"]
+    - [ESC, "Leave the table (at the table list: back to the Lobby)"]
+    - [F1, Sound off and on]
+
+adam:
+  name: Coleco Adam
+  machine: Adam
+  long: Coleco Adam
+  slug: adam
+  shots: adam
+  file: mule.ddp
+  tnfs: tnfs://irata.online/mule/adam/mule.ddp
+  needs:
+    - A Coleco Adam
+    - A FujiNet for the Adam
+    - A controller in port 1 (recommended)
+  boot:
+    - Mount *mule.ddp* (a tape image) on the FujiNet and boot. A disk image, *mule.dsk*, is in the same folder if you prefer it.
+    - The game loads each phase from the tape as it starts, which takes a moment on the Adam.
+  notes:
+    - The Adam's keyboard sends repeating keys rather than held ones, so walking with the arrow keys is jerky. Use the controller for smooth walking.
+  keys:
+    stick: the controller (or the arrow keys)
+    button: the fire button (or SPACE)
+    end: RETURN (or * on the keypad)
+    leave: ESCAPE
+    sitout: "0"
+    mute: SmartKey VI
+  controls:
+    - [Controller 1 or arrow keys, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [Fire button or SPACE, The button]
+    - [RETURN or keypad *, End your development turn]
+    - ["0 (keyboard or keypad)", "Declaring: sit this good out"]
+    - [ESCAPE, "Leave the table (at the table list: back to CONFIG)"]
+    - [SmartKey VI, Sound off and on]
+
+msx:
+  name: MSX
+  machine: MSX
+  long: MSX1, MSX2 and later
+  slug: msx
+  shots: msx
+  file: mule.rom
+  tnfs: tnfs://irata.online/mule/msxrom/mule.rom
+  needs:
+    - Any MSX computer (MSX1 or later)
+    - A FujiNet MSX cartridge with firmware that can run user ROMs
+    - A joystick in port 1 (optional)
+  boot:
+    - "The FujiNet cartridge loads and runs the ROM. If you copy it yourself, use the name *mule[ASCII8].rom*: the firmware chooses the ROM mapper from the end of the file name."
+  notes:
+    - "Text uses the Namco arcade font that other FujiNet games on the Adam and MSX use."
+  keys:
+    stick: the arrow keys (or the joystick)
+    button: SPACE (or the trigger)
+    end: RETURN
+    leave: ESC
+    sitout: "0"
+    mute: F1
+  controls:
+    - [Arrow keys or joystick 1, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [SPACE or trigger, The button]
+    - [RETURN, End your development turn]
+    - ["0", "Declaring: sit this good out"]
+    - [ESC, "Leave the table (at the table list: back to the FujiNet ROM)"]
+    - [F1, Sound off and on]
+
+lynx:
+  name: Atari Lynx
+  machine: Lynx
+  long: Atari Lynx
+  slug: lynx
+  shots: lynx
+  file: mule.lnx
+  tnfs: tnfs://irata.online/mule/lynx/mule.lnx
+  needs:
+    - An Atari Lynx
+    - A FujiNet-Lynx on the ComLynx port
+    - "A way to load mule.lnx: the FujiNet, or a flash cartridge"
+  boot:
+    - Load *mule.lnx* and start it with FujiNet-Lynx connected to ComLynx.
+    - Pick your name a letter at a time with the joypad (A takes a letter, B rubs one out).
+  notes:
+    - "The Lynx can't go back once it has started talking to the server, so it doesn't remember your table: the table list comes up every time you start the game."
+    - Leaving only says goodbye to the server. Switch the Lynx off afterwards.
+  keys:
+    stick: the joypad
+    button: A
+    end: OPTION 1
+    leave: OPTION 2
+    sitout: OPTION 1 + B
+    mute: PAUSE
+  controls:
+    - [Joypad, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [A, The button]
+    - [B, Rub out a letter (name entry)]
+    - [OPTION 1, End your development turn]
+    - [OPTION 1 + B, "Declaring: sit this good out"]
+    - [OPTION 2, Leave the table]
+    - [PAUSE, Sound off and on]
+
+intv:
+  name: Intellivision
+  machine: Intellivision
+  long: Mattel Intellivision
+  slug: intv
+  shots: intv
+  file: mule.rom
+  tnfs: tnfs://irata.online/mule/intv/mule.rom
+  needs:
+    - A Mattel Intellivision (or Intellivision II)
+    - A FujiNet Intellivision cartridge
+  boot:
+    - The FujiNet cartridge loads *mule.rom* and starts it. Use the left hand controller.
+    - "If you have to enter your name: push the disc up or down to pick a letter, right to add it, left to rub out, and press a side button to finish."
+  notes:
+    - "The Intellivision shows SPECTATOR in the title row for one second in every two, as there's no room for it beside the title."
+  keys:
+    stick: the disc
+    button: a side button
+    end: ENTER on the keypad
+    leave: CLEAR on the keypad
+    sitout: "0 on the keypad"
+    mute: ""
+  controls:
+    - [Disc, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [Side button, The button]
+    - [Keypad ENTER, End your development turn]
+    - [Keypad 0, "Declaring: sit this good out"]
+    - [Keypad CLEAR, Leave the table]
+
+astrocade:
+  name: Bally Astrocade
+  machine: Astrocade
+  long: Bally Professional Arcade / Astrocade
+  slug: astrocade
+  shots: astrocade
+  file: mule.bin
+  tnfs: tnfs://irata.online/mule/astrocade/mule.bin
+  needs:
+    - A Bally Astrocade (a stock 4K machine is enough)
+    - A FujiNet Astrocade cartridge with bank-switching (APPBANK) firmware
+    - A hand controller in port 1
+  boot:
+    - The FujiNet cartridge loads *mule.bin* and starts it.
+    - "To enter your name, move the stick up and down to choose a letter, and push right or pull the trigger to take it. The keypad digits go straight in. CE rubs out, and = finishes."
+  notes: []
+  keys:
+    stick: the hand controller
+    button: the trigger
+    end: "= on the keypad"
+    leave: C on the keypad
+    sitout: "0 on the keypad"
+    mute: MR on the keypad
+  controls:
+    - [Hand controller, "Walk; move up and down in auctions; left and right in the lobby"]
+    - [Trigger, The button]
+    - [Keypad =, "End your development turn; finish your name"]
+    - [Keypad 0, "Declaring: sit this good out"]
+    - [Keypad C, Leave the table]
+    - [Keypad CE, Rub out (name entry)]
+    - [Keypad MR, Sound off and on]
+
+a2600:
+  name: Atari 2600
+  machine: 2600
+  long: Atari 2600 VCS
+  slug: atari-2600
+  shots: atari-2600
+  file: mule2600.bin
+  tnfs: tnfs://irata.online/mule/atari-2600/mule2600.bin
+  needs:
+    - An Atari 2600 (any model)
+    - A FujiNet 2600 cartridge
+    - A joystick in the left port
+  boot:
+    - The FujiNet cartridge loads *mule2600.bin* and starts it. Press FIRE to start and join.
+  notes:
+    - "The 2600 can't draw the original pictures, so it draws the map with letters: F, E, S and C mark Food, Energy, Smithore and Crystite M.U.L.E.s. Mountains and the river are shown in the ground of each plot, and each owner's colour frames their plots."
+    - "In the town, the buildings are letters too: C S E F for the outfitters, A L P for the assay office, land office and pub, and the corral."
+    - Messages scroll through a row at the bottom of the screen.
+    - FIRE also sits out a declaration, so you don't need a separate key for it.
+  keys:
+    stick: the joystick
+    button: FIRE
+    end: SELECT
+    leave: RESET (hold it for a second)
+    sitout: FIRE
+    mute: left difficulty switch at A
+  controls:
+    - [Joystick, "Walk; choose; move your auction line; declare (up sells, down buys)"]
+    - [FIRE, "Start, join and ready; claim a plot; begin your turn; install, sample, catch the Wampus; collude; sit out a declaration"]
+    - [SELECT, End your development turn]
+    - [RESET held for a second, Leave the table]
+    - [Left difficulty switch at A, Sound off]
+
+order: [atari, apple2, coco, msdos, adam, msx, lynx, intv, astrocade, a2600]

@@ -1,0 +1,61 @@
+# Numbers from the game server, fujinet-multiplayer-mule/internal/rules.
+# tools/checkfacts.py compares the ones it can against the Go source.
+
+rounds: 12
+seats: 4
+table: { id: irata, name: Planet IRATA }
+
+species:          # constants.go: SpeciesMoney, PTU per species
+  - { id: mechtron, name: Mechtron, money: 1000, ptu: 28 }
+  - { id: gollumer, name: Gollumer, money: 1000, ptu: 28 }
+  - { id: packer,   name: Packer,   money: 1000, ptu: 28 }
+  - { id: bonzoid,  name: Bonzoid,  money: 1000, ptu: 28 }
+  - { id: spheroid, name: Spheroid, money: 1000, ptu: 28 }
+  - { id: flapper,  name: Flapper,  money: 1600, ptu: 36 }
+  - { id: leggite,  name: Leggite,  money: 1000, ptu: 28 }
+  - { id: humanoid, name: Humanoid, money:  600, ptu: 20 }
+computer: { species: Mechtron, money: 1200 }
+
+start_goods: { food: 4, energy: 2 }
+store_start: { food: 8, energy: 8, smithore: 8, crystite: 0, mules: 14 }
+start_prices: { food: 30, energy: 25, smithore: 50, crystite: 100, mule: 100 }
+outfit: { food: 25, energy: 50, smithore: 75, crystite: 100 }
+
+# food needed per round: rounds 1-3, 4-7, 8-12
+food_need: [ { rounds: "1–3", need: 3 }, { rounds: "4–7", need: 4 }, { rounds: "8–12", need: 5 } ]
+
+# mapgen.go baseYield
+terrain:
+  - { id: plain,     name: Plains,          food: 2, energy: 3, smithore: 1, crystite: "deposit" }
+  - { id: river,     name: River,           food: 4, energy: 2, smithore: "–", crystite: "–" }
+  - { id: mountain1, name: Mountains (one),   food: 1, energy: 1, smithore: 2, crystite: "deposit" }
+  - { id: mountain2, name: Mountains (two),   food: 1, energy: 1, smithore: 3, crystite: "deposit" }
+  - { id: mountain3, name: Mountains (three), food: 1, energy: 1, smithore: 4, crystite: "deposit" }
+
+store_spread:     # types.go Store buy/sell
+  - { good: Food,     buys: "P − $15", sells: "P + $20" }
+  - { good: Energy,   buys: "P − $15", sells: "P + $20" }
+  - { good: Smithore, buys: "P",       sells: "P + $35" }
+  - { good: Crystite, buys: "P (rounded down to $4)", sells: "that + $140" }
+
+price_floor: { food: 30, energy: 25, smithore: 20, crystite: 50 }
+price_cap: 250
+
+colony_caps:      # events_colony.go colonyEventCaps
+  pest: 3
+  pirates: 2
+  acid: 3
+  quake: 3
+  sunspot: 3
+  meteorite: 2
+  radiation: 2
+  fire: 2
+
+rating:           # store.go ColonyRating / RatingText
+  - { n: 0, total: "under $20,000, or the colony ran out of Food or Energy", text: "the colony failed. the federation will not be sending another ship. you will all be left to die." }
+  - { n: 1, total: "$20,000", text: "the colony failed. the few survivors are taken off-planet by federation police. you have been sentenced to pay reparations." }
+  - { n: 2, total: "$40,000", text: "the colony barely survived. the federation has decided to keep it running, but with a new set of leaders." }
+  - { n: 3, total: "$60,000", text: "the colony was a success. the federation is pleased and will send new colonists." }
+  - { n: 4, total: "$80,000", text: "the colony was a great success. you will be honored for your work." }
+  - { n: 5, total: "$100,000", text: "the colony was a tremendous success. you will all be named honorary citizens." }
+  - { n: 6, total: "$120,000 or more", text: "the colony was a phenomenal success! the federation is delighted and has declared irata a planetary landmark." }
