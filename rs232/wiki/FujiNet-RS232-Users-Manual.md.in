@@ -46,7 +46,7 @@ count from zero (disk slot 1 is `p0 = 0`).
 | `fujinet-rs232-s3` | ESP32-S3, 16 MB | UART 1 via TRS3238E: RX GPIO 41, TX GPIO 42 |
 | `fujiversal-rs232` | ESP32-S3 | USB CDC-ACM host to a Fujiversal cartridge; no UART, baud ignored |
 
-The serial boards are **DCE** with a female DB-9 (straight onto a PC COM
+The serial boards are **DCE** with a female DE9 (straight onto a PC COM
 port). Only TXD (pin 3, in), RXD (pin 2, out) and ground are needed: commands
 are entirely in-band. The firmware requests RTS/CTS flow control but never
 routes the pins to the UART; CTS is simply held on. 8N1, **115200 baud** by

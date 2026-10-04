@@ -776,7 +776,7 @@ holds every setting the adapter keeps.])
 // ============================================================
 #chapter[The RS-232 FujiNet]
 
-The RS-232 FujiNet is an ESP32 with a serial line driver and a DB-9
+The RS-232 FujiNet is an ESP32 with a serial line driver and a DE9
 connector. It is powered from its own USB-C socket, not from the serial
 port, so plug it into power first and then into the computer. Inside it
 runs the same firmware as every other FujiNet, built for the RS-232 bus.
@@ -799,13 +799,13 @@ bytes reach the ESP32; the packets are identical.
 )
 
 The two serial boards present the port as #strong[data communications
-equipment] (DCE), the way a modem does: they carry a female DB-9 that plugs
+equipment] (DCE), the way a modem does: they carry a female DE9 that plugs
 straight onto a PC's male COM port, with no null-modem cable. On a machine
 whose serial port is itself wired as DCE (many S-100 serial boards can be
 strapped either way), a null-modem adapter is needed.
 
 #ktable(columns: (auto, auto, auto, 1fr),
-  table.header[DB-9 pin][Signal][Direction][Use on the RS-232 FujiNet],
+  table.header[DE9 pin][Signal][Direction][Use on the RS-232 FujiNet],
   [2], [RXD], [FujiNet #sym.arrow.r computer], [replies],
   [3], [TXD], [computer #sym.arrow.r FujiNet], [commands],
   [5], [GND], [---], [signal ground],

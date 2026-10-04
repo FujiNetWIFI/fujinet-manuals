@@ -8,9 +8,9 @@ Knob and a Button.  This script:
   * recentres each half on the XY origin,
   * flips the Top over and stacks it on the Bottom to form the closed
     clamshell,
-  * mirrors the one knurled knob into the pair that flanks the DE-9,
+  * mirrors the one knurled knob into the pair that flanks the DE9,
   * keeps the button,
-  * generates the DE-9 female connector (mounting flange, rounded
+  * generates the DE9 female connector (mounting flange, rounded
     D-shaped metal shell, recessed insulator with the 9 socket holes)
     that mates with the PC's male serial port, and two LED light-pipe
     domes,
@@ -217,7 +217,7 @@ def main():
     # mirroring flips winding; reverse vertex order so normals stay sane
     knob_r = knob_r[:, ::-1, :]
 
-    # --- DE-9 female connector at the +Y (connector) end -------------
+    # --- DE9 female connector at the +Y (connector) end -------------
     # A panel-mount D-sub socket as seen on the real unit: mounting
     # flange proud of the case, a rounded D-shaped metal shell, and a
     # recessed insulator carrying the 9 socket holes (5 over 4).

@@ -564,7 +564,7 @@ joining, give the slower band its own name in the router's settings.]
 // --------------------------------------------------------------
 #pagebreak(weak: true)
 #sect[A Tour of the FujiNet]
-#ix("Lamps (LED indicators)", "Buttons", "Connector, DB-9",
+#ix("Lamps (LED indicators)", "Buttons", "Connector, DE9",
   "microSD card", "USB-C")
 
 Take a moment to get acquainted before you plug anything in. Hold the

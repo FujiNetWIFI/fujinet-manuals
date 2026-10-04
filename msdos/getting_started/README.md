@@ -35,7 +35,7 @@ portrait booklet (7 × 9 in) covering:
 Every feature is cross-referenced against source, not docs:
 
 - **Hardware** — `fujinet-hardware/RS232/RS232-Rev1b` (schematic, BOM, STLs):
-  ESP32-S3, DB-9 female edge connector, USB-C power, push-push microSD,
+  ESP32-S3, DE9 female edge connector, USB-C power, push-push microSD,
   white WiFi LED + orange BUS LED, knurled thumbscrews.
 - **Drivers & utilities** — `fujinet-msdos` (`sys`, `printer`, `fmount`,
   `fnshare`, `ncopy`, `nget`, `nput`): `FUJINET.SYS` block driver,
@@ -61,7 +61,7 @@ contours), matching the rest of the FujiNet manual series:
 
 - **The FujiNet** is assembled from the published `RS232-Rev1b` case STLs by
   `tools/make_case.py`, which closes the two printable shells into a clamshell,
-  mirrors the single knurled knob into a pair, and generates the DB-9
+  mirrors the single knurled knob into a pair, and generates the DE9
   connector and the LED light-pipes.
 - **The IBM 5150** (system unit, display, keyboard, rear panel) is a
   parametric model built by `tools/make_pc.py`.

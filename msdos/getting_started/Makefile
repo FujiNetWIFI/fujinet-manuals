@@ -52,7 +52,7 @@ preview: $(PDF)
 
 # Re-render the flat-shaded illustrations. make_case.py assembles the
 # two Rev1b case shells into a closed clamshell (mirroring the single
-# knurled knob into a pair) and generates the DB-9 connector + LED
+# knurled knob into a pair) and generates the DE9 connector + LED
 # domes. make_pc.py builds the parametric IBM 5150 system + rear panel.
 images:
 	python3 tools/make_case.py tools
