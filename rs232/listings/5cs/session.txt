@@ -1,0 +1,82 @@
+
+FUJINET 5 CARD STUD
+YOUR NAME? altair
+
+TABLES
+  1  DEV ROOM - 7 BOTS     0 / 1
+  2  DEV ROOM - 6 BOTS     0 / 2
+  3  DEV ROOM - 5 BOTS     0 / 3
+  4  DEV ROOM - 4 BOTS     0 / 4
+  5  DEV ROOM - 3 BOTS     0 / 5
+  6  DEV ROOM - 2 BOTS     0 / 6
+  7  DEV ROOM - 1 BOTS     0 / 7
+TABLE NUMBER (RETURN TO QUIT)? 6
+
+ROUND 1   POT 3
+  ALTAIR      199    0  TH AD           
+> CLYD BOT    199    0  ?? 8S           
+  JIM BOT     199    0  ?? AC           
+  CLYD BOT  BET        5
+  JIM BOT   CALL       5
+YOUR CARDS TH AD           POT 3
+YOUR MOVE:  1 FOLD  2 CALL  3 RAISE 5  Q LEAVE? 2
+  ALTAIR    CALL       5
+
+ROUND 2   POT 18
+> ALTAIR      194    0  TH AD 3C        
+  CLYD BOT    194    0  ?? 8S 5C        
+  JIM BOT     194    0  ?? AC 2H        
+YOUR CARDS TH AD 3C        POT 18
+YOUR MOVE:  1 FOLD  2 CHECK  3 BET 5  Q LEAVE? 2
+  ALTAIR    CHECK      0
+  CLYD BOT  CHECK      0
+  JIM BOT   CHECK      0
+
+ROUND 3   POT 18
+> ALTAIR      194    0  TH AD 3C QH     
+  CLYD BOT    194    0  ?? 8S 5C 9D     
+  JIM BOT     194    0  ?? AC 2H TS     
+YOUR CARDS TH AD 3C QH     POT 18
+YOUR MOVE:  1 FOLD  2 CHECK  3 BET 10  Q LEAVE? 2
+  ALTAIR    CHECK      0
+  CLYD BOT  CHECK      0
+  JIM BOT   BET       10
+YOUR CARDS TH AD 3C QH     POT 18
+YOUR MOVE:  1 FOLD  2 CALL  3 RAISE 10  Q LEAVE? 2
+  ALTAIR    CALL      10
+  CLYD BOT  FOLD       0
+
+ROUND 4   POT 38
+  ALTAIR      184    0  TH AD 3C QH JD  
+  CLYD BOT    194    0  ??              
+> JIM BOT     184    0  ?? AC 2H TS 2S  
+  JIM BOT   BET       10
+YOUR CARDS TH AD 3C QH JD  POT 38
+YOUR MOVE:  1 FOLD  2 CALL  3 RAISE 10  Q LEAVE? 2
+  ALTAIR    CALL      10
+
+SHOWDOWN   POT 58
+  ALTAIR      174   10  TH AD 3C QH JD  CALL
+  CLYD BOT    194    0  ??              
+  JIM BOT     232   10  7C AC 2H TS 2S  BET
+JIM BOT WON WITH PAIR, TWOS
+
+ROUND 1   POT 3
+  ALTAIR      173    0  6S 5D           
+> CLYD BOT    193    0  ?? 2D           
+  JIM BOT     231    0  ?? AC           
+  CLYD BOT  BET        5
+  JIM BOT   RAISE     10
+YOUR CARDS 6S 5D           POT 3
+YOUR MOVE:  1 FOLD  2 CALL  3 RAISE 5  Q LEAVE? Q
+YOU LEAVE THE TABLE.
+
+TABLES
+  1  DEV ROOM - 7 BOTS     0 / 1
+  2  DEV ROOM - 6 BOTS     0 / 2
+  3  DEV ROOM - 5 BOTS     0 / 3
+  4  DEV ROOM - 4 BOTS     0 / 4
+  5  DEV ROOM - 3 BOTS     0 / 5
+  6  DEV ROOM - 2 BOTS     0 / 6
+  7  DEV ROOM - 1 BOTS     0 / 7
+TABLE NUMBER (RETURN TO QUIT)? 

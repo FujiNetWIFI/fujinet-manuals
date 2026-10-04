@@ -1,0 +1,10 @@
+FUJINET RS-232 HELLO
+WIFI STATUS 03
+1: SD
+2: fujinet.online
+3: apps.irata.online
+4: fujinet.diller.org
+5: FujiNet.Atari8bit.net
+6: atarionline.eu
+7: fujinet.pl
+8: ec.tnfs.io

@@ -1,0 +1,9 @@
+preview/
+listings/*/*.bin
+listings/*/*.o
+sim/sim.log
+sim/socat.log
+sim/t.ini
+sim/*.bak
+tools/__pycache__/
+listings/*/*.lis

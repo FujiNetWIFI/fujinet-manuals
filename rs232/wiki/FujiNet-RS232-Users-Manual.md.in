@@ -1,0 +1,468 @@
+# The RS-232 FujiNet User's Manual
+
+Driving every FujiNet device through a plain serial port: setting up
+`fnconfig.ini`, the FujiBus packet, a command reference for every device with
+real byte streams, and three complete Z80 programs (CONFIG, NETCAT, 5 Card
+Stud) for an Altair 8800 with an 88-2SIO. This is the wiki condensation; the
+full illustrated edition, with every listing, is the PDF in `rs232/` of the
+[manuals repository](https://github.com/FujiNetWIFI/fujinet-manuals/tree/main/rs232).
+
+It describes `fujinet-firmware` at commit `670b2ed55`. Every byte stream
+below was captured from a running adapter (`tools/examples.py`); where the
+firmware does something unexpected, it says so, and
+[Firmware behaviour and errata](#firmware-behaviour-and-errata) collects every
+case with its source reference.
+
+See also the [FujiNet-Network-Protocol-Handbook](FujiNet-Network-Protocol-Handbook)
+for the network protocols themselves.
+
+## Contents
+
+- [The hardware](#the-hardware)
+- [fnconfig.ini](#fnconfigini)
+- [The FujiBus packet](#the-fujibus-packet)
+- [Transactions](#transactions)
+- [The devices](#the-devices)
+- [The Fuji device (70h)](#the-fuji-device-70h)
+- [The disk drives (31h-38h)](#the-disk-drives-31h-38h)
+- [The network units (71h-78h)](#the-network-units-71h-78h)
+- [The clock (45h)](#the-clock-45h)
+- [The printer (40h)](#the-printer-40h)
+- [The modem (50h)](#the-modem-50h)
+- [CP/M (5Ah)](#cpm-5ah)
+- [The Z80 programs](#the-z80-programs)
+- [Running the examples in SIMH](#running-the-examples-in-simh)
+- [Firmware behaviour and errata](#firmware-behaviour-and-errata)
+
+Conventions: `70h` is hexadecimal; multi-byte values on the wire are
+little-endian; parameters are numbered p0, p1...; slot numbers on the wire
+count from zero (disk slot 1 is `p0 = 0`).
+
+## The hardware
+
+| Target | Processor | Host link |
+|---|---|---|
+| `fujinet-rs232-rev0` | ESP32, 8 MB | UART 1 via TRS3238E: RX GPIO 13, TX GPIO 21 |
+| `fujinet-rs232-s3` | ESP32-S3, 16 MB | UART 1 via TRS3238E: RX GPIO 41, TX GPIO 42 |
+| `fujiversal-rs232` | ESP32-S3 | USB CDC-ACM host to a Fujiversal cartridge; no UART, baud ignored |
+
+The serial boards are **DCE** with a female DB-9 (straight onto a PC COM
+port). Only TXD (pin 3, in), RXD (pin 2, out) and ground are needed: commands
+are entirely in-band. The firmware requests RTS/CTS flow control but never
+routes the pins to the UART; CTS is simply held on. 8N1, **115200 baud** by
+default (`[Serial] baud`).
+
+**RI (pin 9)** is an attention line: held on normally, it toggles off/on every
+`2 x rate` ms (rate 100 ms by default, SET_INT_RATE) while any network unit has
+data, has lost its connection or has an error. Polling STATUS is always an
+alternative. fujinet-pc drives the PC's DTR or RTS instead (`[Serial] proceed`).
+
+At power-up the boot image named by `[General] boot_mode` (mode 0:
+`/autorun.img`) sits in disk slot 1. With `configenabled=0` the listed disk
+slots are mounted as soon as WiFi is up; with `1` (default) a program must send
+MOUNT_ALL or MOUNT_IMAGE.
+
+**fujinet-pc** (the firmware built for a PC, `cmake -DFUJINET_TARGET=RS232`)
+speaks the same packets over a serial port (`[Serial] port`) or a TCP socket
+(`[BOIP] enabled=1`, port 1985): `./fujinet -c fnconfig.ini -s SD -u http://0.0.0.0:8000`.
+
+## fnconfig.ini
+
+Read at start from `/fnconfig.ini` on the SD card if present, else flash; saved
+to flash then SD (`fnconfig_on_spifs=1`) or SD only (`0`). On fujinet-pc, the
+`-c` file. Sections match by case-insensitive prefix; numbered sections count
+from 1; yes/no values are true if they start with `1 T t Y y` (`[WiFi]
+enabled`, `multi_ap` and `[Bluetooth] enabled` need exactly `1`).
+
+| Section / key | Default | Meaning on RS-232 |
+|---|---|---|
+| `[General] devicename` | `FujiNet` | network host name |
+| `[General] timezone` | empty (UTC) | POSIX TZ for the clock |
+| `[General] configenabled` | `1` | `0` = mount listed slots at start-up |
+| `[General] altconfigfile` | empty | if set, slots are not auto-mounted |
+| `[General] boot_mode` | `0` | boot image in slot 1: 0 autorun, 1 mount-and-boot, 2 lobby, 3 hisioboot |
+| `[General] printer_enabled` | `1` | `0` = printer ignores everything, no reply |
+| `[General] encrypt_passphrase` | `0` | obfuscate the stored WiFi passphrase |
+| `[WiFi] enabled`, `SSID`, `passphrase`, `multi_ap` | `1`, -, -, `0` | the network; `[WiFiStored1-8]` hold more |
+| `[HostN] type`, `name` | | `SD` or `TNFS`, and the server name |
+| `[MountN] hostslot`, `path`, `mode` | | host slot **from 1**, path, `r`/`w` |
+| `[PrinterN] type`, `port` | `1` | emulation (see the printer); **only `[Printer1]` works** |
+| `[Serial] baud` | `115200` | line speed |
+| `[Serial] port` | empty | fujinet-pc: the serial device |
+| `[Serial] proceed` | `DTR` | fujinet-pc: line carrying RI (`DTR`, `RTS`, `none`); **lost on save** |
+| `[BOIP] enabled`, `host`, `port` | `0`, -, `1985` | carry the bus over TCP |
+| `[Modem] modem_enabled`, `sniffer_enabled` | `1`, `0` | the modem device |
+| `[PhonebookN] number`, `host`, `port` | | modem phonebook |
+| `[Network] sntpserver` | `pool.ntp.org` | time server |
+| `[S3]`, `[GoogleDrive]`, `[OneDrive]` | | cloud credentials for the `N:` protocols |
+
+`[Bluetooth]`, `[Cassette]`, `[CPM]`, `[ENABLE]` are ignored on RS-232;
+`[Tape1]` overwrites the first disk slot (bug) - leave it out. Example for an
+Altair at 9600 baud:
+
+```ini
+[General]
+devicename=ALTAIR-FN
+configenabled=0
+[WiFi]
+SSID=My Network
+passphrase=my password
+[Serial]
+baud=9600
+[Host1]
+type=SD
+name=SD
+[Host2]
+type=TNFS
+name=tnfs.fujinet.online
+[Mount1]
+hostslot=2
+path=/cpm/altair/cpm22.dsk
+mode=r
+```
+
+## The FujiBus packet
+
+One packet from the computer, one back. GET_WIFISTATUS:
+
+{{ex:first}}
+
+**SLIP framing:** `C0`, the packet with `C0` sent as `DB DC` and `DB` as
+`DB DD`, `C0`. Send exactly one END each side (a leading double END loses the
+command). Bytes before the first END go to the modem.
+
+{{ex:esc}}
+
+**Header** (after unescaping):
+
+| Offset | Field | |
+|---|---|---|
+| 0 | device | who it is for; in a reply, who answered |
+| 1 | command | in a reply: `06` ACK or `15` NAK |
+| 2-3 | length | total packet length **including the header**, LE, before escaping |
+| 4 | checksum | see below |
+| 5 | descriptor | first parameter descriptor |
+
+**Checksum:** 8-bit sum of the whole packet with end-around carry, computed
+with byte 4 as zero, not inverted.
+
+```c
+uint16_t chk = 0;
+for (i = 0; i < len; i++) { chk += buf[i]; chk = (chk >> 8) + (chk & 0xFF); }
+```
+
+In Z80: `ADD A,(HL)` then `ADC A,0`.
+
+**Descriptors** (low 3 bits): `0` none, `1`-`4` that many 8-bit params, `5`
+one 16-bit, `6` two 16-bit, `7` one 32-bit. Bit 7 = another descriptor byte
+follows the header (before the values). The firmware reads values, not widths.
+**Send every parameter a command reads** - a missing one crashes the firmware.
+
+{{ex:multi}}
+
+**Payload:** everything after the parameters. Fixed-size structures (256-byte
+paths, the 97-byte SSID block...) must be sent **at full size**, zero-padded.
+
+**Reply:** device = who answered, command `06` ACK (data in the payload) or
+`15` NAK (never data), descriptor `00`.
+
+{{ex:fuji.bad_command}}
+
+## Transactions
+
+- One command at a time; write data rides in the command, read data in the
+  reply.
+- Within a frame the firmware waits 200 ms per byte (500 ms over TCP);
+  send packets without pausing.
+- Before the reply, allow seconds: network OPEN (DNS/TLS), SET_SSID (tens of
+  seconds), MOUNT_HOST and directories on TNFS, MOUNT_IMAGE, COPY_FILE.
+- **No reply at all** for: bad checksum/length, stalled frame, RESET, printer
+  disabled, missing parameter (crash), anything to the modem.
+- An unknown device gets a NAK with device byte `00`:
+
+{{ex:unknown_dev}}
+
+- Reads of state and settings are safe to retry; network READ/WRITE, printer
+  WRITE and the hash/Base64/QR input commands are not.
+- Drain stale input before each command (SET_SSID sends **two** NAKs on a
+  failed join).
+
+**RESEND (where supported).** fujinet-pc branch `rs232-resend` answers command
+`05` to any device by re-sending its last reply byte for byte, without
+re-running the command. Use it only when part of a reply arrived damaged.
+Firmware `670b2ed55` NAKs it:
+
+{{ex:resend.nak}}
+
+## The devices
+
+| Device | Name | |
+|---|---|---|
+| `70` | Fuji | the adapter: WiFi, hosts, slots, directories, app keys, helpers |
+| `31`-`38` | Disk | disk slots 1-8 |
+| `71`-`78` | Network | the eight `N:` units |
+| `45` | Clock | the time, many formats |
+| `40` | Printer | renders to a file on the adapter |
+| `50` | Modem | Hayes-style modem dialling TCP |
+| `5A` | CP/M | defined but **not on the RS-232 bus** |
+
+## The Fuji device (70h)
+
+| Code | Command | Params / payload | Reply |
+|---|---|---|---|
+| `FA` | GET_WIFISTATUS | - | 1: `03` up, `06` down |
+| `EA` | GET_WIFI_ENABLED | - | 1 |
+| `FD` | SCAN_NETWORKS | - | 1: count |
+| `FC` | GET_SCAN_RESULT | p0 index | 34: SSID (33), RSSI (signed dBm) |
+| `FB` | SET_SSID | 97: SSID (33) + password (64) | ACK when joined; two NAKs on failure |
+| `FE` | GET_SSID | - | 97 - **includes the stored password** |
+| `E8` | GET_ADAPTERCONFIG | - | 140: SSID 0, hostname 33, IP 97, gateway 101, netmask 105, DNS 109, MAC 113, BSSID 119, version 125 |
+| `C4` | GET_ADAPTERCONFIG_EXTENDED | - | 240: the 140 + addresses as text at 140, 156, 172, 188, MAC 204, BSSID 222 |
+| `F4` | READ_HOST_SLOTS | - | 256: 8 x 32 names |
+| `F3` | WRITE_HOST_SLOTS | 256 | ACK; all hosts unmounted |
+| `F9` | MOUNT_HOST | p0 host | ACK |
+| `E6` | UNMOUNT_HOST | p0 host | ACK (NAK if never mounted; NAK for SD on fujinet-pc) |
+| `E1` | SET_HOST_PREFIX | p0 host; 256 prefix | ACK |
+| `E0` | GET_HOST_PREFIX | p0 host | 256 (leftover memory after the NUL) |
+| `F7` | OPEN_DIRECTORY | p0 host; 256: path NUL [pattern NUL] | ACK |
+| `F6` | READ_DIR_ENTRY | p0 length, p1 flags (`80` details, `C0`+ block mode) | p0 bytes; `7F 7F` at the end |
+| `F5` | CLOSE_DIRECTORY | - | ACK |
+| `E5` / `E4` | GET / SET_DIRECTORY_POSITION | - / p0 (16-bit) | 2 / ACK |
+| `F2` | READ_DEVICE_SLOTS | - | 304: 8 x (host, mode, name 36) - **names only, no paths** |
+| `F1` | WRITE_DEVICE_SLOTS | 304 | ACK (writing READ's reply back loses the paths) |
+| `E2` | SET_DEVICE_FULLPATH | p0 disk, p1 host, p2 mode (1 R, 2 RW); 256 path | ACK |
+| `DA` | GET_DEVICE_FULLPATH | p0 disk | 256 |
+| `F8` | MOUNT_IMAGE | p0 disk, p1 mode | ACK |
+| `E9` | UNMOUNT_IMAGE | p0 disk | ACK |
+| `D7` | MOUNT_ALL | - | ACK |
+| `E7` | NEW_DISK | 262 | **always NAK** (after truncating the file) |
+| `D9` | CONFIG_BOOT | p0 | ACK |
+| `D6` | SET_BOOT_MODE | p0 mode | ACK |
+| `FF` | RESET | - | none (restarts) |
+| `D8` | COPY_FILE | p0, p1 hosts **from 1**; `src\|dst` NUL | ACK |
+| `DC` | OPEN_APPKEY | 6: creator (16), app, key, mode (0 R, 1 W), 0 | ACK |
+| `DE` | WRITE_APPKEY | up to 64 bytes | ACK |
+| `DD` | READ_APPKEY | - | length (16) + data; 64 zeroes + ACK on failure |
+| `DB` | CLOSE_APPKEY | - | ACK |
+| `D0`/`CF`/`CE`/`CD` | BASE64 encode input/compute/length/output | p0 count (16) + data / - / - / p0 count | ACK / ACK / 4 (counts a NUL) / data |
+| `CC`/`CB`/`CA`/`C9` | BASE64 decode, the same | | |
+| `C8` | HASH_INPUT | p0 count (16) + data | ACK |
+| `C7` / `C3` | HASH_COMPUTE (/NO_CLEAR) | p0: 0 MD5, 1 SHA1, 2 SHA256, 3 SHA512 | ACK |
+| `C6` / `C5` | HASH_LENGTH / OUTPUT | p0 `01` hex, `00` binary | 1 / digest |
+| `C2` | HASH_CLEAR | - | ACK |
+| `BC` | QRCODE_INPUT | p0 count (16) + text | ACK |
+| `BD` | QRCODE_ENCODE | p0 version, p1 ECC (0-3), p2 shorten | ACK (NAK if too small) |
+| `BE` | QRCODE_LENGTH | p0 form: 0 binary, 1 ANSI, 2 bitmap, 3 SVG, 4 ATASCII, 5 PETSCII | 4 |
+| `BF` | QRCODE_OUTPUT | p0 count (16) | data |
+| `D3` | RANDOM_NUMBER | - | 4 |
+| `BB` | GENERATE_GUID | - | 37 |
+| `53` | STATUS | - | 4 zeroes |
+| `00` | DEVICE_READY | - | 512 x `41` |
+
+A first session - status, host slots, mount an image, read a sector:
+
+{{ex:fuji.wifi_status}}
+{{ex:fuji.read_hosts}}
+{{ex:fuji.mount_host}}
+{{ex:fuji.set_fullpath}}
+{{ex:fuji.mount_image}}
+{{ex:disk.read}}
+
+Directory entries; the extended form puts 12 bytes in front (year-1970,
+month, day, hour, minute, second, size 32-bit, flags `01` dir `02` truncated,
+media type):
+
+{{ex:fuji.read_dir}}
+{{ex:fuji.read_dir_ext}}
+{{ex:fuji.read_dir_end}}
+
+Not available on RS-232 (NAK): `F0`, `EB`, `E3`, `DF`, `D5`, `D4`, `D1`, `D2`,
+`C1`, `A0`-`A9`, `90`, `3F`.
+
+## The disk drives (31h-38h)
+
+Extensions: `.IMD` ImageDisk; `.ROM .BIN .INT .ITV .CHF` cartridge ROM (**do
+not mount** on a serial computer: the firmware pushes the ROM to device `FF`
+and waits for replies); anything else a flat image of **512-byte** sectors.
+
+| Code | Command | Params / payload | Reply |
+|---|---|---|---|
+| `52` | READ | p0 sector (32-bit) | 512 (NAK past the end or empty slot) |
+| `57` / `50` | WRITE / PUT | p0 sector; 512 bytes | ACK (NAK if read-only) |
+| `53` | STATUS | **do not use** - it is wired to WRITE | |
+| `21` / `22` | FORMAT / FORMAT_MEDIUM | - | 128: `FF FF` 00... (image untouched) |
+| `4E` / `4F` | PERCOM_READ / WRITE | - / 12 | 12 / ACK |
+
+{{ex:disk.write}}
+
+## The network units (71h-78h)
+
+Devicespec: a URL with optional `N:` prefix, NUL-terminated, up to 255
+characters. Protocols are covered in the Network Protocol Handbook.
+
+| Code | Command | Params / payload | Reply |
+|---|---|---|---|
+| `4F` | OPEN | p0 mode, p1 translation; devicespec | ACK / NAK (STATUS says why) |
+| `43` | CLOSE | - | ACK |
+| `53` | STATUS | - | 4: waiting (16), connected, status |
+| `52` | READ | p0 max (16) | up to p0 bytes; NAK if none |
+| `57` | WRITE | p0 count (16); data | ACK |
+| `FC` | SET_PARSER | p0 0, p1: 1 JSON, 2 HTML, 3 XML | ACK |
+| `50` | PARSE | - | ACK |
+| `51` | QUERY | path | ACK (then STATUS + READ) |
+| `FB` | SET_PARAMETER | p0 0 flags / 1 EOL, p1 value | ACK |
+| `54` | TRANSLATION | p0 0, p1 translation | ACK |
+| `4C` | SET_EOL | EOL bytes | ACK |
+| `5A` | SET_INT_RATE | p0 ms | ACK |
+| `25` / `26` | SEEK / TELL | p0 offset (32) / - | ACK / 4 |
+| `30` / `2C` | GETCWD / CHDIR | - / path | path (no NUL) / ACK |
+| `FD` / `FE` | USERNAME / PASSWORD | NUL-terminated | ACK |
+| `20` | RENAME | p0 mode, p1 0; `spec,new` NUL | ACK |
+| `21` `23` `24` `2A` `2B` | DELETE LOCK UNLOCK MKDIR RMDIR | p0 mode, p1 0; spec NUL | ACK |
+| `41` | ACCEPT | - | ACK |
+| `63` | CLOSE_CLIENT | - | **inverted**: NAK after a disconnect |
+| `4D` | SET_HTTP_MODE | p0 0, p1: 0 body, 1 collect headers, 2 get headers, 3 set headers, 4 POST data | ACK |
+| `72` | GET_REMOTE | - | 256: `addr:port` ended by `9B` (NAK on ESP32) |
+| `44` | SET_DESTINATION | `N:host:port` **and a NUL** | ACK |
+
+Open modes: `04` read/GET, `05` DELETE, `06` directory, `07` directory alt,
+`08` write/PUT, `09` append/DELETE+headers, `0C` read-write/GET+headers, `0D`
+POST, `0E` PUT+headers. Translation: `00` none, `01` CR, `02` LF, `03` CR LF,
+`04` PETSCII. **End of data:** TCP - nothing waiting and connected `00`; HTTP -
+nothing waiting and status `88` (connected is `00` throughout). UDP on
+fujinet-pc: STATUS never counts datagrams; READ anyway.
+
+An HTTP GET:
+
+{{ex:net.open_get}}
+{{ex:net.status_get}}
+{{ex:net.read}}
+{{ex:net.status_eof}}
+
+JSON (after OPEN): SET_PARSER, PARSE, QUERY, STATUS, READ:
+
+{{ex:net.query}}
+{{ex:net.status_q}}
+{{ex:net.read_q}}
+
+Status codes: 1 OK, 131 write-only, 132 invalid command, 135 read-only, 136
+EOF, 138 timeout, 144 general, 146 not implemented, 151 exists, 162 no space,
+165 bad devicespec, 166 bad position, 167 access denied, 170 not found, 200
+refused, 201 unreachable, 202 socket timeout, 203 network down, 204 reset, 205
+in progress, 206 address in use, 207 not connected, 208 server not running,
+209 no connection waiting, 210 service unavailable, 211 aborted, 212 bad
+login, 213 JSON parse, 214 client error, 215 server error, 255 no buffers.
+
+## The clock (45h)
+
+Every command takes p0 (`01` = alternate zone where honoured) - always send it.
+
+| Code | Command | Reply |
+|---|---|---|
+| `93` | GETTIME | 6: day, month, year-2000, h, m, s |
+| `9A` | GETTZTIME | 6, alternate zone |
+| `54` | GET_SIMPLE (named SETTZ_ALT2; a read on RS-232) | 7: century, year, month, day, h, m, s |
+| `4D` | GET_SIMPLE_HUNDREDTHS | 8 |
+| `50` | GET_PRODOS | 4 |
+| `53` | GET_SOS | `YYYYMMDD0HHMMSS000` NUL |
+| `49` | GET_ISO_LOCAL | `YYYY-MM-DDTHH:MM:SS+HHMM` NUL |
+| `5A` | GET_ISO_UTC | the same, `+0000` |
+| `47` / `4C` | GET_GENERAL / GETTZ_LEN | zone NUL / length+1 |
+| `99` | SETTZ (payload zone NUL) | ACK - alternate zone, not saved |
+| `74` | SETTZ_ALT (payload zone NUL) | ACK - system zone, saved |
+
+{{ex:clock.iso_local}}
+
+## The printer (40h)
+
+WRITE/PUT (`57`/`50`): up to **255** bytes (longer is cut; over 320 overruns
+the buffer). STATUS (`53`, p0 required): 4 bytes. Types (`[Printer1] type`):
+0 raw file, 1 text file (default), 2 ASCII, 3-11 Atari models, 12 Epson 80,
+13 Epson PrintShop, 14 Okimate 10, 15 PNG, 16 HTML, 17 HTML ATASCII.
+
+{{ex:printer.write}}
+
+## The modem (50h)
+
+Raw text outside a frame (or a WRITE `57` payload) goes to the AT parser; the
+modem's output, including its replies to FujiBus commands, is **raw and
+unframed**. Immediate AT responses (`OK`, `ATIP`) are suppressed on RS-232;
+`CONNECT` and `NO CARRIER` appear. `ATDThost:port` dials (port 23 default),
+`ATH`/`+++ATH` hangs up, `ATPORTn` listens, `ATPBn=host:port` phonebook.
+**`ATCPM` crashes the adapter.** STATUS (`53`, p0) returns 2 raw bytes.
+
+## CP/M (5Ah)
+
+Compiled in, never added to the bus: device `5A` answers like a missing
+device. Run CP/M on the computer from a disk slot instead.
+
+## The Z80 programs
+
+Three include files in `listings/common/`: **ALTAIR.INC** (the only
+hardware code: 88-2SIO port A `10h/11h` terminal, port B `12h/13h` FujiNet,
+6850 reset `03h` then `15h`, RDRF bit 0, TDRE bit 1; routines between
+`PLATFORM BEGIN`/`END` markers), **FUJIBUS.INC** (FBNEW, FBBYTE, FBWORD,
+FBMEM, FBSTR, FBCALL with drain, retry and optional RESEND; FBERR 1-6) and
+**CONIO.INC**. All programs are `ORG 0100h`, no BDOS calls; assemble with
+`z88dk-z80asm -b` (`-DCPM=1` to exit to CP/M, `-DUSE_RESEND=1` for RESEND).
+
+- **HELLO** - WiFi status and host slots.
+- **CONFIG** (`listings/config/fncfg.asm`) - host slots (H), browse and mount
+  (B), eject (E), WiFi (W), list (L), quit (Q); plain scrolling text.
+- **NETCAT** (`listings/netcat/netcat.asm`) - OPEN mode 12, then WRITE keys,
+  STATUS + READ to print; Ctrl-] hangs up.
+- **5 CARD STUD** (`listings/5cs/stud.asm`) - HTTPS GETs to
+  `5card.carr-designs.com` with `&bin=1` (fixed binary state: last result 81,
+  round, pot, active player, move time, viewing, move count, 5 moves x 13,
+  player count, players x 33); full table per round, one line per move,
+  Teletype-friendly.
+
+To port to other hardware, rewrite only the PLATFORM routines (examples for
+an 8251 USART, a Z80 SIO and CP/M BIOS console calls are in the PDF).
+
+## Running the examples in SIMH
+
+AltairZ80 with `set m2sio0 enabled`, `set m2sio1 enabled`, `set m2sio0
+noconsole`, **`set m2sio0 dtr` / `set m2sio1 dtr`** (connections wait for
+DTR), **`deposit clock 2000`** (2 MHz, so the software timeouts hold),
+`attach m2sio0 <port>;notelnet`, `attach m2sio1 <port>;notelnet`, then bridge
+port B to fujinet-pc's BoIP port with `socat`. `sim/run.sh` and `sim/term.py`
+in the manuals repo do all of this.
+
+## Firmware behaviour and errata
+
+| Command | Behaviour | Source |
+|---|---|---|
+| any | missing parameter: uncaught exception (crash) | `lib/bus/rs232/FujiBusPacket.h:76` |
+| any | bad checksum/length/stalled frame: no reply | `lib/bus/rs232/rs232.cpp:114` |
+| any | double opening END: command lost to the modem | `lib/bus/rs232/rs232.cpp:107` |
+| any | short fixed payload accepted, rest uninitialised | `lib/bus/rs232/rs232.cpp:78` |
+| unknown device | NAK with device byte `00` | |
+| Fuji `FF` RESET | restarts without ACK | `lib/device/fujiDevice/fujiDevice.cpp:55` |
+| Fuji `FE` GET_SSID | returns the password | `lib/device/fujiDevice/fujiDevice.cpp:438` |
+| Fuji `FB` SET_SSID | failed join sends two NAKs | `lib/device/fujiDevice/fujiDevice.cpp:555` |
+| Fuji `F2`/`F1` | slot names only; write-back loses paths | `lib/device/fujiDevice/fujiDevice.cpp:1575`, `:1613` |
+| Fuji `E7` NEW_DISK | always NAK, after truncating the file | `lib/media/rs232/diskTypeImg.cpp:167` |
+| Fuji `E0` GET_HOST_PREFIX | leftover memory | `lib/device/fujiDevice/fujiDevice.cpp:1393` |
+| Fuji `E6` UNMOUNT_HOST | NAK for SD on fujinet-pc | `lib/device/fujiDevice/fujiDevice.cpp:1563` |
+| Fuji `53` STATUS | always zeroes | `lib/device/rs232/rs232Fuji.cpp:61` |
+| Fuji `DD` READ_APPKEY | ACK + 64 zeroes on failure | `lib/device/fujiDevice/AppKeyMixin.cpp:83` |
+| Fuji `CE` | Base64 length counts a NUL | `lib/device/fujiDevice/Base64Mixin.cpp:45` |
+| Disk `53` STATUS | wired to WRITE | `lib/device/rs232/disk.cpp:386` |
+| Disk ROM mount | pushes to device `FF`, waits | `lib/device/rs232/disk.cpp:313` |
+| Net `53` STATUS | HTTP connected always 0; UDP count 0 on fujinet-pc | `lib/network-protocol/UDP.cpp:166` |
+| Net `63` CLOSE_CLIENT | answer inverted | `lib/network-protocol/TCP.cpp:337` |
+| Net `72` GET_REMOTE | ends with `9B`, leftover memory | `lib/network-protocol/UDP.cpp:230` |
+| Net `44` SET_DESTINATION | needs prefix and NUL | `lib/network-protocol/UDP.cpp:199` |
+| Net `26` TELL | leftover memory when closed | `lib/device/NDevice/NDevice.cpp:697` |
+| Clock `54` | a read, not SETTZ | `lib/device/fujiClock/fujiClock.cpp:385` |
+| Clock `99`/`74` | ACK before validating | `lib/device/fujiClock/fujiClock.cpp:319` |
+| Printer `57` | >255 cut, >320 overruns | `lib/device/rs232/printer.cpp:46` |
+| Modem | unframed; AT replies suppressed | `lib/bus/rs232/rs232.cpp:376`, `lib/device/rs232/modem.cpp:105` |
+| Modem `ATCPM` | crash | `lib/device/rs232/modem.cpp:1254` |
+| Modem `AT+TERM` | ANSI/DUMB swapped | `lib/device/rs232/modem.cpp:1023` |
+| CP/M `5A` | not on the bus | `src/main.cpp:364` |
+| `[PrinterN]` | all load into slot 0 | `lib/config/fnc_util.cpp:47` |
+| `[Tape1]` | loads into the disk slots | `lib/config/fnc_mounts.cpp:156` |
+| `[Serial] proceed` | not saved on RS-232 | `lib/config/fnc_save.cpp:218` |
+| RTS/CTS | requested, not routed | `lib/hardware/ESP32UARTChannel.cpp:57` |

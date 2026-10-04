@@ -1,0 +1,180 @@
+
+FUJINET CONFIG FOR RS-232
+
+NETWORK  Dummy Cafe  IP 127.0.0.1
+FIRMWARE v1.6-670b2ed55
+
+HOST SLOTS
+ 1  SD
+ 2  fujinet.online
+ 3  apps.irata.online
+ 4  fujinet.diller.org
+ 5  FujiNet.Atari8bit.net
+ 6  atarionline.eu
+ 7  fujinet.pl
+ 8  ec.tnfs.io
+
+DISK SLOTS
+ 1  (EMPTY)
+ 2  (EMPTY)
+ 3  (EMPTY)
+ 4  (EMPTY)
+ 5  (EMPTY)
+ 6  (EMPTY)
+ 7  (EMPTY)
+ 8  (EMPTY)
+
+H)OST B)ROWSE E)JECT W)IFI L)IST Q)UIT? B
+HOST SLOT (1-8)? 1
+
+HOST 1: /
+  1  cpm/
+  2  FujiNet/
+  3  games/
+  4  test/
+  5  --- FujiNet SD Card ---
+(END)
+NUMBER, N)EXT, U)P, X)IT? 1
+
+HOST 1: /cpm/
+  1  cpm22.dsk
+  2  mbasic.dsk
+  3  turbo3.dsk
+  4  wordstar.dsk
+  5  zork1.dsk
+(END)
+NUMBER, N)EXT, U)P, X)IT? 1
+DISK SLOT (1-8)? 1
+R)EAD-ONLY OR W)RITE? R
+MOUNTED.
+
+NETWORK  Dummy Cafe  IP 127.0.0.1
+FIRMWARE v1.6-670b2ed55
+
+HOST SLOTS
+ 1  SD
+ 2  fujinet.online
+ 3  apps.irata.online
+ 4  fujinet.diller.org
+ 5  FujiNet.Atari8bit.net
+ 6  atarionline.eu
+ 7  fujinet.pl
+ 8  ec.tnfs.io
+
+DISK SLOTS
+ 1  R  HOST 1  cpm22.dsk
+ 2  (EMPTY)
+ 3  (EMPTY)
+ 4  (EMPTY)
+ 5  (EMPTY)
+ 6  (EMPTY)
+ 7  (EMPTY)
+ 8  (EMPTY)
+
+H)OST B)ROWSE E)JECT W)IFI L)IST Q)UIT? B
+HOST SLOT (1-8)? 8
+
+HOST 8: /
+  1  apple2/
+  2  atari/
+  3  c64/
+  4  coco/
+  5  intv/
+  6  msdos/
+  7  utils/
+  8  == New tnfs ==
+(END)
+NUMBER, N)EXT, U)P, X)IT? 6
+
+HOST 8: /msdos/
+  1  fbs-old.img
+  2  fbs.img
+  3  fcs.img
+  4  fujirkle.img
+  5  fujitzee - Copy.img
+  6  fujitzee.img
+  7  lobby.img
+  8  texas.img
+(END)
+NUMBER, N)EXT, U)P, X)IT? 7
+DISK SLOT (1-8)? 2
+R)EAD-ONLY OR W)RITE? R
+MOUNTED.
+
+NETWORK  Dummy Cafe  IP 127.0.0.1
+FIRMWARE v1.6-670b2ed55
+
+HOST SLOTS
+ 1  SD
+ 2  fujinet.online
+ 3  apps.irata.online
+ 4  fujinet.diller.org
+ 5  FujiNet.Atari8bit.net
+ 6  atarionline.eu
+ 7  fujinet.pl
+ 8  ec.tnfs.io
+
+DISK SLOTS
+ 1  R  HOST 1  cpm22.dsk
+ 2  R  HOST 8  lobby.img
+ 3  (EMPTY)
+ 4  (EMPTY)
+ 5  (EMPTY)
+ 6  (EMPTY)
+ 7  (EMPTY)
+ 8  (EMPTY)
+
+H)OST B)ROWSE E)JECT W)IFI L)IST Q)UIT? H
+HOST SLOT (1-8)? 6
+HOST NAME (RETURN TO CLEAR)? tnfs.fujinet.online
+
+NETWORK  Dummy Cafe  IP 127.0.0.1
+FIRMWARE v1.6-670b2ed55
+
+HOST SLOTS
+ 1  SD
+ 2  fujinet.online
+ 3  apps.irata.online
+ 4  fujinet.diller.org
+ 5  FujiNet.Atari8bit.net
+ 6  tnfs.fujinet.online
+ 7  fujinet.pl
+ 8  ec.tnfs.io
+
+DISK SLOTS
+ 1  R  HOST 1  cpm22.dsk
+ 2  R  HOST 8  lobby.img
+ 3  (EMPTY)
+ 4  (EMPTY)
+ 5  (EMPTY)
+ 6  (EMPTY)
+ 7  (EMPTY)
+ 8  (EMPTY)
+
+H)OST B)ROWSE E)JECT W)IFI L)IST Q)UIT? E
+DISK SLOT (1-8)? 2
+
+NETWORK  Dummy Cafe  IP 127.0.0.1
+FIRMWARE v1.6-670b2ed55
+
+HOST SLOTS
+ 1  SD
+ 2  fujinet.online
+ 3  apps.irata.online
+ 4  fujinet.diller.org
+ 5  FujiNet.Atari8bit.net
+ 6  tnfs.fujinet.online
+ 7  fujinet.pl
+ 8  ec.tnfs.io
+
+DISK SLOTS
+ 1  R  HOST 1  cpm22.dsk
+ 2  (EMPTY)
+ 3  (EMPTY)
+ 4  (EMPTY)
+ 5  (EMPTY)
+ 6  (EMPTY)
+ 7  (EMPTY)
+ 8  (EMPTY)
+
+H)OST B)ROWSE E)JECT W)IFI L)IST Q)UIT? Q
