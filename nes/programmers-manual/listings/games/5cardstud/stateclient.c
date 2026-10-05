@@ -1,0 +1,60 @@
+#ifdef _CMOC_VERSION_
+#include <cmoc.h>
+#define true 1
+#define false 0
+#else
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#endif /* CMOC_VERSION */
+#define POKE(addr,val)     (*(unsigned char*) (addr) = ((unsigned char)(val)))
+#define POKEW(addr,val)    (*(unsigned*) (addr) = ((unsigned)(val)))
+#define PEEK(addr)         (*(unsigned char*) (addr))
+#define PEEKW(addr)        (*(unsigned*) (addr))
+#include "stateclient.h"
+#include "misc.h"
+#include "platform-specific/network.h"
+#ifndef _CMOC_VERSION_
+#include <conio.h>
+#endif
+
+char urlBuffer[URL_BUFFER_LEN];
+
+unsigned char apiCall(const char *path) {
+#ifndef __CBM__
+  if (serverEndpoint[0] != 'N') {
+    strcpy(urlBuffer,"N:");
+  } else {
+    strcpy(urlBuffer,"");
+  }
+#else
+  memset(urlBuffer,0,sizeof(urlBuffer));
+#endif /* ! __CBM__ */
+
+  strcat(urlBuffer, serverEndpoint);
+  strcat(urlBuffer, path);
+  strcat(urlBuffer, query);
+
+  // Set Binary mode
+  strcat(urlBuffer, query[0] ? "&bin=1" QUERY_SUFFIX : "?bin=1" QUERY_SUFFIX);
+  //printf(urlBuffer);
+  //printf("\r\n");
+  // sizeof(Game), not sizeof(clientState.game): on the ColecoVision clientState
+  // is a macro for a cast-and-dereference of the cartridge reply window, and
+  // sccz80 will not take sizeof() of that expression.
+  return getResponse(urlBuffer, &clientState.firstByte, sizeof(Game));
+
+}
+
+unsigned char getStateFromServer()
+{
+  if (requestedMove) {
+    strcpy(tempBuffer, "move/");
+    strcat(tempBuffer, requestedMove);
+    requestedMove=NULL;
+  } else {
+    strcpy(tempBuffer, "state");
+  }
+
+  return apiCall(tempBuffer);
+}
