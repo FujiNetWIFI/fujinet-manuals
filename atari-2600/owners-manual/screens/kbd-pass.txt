@@ -1,0 +1,21 @@
+PASSWORD
+ATARI2600
+LEN 09/63
+
+ !"#$%&'()*+
+^
+,-./01234567
+
+89:;<=>?@ABC
+
+DEFGHIJKLMNO
+
+PQRSTUVWXYZ[
+
+\]^_`abcdefg
+
+hijklmnopqrs
+
+tuvwxyz{|}~<
+
+FIRE SEL=OK

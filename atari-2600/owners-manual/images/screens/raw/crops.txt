@@ -1,0 +1,14 @@
+# name     x0  y0  x1   y1    -- close-ups of text-column screens (raw pixels)
+lobby      40  14  136  206
+th-0001    40  14  136  206
+th-0016    40  14  136  206
+bs-tables  40  14  136  206
+fz-wait    40  14  136  206
+fz-over    40  14  136  206
+5cs-tables 40  14  136  206
+5cs-table  40  14  136  206
+5cs-purses 40  14  136  206
+5cs-menu   40  14  136  206
+5cs-banner 40  14  136  206
+5cs-layout 40  14  136  206
+fz-card    40  14  136  206

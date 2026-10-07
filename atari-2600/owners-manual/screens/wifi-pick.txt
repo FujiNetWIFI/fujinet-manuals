@@ -1,0 +1,21 @@
+PICK NET
+
+ CAFE LATTE
+>HOMEBASE
+ HOMEBASE-5G
+ NETGEAR42
+ OTHER...
+
+
+
+
+
+
+
+
+
+
+
+
+
+SEL=SKIP
