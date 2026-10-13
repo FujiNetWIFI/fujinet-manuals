@@ -1,0 +1,10 @@
+{
+ "printer.write": {"reply": "ACK", "len": 0, "tag": "OUTPUT CHECKED ON HOST", "note": "\"Printed on the H89 through FujiNet.\\r\\n\" appears in fujinet-pc's SD directory as file paper (build/runs/<run>/SD/paper; copied to build/runs/<run>/paper.txt). Printer type 1 (FILE_TRIM) writes the bytes unchanged up to the first 9BH. No fujinet-lib call: C uses fuji_bus_call"},
+ "printer.put": {"reply": "ACK", "len": 0, "tag": "OUTPUT CHECKED ON HOST", "trap": "alias of PRINTER_WRITE (printer.cpp:234-239)"},
+ "printer.status": {"reply": "ACK", "len": 4, "note": "00 xx 05 00", "trap": "byte 1 is _lastaux1, never assigned (printer.h:27; printer.cpp:96)"},
+ "printer.status.nofield": {"reply": "NAK", "tag": "NAK", "trap": "the field must be present (printer.cpp:241-244); fujinet-lib's DEVCALL_RV would be NAKed"},
+ "printer.write.empty": {"reply": "NAK", "tag": "NAK", "note": "no payload (printer.cpp:39-43)"},
+ "printer.write.256": {"reply": "ACK", "len": 0, "tag": "OUTPUT CHECKED ON HOST", "trap": "length passed as uint8_t: 256 bytes print nothing, still ACK (printer.cpp:48; printer_emulator.h:68)"},
+ "printer.write.300": {"reply": "ACK", "len": 0, "tag": "OUTPUT CHECKED ON HOST", "trap": "300 mod 256 = 44: only the first 44 bytes reach the paper (printer.cpp:48)"},
+ "printer.write.overrun": {"sent": false, "reply": "none", "note": "a WRITE of more than 320 bytes memcpy()s past the emulator's uint8_t buffer[320] (printer.cpp:46; printer_emulator.h:41, 72) and corrupts fujinet-pc: not sent"}
+}

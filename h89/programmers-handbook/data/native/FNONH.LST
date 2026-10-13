@@ -1,0 +1,73 @@
+                                                  	HEATH ASM #104.06.00
+                                                  	12-Oct-80  Page    1
+
+                        00001   *	FNONH.ASM - ENABLE THE FUJINET CARD IN AN H89 (82C55 AT 320Q)
+                        00002   *
+                        00003   *	THE HDOS TWIN OF FNON.ASM, FOR HEATH'S ASM.  SETS THE 82C55
+                        00004   *	TO MODE 2, BOOTS THE ESP32 FROM FLASH AND TURNS THE 74LVC245
+                        00005   *	TOWARD THE H89.  LEAVES A CARD THAT IS ALREADY ON ALONE.
+                        00006   *
+                        00007   *	>SY1:ASM SY1:FNONH,SY1:FNONH=SY1:FNONH
+                        00008   *	>SY1:FNONH
+                        00009   *
+                        00010   *	ASM.ABS, HOSDEF.ACM AND ASCII.ACM (FROM THE SOFTWARE TOOLS
+                        00011   *	DISK) ARE ON SY1: WITH THIS FILE.
+                        00012   *
+                        00013   *	Copyright (C) 2026 Thomas Cherryhomes
+                        00014   *	SPDX-License-Identifier: GPL-3.0-or-later
+                        00015   *
+   042.200              00016   	XTEXT	HOSDEF		HDOS SYSTEM CALLS: .PRINT, .EXIT
+   000.207              00082   	XTEXT	ASCII		ENL: NEW LINE + 200Q, ENDS A LINE
+                        00111   *
+   000.320              00112   PORTA	EQU	320Q		D0H: 82C55 PORT A, THE BYTE PIPE
+   000.322              00113   PORTC	EQU	322Q		PC0 DIR, PC1 /OE (ESP32 IO0), PC2 EN
+   000.323              00114   PCTRL	EQU	323Q		CONTROL WORD, PORT C BIT SET/RESET
+                        00115   *
+   042.200              00116   	ORG	42200A		WHERE HDOS LOADS A PROGRAM
+                        00117   *
+   042.200  333 322     00118   START	IN	PORTC
+   042.202  346 004     00119   	ANI	004Q		EN HIGH: CARD ALREADY RUNNING
+   042.204  302 263 042 00120   	JNZ	ISON
+   042.207  076 300     00121   	MVI	A,300Q		PORT A MODE 2, PC0-PC2 OUTPUTS
+   042.211  323 323     00122   	OUT	PCTRL		(CLEARS PORT C, SO EN GOES LOW)
+   042.213  076 006     00123   	MVI	A,006Q		EN=1, IO0=1
+   042.215  323 322     00124   	OUT	PORTC
+   042.217  076 002     00125   	MVI	A,002Q		EN=0 WITH IO0 ALREADY HIGH
+   042.221  323 322     00126   	OUT	PORTC
+   042.223  001 144 000 00127   	LXI	B,100		HOLD RESET ABOUT 1 MS
+   042.226  315 273 042 00128   	CALL	WAIT
+   042.231  076 006     00129   	MVI	A,006Q		EN=1: IO0 HIGH = BOOT FROM FLASH
+   042.233  323 322     00130   	OUT	PORTC
+   042.235  001 150 102 00131   	LXI	B,17000		KEEP IO0 HIGH WHILE IT STARTS, ~200 MS
+   042.240  315 273 042 00132   	CALL	WAIT
+   042.243  333 320     00133   	IN	PORTA		DROP ANY BYTE LATCHED DURING RESET
+   042.245  076 002     00134   	MVI	A,002Q		PC1=0: ENABLE THE 245
+   042.247  323 323     00135   	OUT	PCTRL
+   042.251  076 000     00136   	MVI	A,000Q		PC0=0: 245 DRIVES TOWARD THE H89
+   042.253  323 323     00137   	OUT	PCTRL
+   042.255  041 302 042 00138   	LXI	H,MSGON
+   042.260  303 266 042 00139   	JMP	DONE
+   042.263  041 322 042 00140   ISON	LXI	H,MSGRUN
+   042.266  377 003     00141   DONE	SCALL	.PRINT		PRINT TO THE BYTE WITH BIT 7 SET
+   042.270  257         00142   	XRA	A
+   042.271  377 000     00143   	SCALL	.EXIT		BACK TO HDOS
+                        00144   *
+   042.273  013         00145   WAIT	DCX	B		ABOUT 12 US A PASS AT 2 MHZ
+   042.274  170         00146   	MOV	A,B
+   042.275  261         00147   	ORA	C
+   042.276  302 273 042 00148   	JNZ	WAIT
+   042.301  311         00149   	RET
+                        00150   *
+                                                  	HEATH ASM #104.06.00
+                                                  	12-Oct-80  Page    2
+
+   042.302  106 125 112 00151   MSGON	DB	'FUJINET ENABLED',ENL
+   042.322  106 125 112 00152   MSGRUN	DB	'FUJINET ALREADY ON',ENL
+                        00153   *
+   042.345  000         00154   	END	START
+
+
+00154 Statements Assembled
+40215 Bytes Free
+ No Errors Detected
+

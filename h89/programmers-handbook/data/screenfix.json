@@ -1,0 +1,212 @@
+{
+ "battleship-1": {
+  "run": "game-bs-hdos-2-tables",
+  "replaced": []
+ },
+ "battleship-2": {
+  "run": "game-bs-hdos-2-lobby",
+  "replaced": []
+ },
+ "battleship-3": {
+  "run": "game-bs-hdos-3-placed",
+  "replaced": []
+ },
+ "battleship-4": {
+  "run": "game-bs-hdos-3",
+  "replaced": []
+ },
+ "fnhello-cpm": {
+  "run": "fnhello-asm-cpm",
+  "replaced": [
+   [
+    "127.0.0.1",
+    "192.168.1.89"
+   ],
+   [
+    "Dummy Cafe",
+    "Workshop"
+   ],
+   [
+    "TMA-3",
+    "FujiNet"
+   ]
+  ]
+ },
+ "fnhello-hdos": {
+  "run": "fnhello-asm-hdos",
+  "replaced": [
+   [
+    "127.0.0.1",
+    "192.168.1.89"
+   ],
+   [
+    "Dummy Cafe",
+    "Workshop"
+   ],
+   [
+    "TMA-3",
+    "FujiNet"
+   ]
+  ]
+ },
+ "fujitzee-1": {
+  "run": "game-fj-hdos-1",
+  "replaced": []
+ },
+ "fujitzee-2": {
+  "run": "game-fj-hdos-2-lobby",
+  "replaced": []
+ },
+ "fujitzee-3": {
+  "run": "game-fj-hdos-4-h2",
+  "replaced": []
+ },
+ "fujitzee-4": {
+  "run": "game-fj-hdos-3",
+  "replaced": []
+ },
+ "hello-cpm": {
+  "run": "hello-c-cpm",
+  "replaced": [
+   [
+    "127.0.0.1",
+    "192.168.1.89"
+   ],
+   [
+    "Dummy Cafe",
+    "Workshop"
+   ],
+   [
+    "TMA-3",
+    "FujiNet"
+   ]
+  ]
+ },
+ "hello-hdos": {
+  "run": "hello-c-hdos",
+  "replaced": [
+   [
+    "127.0.0.1",
+    "192.168.1.89"
+   ],
+   [
+    "DUMMY CAFE",
+    "WORKSHOP"
+   ],
+   [
+    "TMA-3",
+    "FUJINET"
+   ]
+  ]
+ },
+ "iss-asm-hdos": {
+  "run": "issmap-asm-hdos",
+  "replaced": []
+ },
+ "isspeople-asm-hdos": {
+  "run": "isspeople-asm-hdos",
+  "replaced": []
+ },
+ "memprobe-cpm": {
+  "run": "memprobe-c-cpm",
+  "replaced": []
+ },
+ "memprobe-hdos": {
+  "run": "memprobe-c-hdos",
+  "replaced": []
+ },
+ "native-fnon-asm": {
+  "run": "native-fnon-asm",
+  "replaced": []
+ },
+ "native-fnon-run": {
+  "run": "native-fnon-run",
+  "replaced": []
+ },
+ "native-fnonh-asm": {
+  "run": "native-fnonh-asm",
+  "replaced": []
+ },
+ "native-fnonh-run": {
+  "run": "native-fnonh-run",
+  "replaced": []
+ },
+ "native-fnver-asm": {
+  "run": "native-fnver-asm",
+  "replaced": []
+ },
+ "native-fnver-run": {
+  "run": "native-fnver-run",
+  "replaced": [
+   [
+    "Dummy Cafe",
+    "Workshop"
+   ]
+  ]
+ },
+ "native-fnverh-asm": {
+  "run": "native-fnverh-asm",
+  "replaced": []
+ },
+ "native-fnverh-run": {
+  "run": "native-fnverh-run",
+  "replaced": [
+   [
+    "DUMMY CAFE",
+    "WORKSHOP"
+   ]
+  ]
+ },
+ "netcat-cpm": {
+  "run": "netcat-c-cpm",
+  "replaced": [
+   [
+    "127.0.0.1",
+    "192.168.1.10"
+   ]
+  ]
+ },
+ "netcat-hdos": {
+  "run": "netcat-asm-hdos",
+  "replaced": [
+   [
+    "127.0.0.1",
+    "192.168.1.10"
+   ]
+  ]
+ },
+ "nget-hdos": {
+  "run": "nget-asm-hdos",
+  "replaced": [
+   [
+    "127.0.0.1",
+    "192.168.1.10"
+   ]
+  ]
+ },
+ "nput-cpm": {
+  "run": "nput-asm-cpm",
+  "replaced": [
+   [
+    "127.0.0.1",
+    "192.168.1.10"
+   ]
+  ]
+ },
+ "texas-1": {
+  "run": "game-texas-hdos-1",
+  "replaced": []
+ },
+ "texas-2": {
+  "run": "game-texas-hdos-2",
+  "replaced": []
+ },
+ "texas-3": {
+  "run": "game-texas-hdos-3",
+  "replaced": []
+ },
+ "texas-4": {
+  "run": "game-texas-hdos-5-s22",
+  "replaced": []
+ }
+}

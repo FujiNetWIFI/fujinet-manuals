@@ -1,0 +1,873 @@
+{
+ "devices": [
+  {
+   "name": "The FujiNet device",
+   "ids": "70H",
+   "rows": [
+    {
+     "equ": "FUJI_BASE64_DECODE_COMPUTE",
+     "hex": "CBH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_BASE64_DECODE_INPUT",
+     "hex": "CCH",
+     "fields": "2",
+     "payload": "len",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_BASE64_DECODE_LENGTH",
+     "hex": "CAH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "FUJI_BASE64_DECODE_OUTPUT",
+     "hex": "C9H",
+     "fields": "2",
+     "payload": "--",
+     "reply": "len"
+    },
+    {
+     "equ": "FUJI_BASE64_ENCODE_COMPUTE",
+     "hex": "CFH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_BASE64_ENCODE_INPUT",
+     "hex": "D0H",
+     "fields": "2",
+     "payload": "len",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_BASE64_ENCODE_LENGTH",
+     "hex": "CEH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "FUJI_BASE64_ENCODE_OUTPUT",
+     "hex": "CDH",
+     "fields": "2",
+     "payload": "--",
+     "reply": "len"
+    },
+    {
+     "equ": "FUJI_CLOSE_APPKEY",
+     "hex": "DBH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_CLOSE_DIRECTORY",
+     "hex": "F5H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_CONFIG_BOOT",
+     "hex": "D9H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_COPY_FILE",
+     "hex": "D8H",
+     "fields": "1,1",
+     "payload": "src|dst",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_DEVICE_READY",
+     "hex": "00H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "512"
+    },
+    {
+     "equ": "FUJI_GENERATE_GUID",
+     "hex": "BBH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "37"
+    },
+    {
+     "equ": "FUJI_GET_ADAPTERCONFIG",
+     "hex": "E8H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "140"
+    },
+    {
+     "equ": "FUJI_GET_ADAPTERCONFIG_EXTENDED",
+     "hex": "C4H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "240"
+    },
+    {
+     "equ": "FUJI_GET_DEVICE_FULLPATH",
+     "hex": "DAH",
+     "fields": "1",
+     "payload": "--",
+     "reply": "256"
+    },
+    {
+     "equ": "FUJI_GET_DIRECTORY_POSITION",
+     "hex": "E5H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "2"
+    },
+    {
+     "equ": "FUJI_GET_HOST_PREFIX",
+     "hex": "E0H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "256"
+    },
+    {
+     "equ": "FUJI_GET_SCAN_RESULT",
+     "hex": "FCH",
+     "fields": "1",
+     "payload": "--",
+     "reply": "34"
+    },
+    {
+     "equ": "FUJI_GET_SSID",
+     "hex": "FEH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "97"
+    },
+    {
+     "equ": "FUJI_GET_WIFISTATUS",
+     "hex": "FAH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "1"
+    },
+    {
+     "equ": "FUJI_GET_WIFI_ENABLED",
+     "hex": "EAH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "1"
+    },
+    {
+     "equ": "FUJI_HASH_CLEAR",
+     "hex": "C2H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_HASH_COMPUTE",
+     "hex": "C7H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_HASH_COMPUTE_NO_CLEAR",
+     "hex": "C3H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_HASH_INPUT",
+     "hex": "C8H",
+     "fields": "2",
+     "payload": "len",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_HASH_LENGTH",
+     "hex": "C6H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "1"
+    },
+    {
+     "equ": "FUJI_HASH_OUTPUT",
+     "hex": "C5H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "length"
+    },
+    {
+     "equ": "FUJI_MOUNT_ALL",
+     "hex": "D7H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_MOUNT_HOST",
+     "hex": "F9H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_MOUNT_IMAGE",
+     "hex": "F8H",
+     "fields": "1,1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_NEW_DISK",
+     "hex": "E7H",
+     "fields": "--",
+     "payload": "262",
+     "reply": "NAK"
+    },
+    {
+     "equ": "FUJI_OPEN_APPKEY",
+     "hex": "DCH",
+     "fields": "--",
+     "payload": "6",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_OPEN_DIRECTORY",
+     "hex": "F7H",
+     "fields": "1",
+     "payload": "up to 256",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_QRCODE_ENCODE",
+     "hex": "BDH",
+     "fields": "1,1,1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_QRCODE_INPUT",
+     "hex": "BCH",
+     "fields": "2",
+     "payload": "len",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_QRCODE_LENGTH",
+     "hex": "BEH",
+     "fields": "1",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "FUJI_QRCODE_OUTPUT",
+     "hex": "BFH",
+     "fields": "2",
+     "payload": "--",
+     "reply": "len"
+    },
+    {
+     "equ": "FUJI_RANDOM_NUMBER",
+     "hex": "D3H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "FUJI_READ_APPKEY",
+     "hex": "DDH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "2+n"
+    },
+    {
+     "equ": "FUJI_READ_DEVICE_SLOTS",
+     "hex": "F2H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "304"
+    },
+    {
+     "equ": "FUJI_READ_DIR_ENTRY",
+     "hex": "F6H",
+     "fields": "1,1",
+     "payload": "--",
+     "reply": "field 1"
+    },
+    {
+     "equ": "FUJI_READ_HOST_SLOTS",
+     "hex": "F4H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "256"
+    },
+    {
+     "equ": "FUJI_RESET",
+     "hex": "FFH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "none"
+    },
+    {
+     "equ": "FUJI_SCAN_NETWORKS",
+     "hex": "FDH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "1"
+    },
+    {
+     "equ": "FUJI_SET_BOOT_MODE",
+     "hex": "D6H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_SET_DEVICE_FULLPATH",
+     "hex": "E2H",
+     "fields": "1,1,1",
+     "payload": "up to 256",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_SET_DIRECTORY_POSITION",
+     "hex": "E4H",
+     "fields": "2",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_SET_HOST_PREFIX",
+     "hex": "E1H",
+     "fields": "1",
+     "payload": "up to 256",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_SET_SSID",
+     "hex": "FBH",
+     "fields": "1",
+     "payload": "97",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_STATUS",
+     "hex": "53H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "FUJI_UNMOUNT_HOST",
+     "hex": "E6H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_UNMOUNT_IMAGE",
+     "hex": "E9H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_WRITE_APPKEY",
+     "hex": "DEH",
+     "fields": "--",
+     "payload": "<= 64",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_WRITE_DEVICE_SLOTS",
+     "hex": "F1H",
+     "fields": "--",
+     "payload": "304",
+     "reply": "ACK"
+    },
+    {
+     "equ": "FUJI_WRITE_HOST_SLOTS",
+     "hex": "F3H",
+     "fields": "--",
+     "payload": "256",
+     "reply": "ACK"
+    }
+   ]
+  },
+  {
+   "name": "Network channels",
+   "ids": "71H-78H",
+   "rows": [
+    {
+     "equ": "NET_ACCEPT",
+     "hex": "41H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_CHDIR",
+     "hex": "2CH",
+     "fields": "--",
+     "payload": "path",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_CLOSE",
+     "hex": "43H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_CLOSE_CLIENT",
+     "hex": "63H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_DELETE",
+     "hex": "21H",
+     "fields": "1,1",
+     "payload": "spec",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_GETCWD",
+     "hex": "30H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "prefix"
+    },
+    {
+     "equ": "NET_GET_REMOTE",
+     "hex": "72H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "256"
+    },
+    {
+     "equ": "NET_LOCK",
+     "hex": "23H",
+     "fields": "1,1",
+     "payload": "spec",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_MKDIR",
+     "hex": "2AH",
+     "fields": "1,1",
+     "payload": "spec",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_OPEN",
+     "hex": "4FH",
+     "fields": "1,1",
+     "payload": "spec",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_PARSE",
+     "hex": "50H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_PASSWORD",
+     "hex": "FEH",
+     "fields": "--",
+     "payload": "text",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_QUERY",
+     "hex": "51H",
+     "fields": "--",
+     "payload": "pointer",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_READ",
+     "hex": "52H",
+     "fields": "2",
+     "payload": "--",
+     "reply": "<= field"
+    },
+    {
+     "equ": "NET_RENAME",
+     "hex": "20H",
+     "fields": "1,1",
+     "payload": "spec,new",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_RMDIR",
+     "hex": "2BH",
+     "fields": "1,1",
+     "payload": "spec",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_SEEK",
+     "hex": "25H",
+     "fields": "4",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_SET_DESTINATION",
+     "hex": "44H",
+     "fields": "--",
+     "payload": "N:host:port",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_SET_EOL",
+     "hex": "4CH",
+     "fields": "--",
+     "payload": "1-2",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_SET_HTTP_MODE",
+     "hex": "4DH",
+     "fields": "1,1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_SET_INT_RATE",
+     "hex": "5AH",
+     "fields": "1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_SET_PARAMETER",
+     "hex": "FBH",
+     "fields": "1,1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_SET_PARSER",
+     "hex": "FCH",
+     "fields": "1,1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_STATUS",
+     "hex": "53H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "NET_TELL",
+     "hex": "26H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "NET_TRANSLATION",
+     "hex": "54H",
+     "fields": "1,1",
+     "payload": "--",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_UNLOCK",
+     "hex": "24H",
+     "fields": "1,1",
+     "payload": "spec",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_USERNAME",
+     "hex": "FDH",
+     "fields": "--",
+     "payload": "text",
+     "reply": "ACK"
+    },
+    {
+     "equ": "NET_WRITE",
+     "hex": "57H",
+     "fields": "2",
+     "payload": "field",
+     "reply": "ACK"
+    }
+   ]
+  },
+  {
+   "name": "Disk drives",
+   "ids": "31H-38H",
+   "rows": [
+    {
+     "equ": "DISK_FORMAT",
+     "hex": "21H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "128"
+    },
+    {
+     "equ": "DISK_FORMAT_MEDIUM",
+     "hex": "22H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "128"
+    },
+    {
+     "equ": "DISK_PERCOM_READ",
+     "hex": "4EH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "12"
+    },
+    {
+     "equ": "DISK_PERCOM_WRITE",
+     "hex": "4FH",
+     "fields": "--",
+     "payload": "12",
+     "reply": "ACK"
+    },
+    {
+     "equ": "DISK_PUT",
+     "hex": "50H",
+     "fields": "4",
+     "payload": "512",
+     "reply": "ACK"
+    },
+    {
+     "equ": "DISK_READ",
+     "hex": "52H",
+     "fields": "4",
+     "payload": "--",
+     "reply": "512"
+    },
+    {
+     "equ": "DISK_STATUS",
+     "hex": "53H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "DISK_WRITE",
+     "hex": "57H",
+     "fields": "4",
+     "payload": "512",
+     "reply": "ACK"
+    }
+   ]
+  },
+  {
+   "name": "Clock",
+   "ids": "45H",
+   "rows": [
+    {
+     "equ": "APETIME_GETTIME",
+     "hex": "93H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "6"
+    },
+    {
+     "equ": "APETIME_GETTZTIME",
+     "hex": "9AH",
+     "fields": "1",
+     "payload": "--",
+     "reply": "6"
+    },
+    {
+     "equ": "APETIME_GETTZ_LEN",
+     "hex": "4CH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "1"
+    },
+    {
+     "equ": "APETIME_GET_GENERAL",
+     "hex": "47H",
+     "fields": "--",
+     "payload": "--",
+     "reply": "text"
+    },
+    {
+     "equ": "APETIME_GET_ISO_LOCAL",
+     "hex": "49H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "25"
+    },
+    {
+     "equ": "APETIME_GET_ISO_UTC",
+     "hex": "5AH",
+     "fields": "1",
+     "payload": "--",
+     "reply": "25"
+    },
+    {
+     "equ": "APETIME_GET_PRODOS",
+     "hex": "50H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "APETIME_GET_SIMPLE_HUNDREDTHS",
+     "hex": "4DH",
+     "fields": "1",
+     "payload": "--",
+     "reply": "8"
+    },
+    {
+     "equ": "APETIME_GET_SOS",
+     "hex": "53H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "19"
+    },
+    {
+     "equ": "APETIME_SETTZ",
+     "hex": "99H",
+     "fields": "1",
+     "payload": "text",
+     "reply": "ACK"
+    },
+    {
+     "equ": "APETIME_SETTZ_ALT",
+     "hex": "74H",
+     "fields": "1",
+     "payload": "text",
+     "reply": "ACK"
+    },
+    {
+     "equ": "APETIME_SETTZ_ALT2",
+     "hex": "54H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "7"
+    }
+   ]
+  },
+  {
+   "name": "Printer",
+   "ids": "40H",
+   "rows": [
+    {
+     "equ": "PRINTER_PUT",
+     "hex": "50H",
+     "fields": "--",
+     "payload": "text",
+     "reply": "ACK"
+    },
+    {
+     "equ": "PRINTER_STATUS",
+     "hex": "53H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "4"
+    },
+    {
+     "equ": "PRINTER_WRITE",
+     "hex": "57H",
+     "fields": "1",
+     "payload": "text",
+     "reply": "ACK"
+    }
+   ]
+  },
+  {
+   "name": "Modem",
+   "ids": "50H",
+   "rows": [
+    {
+     "equ": "MODEM_AUTOANSWER",
+     "hex": "4FH",
+     "fields": "1",
+     "payload": "--",
+     "reply": "none"
+    },
+    {
+     "equ": "MODEM_BAUDRATELOCK",
+     "hex": "4EH",
+     "fields": "1,1",
+     "payload": "--",
+     "reply": "none"
+    },
+    {
+     "equ": "MODEM_CONFIGURE",
+     "hex": "42H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "none"
+    },
+    {
+     "equ": "MODEM_CONTROL",
+     "hex": "41H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "none"
+    },
+    {
+     "equ": "MODEM_LISTEN",
+     "hex": "4CH",
+     "fields": "2",
+     "payload": "--",
+     "reply": "none"
+    },
+    {
+     "equ": "MODEM_SET_DUMP",
+     "hex": "44H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "none"
+    },
+    {
+     "equ": "MODEM_STATUS",
+     "hex": "53H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "2"
+    },
+    {
+     "equ": "MODEM_STREAM",
+     "hex": "58H",
+     "fields": "1",
+     "payload": "--",
+     "reply": "9"
+    },
+    {
+     "equ": "MODEM_UNLISTEN",
+     "hex": "4DH",
+     "fields": "--",
+     "payload": "--",
+     "reply": "none"
+    },
+    {
+     "equ": "MODEM_WRITE",
+     "hex": "57H",
+     "fields": "1",
+     "payload": "bytes",
+     "reply": "none"
+    }
+   ]
+  }
+ ]
+}

@@ -1,0 +1,3011 @@
+{
+ "device": "fuji",
+ "dev_ids": [
+  "0x70"
+ ],
+ "source": {
+  "firmware": "fn-h89 h89-disk-fixes @ 7ab84ae64 (BUILD_RS232, PINMAP_H89)",
+  "fujinet_lib": "fujinet-lib h89-keep-esp32-running @ 9e6d4dd"
+ },
+ "dispatch": [
+  "fn-h89/src/main.cpp:349 -- theFuji (rs232Fuji platformFuji, fn-h89/lib/device/rs232/rs232Fuji.cpp:24-25) registered on the bus as 0x70 (FUJI_DEVICEID::FUJINET).",
+  "fn-h89/lib/bus/rs232/rs232.cpp:125-133 -- bus looks the header device byte up in the DaisyChain and calls rs232_process(); unknown device -> transaction_error().",
+  "fn-h89/lib/device/rs232/rs232Fuji.cpp:215-216 -- rs232Fuji::rs232_process() calls fujiDevice::processCommand() FIRST and returns if it handled the command.",
+  "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1701-1713 -- processCommand(): tryAllMixins() then the handlers map.",
+  "fn-h89/lib/device/fujiDevice/fujiDevice.h:146, fn-h89/lib/device/fujiDevice/fujiDevice.h:130-133 -- mixin order Base64Mixin, HashMixin, QRMixin, AppKeyMixin (first that recognizes the command wins; command sets are disjoint).",
+  "fn-h89/lib/device/fujiDevice/Base64Mixin.h:25-34 -- 8 Base64 commands; fn-h89/lib/device/fujiDevice/HashMixin.h:26-33 -- 6 hash commands; fn-h89/lib/device/fujiDevice/QRMixin.h:29-38 -- 4 QR commands (QRCODE_CLEAR #if 0); fn-h89/lib/device/fujiDevice/AppKeyMixin.h:46-51 -- 4 appkey commands.",
+  "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:53-155 -- base handlers map: 33 commands.",
+  "fn-h89/lib/device/rs232/rs232Fuji.cpp:218-404 -- rs232 switch: only FUJI_NEW_DISK (331-333) and FUJI_DEVICE_READY (395-398) are reachable; all other cases are shadowed by the base map, so their paramCount guards and rs232-specific variants (rs232_status, rs232_net_set_ssid, fujicmd_reset) are dead code; default -> transaction_error() (402-403) = single NAK.",
+  "Total dispatched for 0x70: 22 mixin + 33 base-map + 2 switch-only = 57 commands."
+ ],
+ "packet_rules": [
+  "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:110-120 -- header (6 bytes): device u8, command u8, length u16 LE = whole decoded packet incl. header, checksum u8, descriptor u8.",
+  "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:220-231, 261-270 -- checksum: 8-bit sum with end-around carry over the whole decoded packet with the checksum byte zeroed.",
+  "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:233-270 -- frame must start and end with 0xC0; SLIP escapes DB DC -> C0, DB DD -> DB; malformed escapes dropped (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:171-181); length must equal decoded size.",
+  "fn-h89/lib/bus/rs232/rs232.cpp:111-116 -- unparseable frame (bad checksum/length/framing) gets NO reply (silence).",
+  "fn-h89/lib/bus/rs232/rs232.cpp:99-107 -- bytes received before a frame's 0xC0 are passed to the modem device (0x50) as transmit data.",
+  "fn-h89/lib/bus/rs232/rs232.cpp:337-366 -- reader stops at the second 0xC0: a frame starting C0 C0 is read as an empty frame and fails, and its body is then fed to the modem. Send exactly one leading 0xC0.",
+  "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:122-129, 281-313 -- descriptor low 3 bits: 0 none, 1-4 = that many 1-byte fields, 5 = one u16, 6 = two u16, 7 = one u32; bit 7 = another descriptor byte follows; all descriptor bytes precede all field bytes; bits 3-6 ignored (fujinet-lib sets 0x08 DATA / 0x10 REPLY there harmlessly, fujinet-lib/bus/h89/fuji_bus_call.c:201). Fields are little-endian.",
+  "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:316-320 -- payload = every byte after the fields; a zero-length payload is the same as no payload.",
+  "fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77 -- param(n) uses std::vector::at(): a missing field throws std::out_of_range, which nothing catches -> fujinet-pc terminates; ESP32 build has C++ exceptions off (fn-h89/sdkconfig.fujinet-heathkit-h89:422) -> abort/panic reboot. Because the base map runs before the rs232 switch, the switch's paramCount<N NAK guards never run.",
+  "fn-h89/lib/bus/PacketParam.h:8-31 -- any field width is accepted (stored as u32); handlers truncate to the type they cast to (mostly uint8_t, lengths/positions uint16_t).",
+  "fn-h89/lib/bus/rs232/rs232.cpp:66-82 -- transaction_get() copies min(remaining payload, wanted) and succeeds if ANY payload exists; it fails (handler NAKs) only when there is no payload. Short payloads are accepted (rest of the handler's buffer keeps whatever it held), extra bytes ignored.",
+  "fn-h89/lib/bus/rs232/rs232.cpp:379-398, fn-h89/lib/bus/rs232/FujiBusPacket.cpp:325-384 -- reply: device = responding device (0x70), command 0x06 ACK or 0x15 NAK, descriptor 0, payload = data only on ACK; a NAK never carries data (transaction_send with is_error drops the data).",
+  "fn-h89/lib/bus/rs232/rs232.cpp:127-133, 60-63, 401-404; fn-h89/lib/bus/bus.h:50-52 -- frame for an unregistered device: NAK whose device byte is 0x00.",
+  "fn-h89/lib/bus/rs232/rs232.cpp:46-89 -- transaction state asserts (accept needs INVALID, success needs NO_GET/DID_GET, send needs NO_GET); assertions are enabled in the ESP32 H89 build (fn-h89/sdkconfig.fujinet-heathkit-h89:414) and in fujinet-pc unless built with NDEBUG.",
+  "Exactly one reply per command except: FUJI_RESET (none), FUJI_SET_SSID failure (two NAKs), FUJI_MOUNT_IMAGE of a ROM-type file (FujiNet first sends its own command frames to device 0xFF and waits for ACKs), unparseable frame (none).",
+  "fujinet-lib/bus/h89/port_slip.c:39-101 + fuji_bus_call.c:106-116 -- lib accepts a reply SHORTER than its buffer (partial fill, success) but fails one LONGER than its buffer (rlen != header length) and leaves the rest of that frame unread.",
+  "fn-h89/lib/bus/rs232/rs232.cpp:214-244, fn-h89/lib/bus/rs232/rs232.h:23-25, fn-h89/include/pinmap/heathkit_h89.h:30-43 -- transport: ESP32 H89 card = 8255 PPI channel (no input flush at setup, fn-h89/lib/bus/rs232/rs232.cpp:266-271); fujinet-pc = serial port (200 ms read timeout) or BoIP."
+ ],
+ "commands": [
+  {
+   "name": "FUJI_RESET",
+   "value": "0xFF",
+   "group": "misc",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:54-56",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "none",
+    "len": "0",
+    "layout": [],
+    "naks_when": []
+   },
+   "side_effects": "Base-class handler calls fnSystem.reboot() at once. fujinet-pc: exit(75) with no bus shutdown, disks not unmounted, run-fujinet restarts the process on rc 75 (fn-h89/lib/hardware/fnSystem.cpp:433-441, fn-h89/distfiles/run-fujinet:9). ESP32: SYSTEM_BUS.shutdown(), WiFi stop, esp_restart() (fn-h89/lib/hardware/fnSystem.cpp:426-431).",
+   "traps": [
+    "No reply at all: the base handler table runs first (fn-h89/lib/device/rs232/rs232Fuji.cpp:215) and never ACKs; rs232Fuji's case FUJI_RESET -> fujicmd_reset(), which would ACK first (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:405-411), is unreachable (fn-h89/lib/device/rs232/rs232Fuji.cpp:228-230)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_reset",
+     "where": "fujinet-lib/include/fujinet-fuji.h:419",
+     "sends": "FUJICALL (no fields, no payload)",
+     "mismatch": "waits for a reply that never comes; fuji_packet_call times out (TIMEOUT_SLOW = 15 s, fujinet-lib/bus/h89/fuji_bus_call.c:14,106-107) and returns false"
+    }
+   ],
+   "pc_vs_esp32": "PC: process exit/restart; ESP32: hardware restart after bus shutdown.",
+   "notes": null
+  },
+  {
+   "name": "FUJI_DEVICE_READY",
+   "value": "0x00",
+   "group": "misc",
+   "handler": "fn-h89/lib/device/rs232/rs232Fuji.cpp:395-398 -> fn-h89/lib/device/rs232/rs232Fuji.cpp:172-180",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "512",
+    "layout": [
+     {
+      "off": 0,
+      "size": 512,
+      "name": "test",
+      "meaning": "512 x 0x41 ('A')"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [
+    "Debug/test command left in the RS232 switch; one of only two commands reached through rs232Fuji's own switch."
+   ],
+   "fujinet_lib": [],
+   "pc_vs_esp32": null,
+   "notes": "Useful as a link test: a 518-byte ACK frame."
+  },
+  {
+   "name": "FUJI_STATUS",
+   "value": "0x53",
+   "group": "status",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:146-148 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1638-1647",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "reqtype",
+     "meaning": "ignored",
+     "if_missing": "ignored (base handler never reads it)"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "4",
+    "layout": [
+     {
+      "off": 0,
+      "size": 4,
+      "name": "status",
+      "meaning": "always 00 00 00 00"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [
+    "Always 4 zero bytes. rs232_status() (reqtype 1 = per-drive mount times, 8 x time_t) is dead code: base table handles FUJI_STATUS before the rs232 switch (fn-h89/lib/device/rs232/rs232Fuji.cpp:66-90, 220-227). The switch's paramCount<1 NAK is also unreachable."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_status",
+     "where": "fujinet-lib/include/fujinet-fuji.h:503",
+     "sends": "FUJICALL_A1_RV(FUJICMD_STATUS, 0, status, sizeof(FNStatus)=4)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": "fuji_copy_file_common uses it as a liveness poll (fujinet-lib/common/fuji_copy_file_common.c:36-39)."
+  },
+  {
+   "name": "FUJI_GENERATE_GUID",
+   "value": "0xBB",
+   "group": "misc",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:143-145 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1649-1691",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "37",
+    "layout": [
+     {
+      "off": 0,
+      "size": 36,
+      "name": "guid",
+      "meaning": "lower-case UUIDv4 text xxxxxxxx-xxxx-4xxx-[89ab]xxx-xxxxxxxxxxxx"
+     },
+     {
+      "off": 36,
+      "size": 1,
+      "name": "nul",
+      "meaning": "0x00"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_generate_guid",
+     "where": "fujinet-lib/include/fujinet-fuji.h:278",
+     "sends": "FUJICALL_RV(FUJICMD_GENERATE_GUID, guid, MAX_GUID_LEN=37)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": "Randomness from fnSystem.random(): ESP32 esp_random(), PC rand() seeded with time() (fn-h89/lib/hardware/fnSystem.cpp:263-266, 286-298).",
+   "notes": null
+  },
+  {
+   "name": "FUJI_RANDOM_NUMBER",
+   "value": "0xD3",
+   "group": "misc",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:125-127 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1693-1699",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "4",
+    "layout": [
+     {
+      "off": 0,
+      "size": 4,
+      "name": "r",
+      "meaning": "u32 little-endian random value"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [],
+   "pc_vs_esp32": "ESP32: esp_random(), full 32 bits. PC: rand(), 0..RAND_MAX (bit 31 always 0 with glibc) (fn-h89/lib/hardware/fnSystem.cpp:263-266, 286-298).",
+   "notes": "No fujinet-lib wrapper."
+  },
+  {
+   "name": "FUJI_GET_ADAPTERCONFIG",
+   "value": "0xE8",
+   "group": "adapter",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:57-59 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1215-1225 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1227-1262)",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "140",
+    "layout": [
+     {
+      "off": 0,
+      "size": 33,
+      "name": "ssid",
+      "meaning": "current SSID, NUL-padded; \"NOT CONNECTED\" when not associated"
+     },
+     {
+      "off": 33,
+      "size": 64,
+      "name": "hostname",
+      "meaning": "network hostname, NUL-padded; empty when not connected"
+     },
+     {
+      "off": 97,
+      "size": 4,
+      "name": "localIP",
+      "meaning": "IPv4 address, network order bytes; 0 when not connected"
+     },
+     {
+      "off": 101,
+      "size": 4,
+      "name": "gateway",
+      "meaning": "IPv4 gateway"
+     },
+     {
+      "off": 105,
+      "size": 4,
+      "name": "netmask",
+      "meaning": "IPv4 netmask"
+     },
+     {
+      "off": 109,
+      "size": 4,
+      "name": "dnsIP",
+      "meaning": "primary DNS"
+     },
+     {
+      "off": 113,
+      "size": 6,
+      "name": "macAddress",
+      "meaning": "MAC, always filled"
+     },
+     {
+      "off": 119,
+      "size": 6,
+      "name": "bssid",
+      "meaning": "AP BSSID; 0 when not connected"
+     },
+     {
+      "off": 125,
+      "size": 15,
+      "name": "fn_version",
+      "meaning": "short firmware version, strlcpy (max 14 chars + NUL)"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [
+    "fn_version is truncated to 14 characters (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1232)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_adapter_config",
+     "where": "fujinet-lib/include/fujinet-fuji.h:285",
+     "sends": "FUJICALL_RV(..., sizeof(AdapterConfig)=140)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": "PC (dummy WiFi): ssid \"Dummy Cafe\", MAC and BSSID D0:1C:ED:C0:FF:EE, always connected (fn-h89/lib/hardware/fnDummyWiFi.cpp:33-44,104-113,160-164); version string is FN_VERSION_FULL_GIT, ESP32 FN_VERSION_FULL (fn-h89/lib/hardware/fnSystem.cpp:600-613).",
+   "notes": null
+  },
+  {
+   "name": "FUJI_GET_ADAPTERCONFIG_EXTENDED",
+   "value": "0xC4",
+   "group": "adapter",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:60-62 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1264-1272",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "240",
+    "layout": [
+     {
+      "off": 0,
+      "size": 33,
+      "name": "ssid",
+      "meaning": "current SSID, NUL-padded; \"NOT CONNECTED\" when not associated"
+     },
+     {
+      "off": 33,
+      "size": 64,
+      "name": "hostname",
+      "meaning": "network hostname, NUL-padded; empty when not connected"
+     },
+     {
+      "off": 97,
+      "size": 4,
+      "name": "localIP",
+      "meaning": "IPv4 address, network order bytes; 0 when not connected"
+     },
+     {
+      "off": 101,
+      "size": 4,
+      "name": "gateway",
+      "meaning": "IPv4 gateway"
+     },
+     {
+      "off": 105,
+      "size": 4,
+      "name": "netmask",
+      "meaning": "IPv4 netmask"
+     },
+     {
+      "off": 109,
+      "size": 4,
+      "name": "dnsIP",
+      "meaning": "primary DNS"
+     },
+     {
+      "off": 113,
+      "size": 6,
+      "name": "macAddress",
+      "meaning": "MAC, always filled"
+     },
+     {
+      "off": 119,
+      "size": 6,
+      "name": "bssid",
+      "meaning": "AP BSSID; 0 when not connected"
+     },
+     {
+      "off": 125,
+      "size": 15,
+      "name": "fn_version",
+      "meaning": "short firmware version, strlcpy (max 14 chars + NUL)"
+     },
+     {
+      "off": 140,
+      "size": 16,
+      "name": "sLocalIP",
+      "meaning": "dotted-quad string"
+     },
+     {
+      "off": 156,
+      "size": 16,
+      "name": "sGateway",
+      "meaning": "dotted-quad string"
+     },
+     {
+      "off": 172,
+      "size": 16,
+      "name": "sNetmask",
+      "meaning": "dotted-quad string"
+     },
+     {
+      "off": 188,
+      "size": 16,
+      "name": "sDnsIP",
+      "meaning": "dotted-quad string"
+     },
+     {
+      "off": 204,
+      "size": 18,
+      "name": "sMacAddress",
+      "meaning": "\"XX:XX:XX:XX:XX:XX\" upper-case hex"
+     },
+     {
+      "off": 222,
+      "size": 18,
+      "name": "sBssid",
+      "meaning": "\"XX:XX:XX:XX:XX:XX\" upper-case hex"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [
+    "String fields are filled even when not connected (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1250-1259)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_adapter_config_extended",
+     "where": "fujinet-lib/include/fujinet-fuji.h:292",
+     "sends": "FUJICALL_RV(..., sizeof(AdapterConfigExtended)=240)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": "As GET_ADAPTERCONFIG.",
+   "notes": null
+  },
+  {
+   "name": "FUJI_SCAN_NETWORKS",
+   "value": "0xFD",
+   "group": "wifi",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:66-68 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:494-504",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "1",
+    "layout": [
+     {
+      "off": 0,
+      "size": 1,
+      "name": "count",
+      "meaning": "networks found"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "Stores the count used to validate GET_SCAN_RESULT.",
+   "traps": [
+    "ESP32 scan is blocking and temporarily disconnects an associated station (fn-h89/lib/hardware/fnWiFi.cpp:370-405)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_scan_for_networks",
+     "where": "fujinet-lib/include/fujinet-fuji.h:428",
+     "sends": "FUJICALL_RV(..., count, 1)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": "PC: always 16 (fn-h89/lib/hardware/fnDummyWiFi.cpp:74-77). ESP32: real scan, at most FNWIFI_SCAN_RESULTS_MAX=20 (fn-h89/lib/hardware/fnWiFi.h:22).",
+   "notes": null
+  },
+  {
+   "name": "FUJI_GET_SCAN_RESULT",
+   "value": "0xFC",
+   "group": "wifi",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:63-65 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:519-529 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:506-517)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "index",
+     "meaning": "0..count-1 from the last SCAN_NETWORKS (truncated to uint8_t)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "34",
+    "layout": [
+     {
+      "off": 0,
+      "size": 33,
+      "name": "ssid",
+      "meaning": "NUL-padded SSID"
+     },
+     {
+      "off": 33,
+      "size": 1,
+      "name": "rssi",
+      "meaning": "RSSI as u8 (signed dBm cast)"
+     }
+    ],
+    "naks_when": [
+     "index >= count of the last scan, including no scan yet (_countScannedSSIDs starts 0, fn-h89/lib/device/fujiDevice/fujiDevice.h:167) (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:510,528)"
+    ]
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_scan_result",
+     "where": "fujinet-lib/include/fujinet-fuji.h:342",
+     "sends": "FUJICALL_A1_RV(..., n, ssid_info, sizeof(SSIDInfo)=34)",
+     "mismatch": "none (lib types rssi as signed char)"
+    }
+   ],
+   "pc_vs_esp32": "PC: \"Dummy Cafe <n>\", rssi 255 (fn-h89/lib/hardware/fnDummyWiFi.cpp:79-102).",
+   "notes": null
+  },
+  {
+   "name": "FUJI_SET_SSID",
+   "value": "0xFB",
+   "group": "wifi",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:69-71 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:555-575 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:532-552)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "unused",
+     "meaning": "ignored; base handler reads no field",
+     "if_missing": "ignored (the rs232 switch's paramCount<1 NAK at fn-h89/lib/device/rs232/rs232Fuji.cpp:242-249 is unreachable)"
+    }
+   ],
+   "payload": {
+    "required": true,
+    "len": "97 (fixed)",
+    "format": "SSIDConfig: ssid[33] NUL-terminated @0, password[64] NUL-terminated @33; copied into an uninitialized stack struct, so a short payload leaves garbage (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:560-561, fn-h89/lib/bus/rs232/rs232.cpp:74-81)"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "no payload (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:561-565)",
+     "fnWiFi.connect() != 0 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:539-542) -- sends TWO NAKs"
+    ]
+   },
+   "side_effects": "Config.save() before connecting (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:535); fnWiFi.connect(); on success stores SSID+passphrase and saves fnconfig.ini (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:544-549).",
+   "traps": [
+    "Failure sends two NAK frames: fujicore_net_set_ssid_success() NAKs (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:540) and fujicmd_net_set_ssid_success() NAKs again (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:569). fujinet-lib resyncs on the next SLIP_END (fujinet-lib/bus/h89/port_slip.c:56-68) and so reads the stray NAK as the reply to the NEXT command: replies run one behind.",
+    "ACK does not mean associated: ESP32 connect() returns esp_wifi_connect()'s immediate status (fn-h89/lib/hardware/fnWiFi.cpp:149-204); a wrong password is ACKed and saved."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_set_ssid",
+     "where": "fujinet-lib/include/fujinet-fuji.h:493",
+     "sends": "FUJICALL_A1_D(FUJICMD_SET_SSID, 0, nc, sizeof(NetConfig)=97)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": "PC dummy connect() always returns 0 (fn-h89/lib/hardware/fnDummyWiFi.cpp:60-65): never NAKs except for a missing payload, so the double NAK can only happen on ESP32.",
+   "notes": null
+  },
+  {
+   "name": "FUJI_GET_SSID",
+   "value": "0xFE",
+   "group": "wifi",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:72-74 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:438-446 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:414-436)",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "97",
+    "layout": [
+     {
+      "off": 0,
+      "size": 33,
+      "name": "ssid",
+      "meaning": "stored SSID, zero-padded"
+     },
+     {
+      "off": 33,
+      "size": 64,
+      "name": "password",
+      "meaning": "stored WiFi passphrase in clear; not NUL-terminated if 64 chars"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [
+    "Returns the saved WiFi passphrase in plain text (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:431-433, 444)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_ssid",
+     "where": "fujinet-lib/include/fujinet-fuji.h:349",
+     "sends": "FUJICALL_RV(..., sizeof(NetConfig)=97)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": "Values come from fnconfig.ini on both builds.",
+   "notes": null
+  },
+  {
+   "name": "FUJI_GET_WIFISTATUS",
+   "value": "0xFA",
+   "group": "wifi",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:90-92 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1417-1423 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1411-1415)",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "1",
+    "layout": [
+     {
+      "off": 0,
+      "size": 1,
+      "name": "status",
+      "meaning": "3 = connected, 6 = disconnected (only values)"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_wifi_status",
+     "where": "fujinet-lib/include/fujinet-fuji.h:362",
+     "sends": "FUJICALL_RV(..., status, 1)",
+     "mismatch": "none on the wire; the lib's enum WifiStatus has no value 6 (fujinet-lib/include/fujinet-fuji.h:36-42)"
+    }
+   ],
+   "pc_vs_esp32": "PC: always 3 once the dummy WiFi is started (fn-h89/lib/hardware/fnDummyWiFi.cpp:38,67-70).",
+   "notes": null
+  },
+  {
+   "name": "FUJI_GET_WIFI_ENABLED",
+   "value": "0xEA",
+   "group": "wifi",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:87-89 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:583-589",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "1",
+    "layout": [
+     {
+      "off": 0,
+      "size": 1,
+      "name": "enabled",
+      "meaning": "1 if [WiFi] enabled in config, else 0"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_wifi_enabled",
+     "where": "fujinet-lib/common/fuji_get_wifi_enabled.c:6-10",
+     "sends": "FUJICALL_RV(..., &c, 1)",
+     "mismatch": "ignores the call's success; returns a stale static byte on failure"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_READ_HOST_SLOTS",
+   "value": "0xF4",
+   "group": "hosts",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:75-77 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1425-1436",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "256",
+    "layout": [
+     {
+      "off": "32*n",
+      "size": 32,
+      "name": "hostname[n], n=0..7",
+      "meaning": "NUL-padded host name (\"SD\" = local card, smb:// nfs:// ftp:// http(s):// prefixes, else TNFS); empty = unused"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_host_slots",
+     "where": "fujinet-lib/include/fujinet-fuji.h:335",
+     "sends": "FUJICALL_RV(..., d, sizeof(HostSlot)*count)",
+     "mismatch": "count must be 8: fewer makes the 256-byte reply overflow the lib buffer -> false (fujinet-lib/bus/h89/port_slip.c:87-90, fuji_bus_call.c:108)"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_WRITE_HOST_SLOTS",
+   "value": "0xF3",
+   "group": "hosts",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:84-86 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1439-1459",
+   "fields": [],
+   "payload": {
+    "required": true,
+    "len": "256 (fixed)",
+    "format": "8 x 32-byte NUL-terminated host names, same layout as READ_HOST_SLOTS"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "no payload (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1445-1449)"
+    ]
+   },
+   "side_effects": "Sets every slot's name (a changed name resets that host to unmounted, fn-h89/lib/fuji/fujiHost.cpp:65-78), clears all hostMounted flags, writes fnconfig.ini (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1451-1457).",
+   "traps": [
+    "Buffer is not zeroed (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1444): a payload shorter than 256 bytes fills the remaining slots with stack garbage."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_put_host_slots",
+     "where": "fujinet-lib/include/fujinet-fuji.h:407",
+     "sends": "FUJICALL_D(..., d, sizeof(HostSlot)*count)",
+     "mismatch": "count must be 8 (see trap)"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_MOUNT_HOST",
+   "value": "0xF9",
+   "group": "hosts",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:93-95 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:468-486 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:449-466)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "host_slot",
+     "meaning": "0-7",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "host_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:471-475)",
+     "empty host name (fn-h89/lib/fuji/fujiHost.cpp:590-593)",
+     "filesystem mount fails (TNFS/SMB/... unreachable) (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:459-462)"
+    ]
+   },
+   "side_effects": "Mounts the host filesystem (\"SD\" -> local SD/\"SD\" dir, else by URL prefix, default TNFS: fn-h89/lib/fuji/fujiHost.cpp:586-614) and sets hostMounted[slot] (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:464) -- the only command that sets it.",
+   "traps": [
+    "Once hostMounted is set the mount is not retried (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:459) even if the server went away."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_mount_host_slot",
+     "where": "fujinet-lib/include/fujinet-fuji.h:380",
+     "sends": "FUJICALL_A1(FUJICMD_MOUNT_HOST, hs)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": "PC: \"SD\" is the SD directory beside the executable.",
+   "notes": null
+  },
+  {
+   "name": "FUJI_UNMOUNT_HOST",
+   "value": "0xE6",
+   "group": "hosts",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:119-121 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1540-1573",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "host_slot",
+     "meaning": "0-7",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "host_slot >= 8, or the slot was not mounted with MOUNT_HOST since boot / last WRITE_HOST_SLOTS (hostMounted false) (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1545-1550)",
+     "host is \"SD\": unmount_success() returns false for local hosts (fn-h89/lib/fuji/fujiHost.cpp:621-625)"
+    ]
+   },
+   "side_effects": "Unmounts and resets every device slot whose host_slot matches (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1553-1561), then unmounts the host.",
+   "traps": [
+    "On the SD host the disks are unmounted and their slots cleared BEFORE the NAK (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1553-1568).",
+    "MOUNT_ALL and COPY_FILE mount hosts without setting hostMounted, so UNMOUNT_HOST after them NAKs."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_unmount_host_slot",
+     "where": "fujinet-lib/include/fujinet-fuji.h:521",
+     "sends": "FUJICALL_A1(FUJICMD_UNMOUNT_HOST, hs)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_SET_HOST_PREFIX",
+   "value": "0xE1",
+   "group": "hosts",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:137-139 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1510-1537",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "host_slot",
+     "meaning": "0-7 (validated after the payload is read)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": true,
+    "len": "up to 256",
+    "format": "NUL-terminated prefix; read into an uninitialized 256-byte buffer (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1512,1517) so include the NUL"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "no payload (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1517-1521)",
+     "host_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1529-1533)"
+    ]
+   },
+   "side_effects": "RAM only, not saved: empty string clears; leading '/' or '\\' replaces; anything else is appended to the current prefix with a '/' (fn-h89/lib/fuji/fujiHost.cpp:81-102). The prefix is prepended to every path used with that host (dir_open, file open, file_exists).",
+   "traps": [
+    "COPY_FILE breaks once a prefix longer than \"/\" is set (see FUJI_COPY_FILE)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_set_host_prefix",
+     "where": "fujinet-lib/include/fujinet-fuji.h:487",
+     "sends": "FUJICALL_A1_D(..., hs, prefix, MAX_FILENAME_LEN=256)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_GET_HOST_PREFIX",
+   "value": "0xE0",
+   "group": "hosts",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:134-136 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1394-1409",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "host_slot",
+     "meaning": "0-7",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "256",
+    "layout": [
+     {
+      "off": 0,
+      "size": 256,
+      "name": "prefix",
+      "meaning": "NUL-terminated prefix; bytes after the NUL are uninitialized stack"
+     }
+    ],
+    "naks_when": [
+     "host_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1401-1405)"
+    ]
+   },
+   "side_effects": "none",
+   "traps": [
+    "prefix[] is never zeroed (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1396); strlcpy writes only up to the NUL (fn-h89/lib/fuji/fujiHost.cpp:300-306): the tail of the reply is garbage."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_host_prefix",
+     "where": "fujinet-lib/include/fujinet-fuji.h:327",
+     "sends": "FUJICALL_A1_RV(..., hs, prefix, 256)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_OPEN_DIRECTORY",
+   "value": "0xF7",
+   "group": "directory",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:96-98 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:774-806 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:729-772)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "host_slot",
+     "meaning": "0-7",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": true,
+    "len": "up to 256 (zero-filled buffer)",
+    "format": "path NUL [pattern NUL]; pattern recognized only if path length < 253 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:736-738); trailing '/' stripped from path if longer than 1 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:741-744); path is relative to the host prefix (fn-h89/lib/fuji/fujiHost.cpp:159-162); pattern is a wildcard, a trailing '/' applies it to directories, TNFS '!name' = recursive search (fn-h89/lib/FileSystem/fnFsTNFS.cpp:285-302)"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "host_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:779-783)",
+     "no payload (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:786-789)",
+     "host not mounted (_fs null) or dir_open fails (fn-h89/lib/fuji/fujiHost.cpp:153-157, fn-h89/lib/device/fujiDevice/fujiDevice.cpp:767-768)"
+    ]
+   },
+   "side_effects": "Closes any directory already open (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:791-796); remembers this host slot as the open directory (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:770). One directory open at a time, device-wide.",
+   "traps": [
+    "MOUNT_HOST first: dir_open fails on an unmounted host.",
+    "With a path < 253 chars the pattern pointer is never null; an empty pattern is passed as \"\" (fnFsTNFS.cpp:296 then indexes realpat[-1])."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_open_directory",
+     "where": "fujinet-lib/include/fujinet-fuji.h:387",
+     "sends": "FUJICALL_A1_D(..., hs, path_filter, 256)",
+     "mismatch": null
+    },
+    {
+     "symbol": "fuji_open_directory_filter",
+     "where": "fujinet-lib/common/fuji_open_directory_filter.c:10-23",
+     "sends": "builds path\\0filter in a static 256-byte buffer, then fuji_open_directory",
+     "mismatch": "with an empty filter it sends 256 bytes straight from the caller's path string: whatever follows the path's NUL in caller memory becomes the firmware's pattern"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_READ_DIR_ENTRY",
+   "value": "0xF6",
+   "group": "directory",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:102-104 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1027-1059 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:977-1025; block mode fn-h89/lib/device/fujiDevice/fujiDevice.cpp:861-975)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "maxlen",
+     "meaning": "reply size 1-255 (cast to uint8_t, fn-h89/lib/device/fujiDevice/fujiDevice.cpp:103: a u16 field of 256 becomes 0); in block mode = number of 256-byte pages",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    },
+    {
+     "index": 1,
+     "size": 1,
+     "name": "addtl",
+     "meaning": "0x80 = prepend 12-byte details header; (addtl & 0xC0) == 0xC0 = block mode with addtl & 0x3F entries per group; other bits ignored",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "maxlen (block mode: maxlen*256)",
+    "layout": [
+     {
+      "off": 0,
+      "size": "12 if addtl&0x80",
+      "name": "details",
+      "meaning": "see structs.DirEntryExt"
+     },
+     {
+      "off": "0 or 12",
+      "size": "rest",
+      "name": "filename",
+      "meaning": "name, '/' appended to directories if it fits (without 0x80: strlen < maxlen-2; with 0x80: strlen < maxlen-14), ellipsized with \"...\" when strlen >= space (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1004-1020), NUL, zero padding to maxlen"
+     },
+     {
+      "off": 0,
+      "size": 2,
+      "name": "EOF",
+      "meaning": "end of directory: 0x7F 0x7F then zeros, no details header even with 0x80 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:989-990)"
+     }
+    ],
+    "naks_when": [
+     "no directory open (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1029-1034)",
+     "block mode: not even one page group fits in maxlen*256 bytes, e.g. maxlen 0 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:942-948)"
+    ]
+   },
+   "side_effects": "Advances the directory position by one entry (block mode: by the entries returned; a group that does not fit is rewound, fn-h89/lib/device/fujiDevice/fujiDevice.cpp:926-932).",
+   "traps": [
+    "addtl 0xC0 (block mode, group size 0) divides by zero at fn-h89/lib/device/fujiDevice/fujiDevice.cpp:887 -> SIGFPE on fujinet-pc, panic/reboot on ESP32.",
+    "With 0x80 keep maxlen >= 14: set_additional_direntry_details does uint8_t maxlen -= 12 (fn-h89/lib/device/rs232/rs232Fuji.cpp:199), smaller values wrap and the reply is cut mid-header.",
+    "TRUNC flag and slash rules disagree by one for directories: a dir name of maxlen-13 chars gets TRUNC although only the '/' was dropped; one of maxlen-14 chars gets neither '/' nor TRUNC (fn-h89/lib/device/rs232/rs232Fuji.cpp:199-205 vs fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1004-1020).",
+    "Plain .img files report mediatype 0 (unknown), not 1 (fn-h89/lib/media/rs232/diskType.cpp:64-95)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_read_directory",
+     "where": "fujinet-lib/common/fuji_read_directory.c:3-6",
+     "sends": "FUJICALL_A1_A2_RV(..., maxlen, aux2, buffer, maxlen)",
+     "mismatch": "block mode unusable: reply is maxlen*256 bytes, lib buffer maxlen -> false"
+    },
+    {
+     "symbol": "fuji_file_stat",
+     "where": "fujinet-lib/common/fuji_file_stat.c:9-60",
+     "sends": "MOUNT_HOST, OPEN_DIRECTORY, READ_DIR_ENTRY(12+strlen(name)+1, 0x80) until match or EOF (checks month==0x7F), CLOSE_DIRECTORY",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": "The H89 FujiDirEntry in fujinet-lib is 12 bytes + filename (fujinet-lib/include/fujinet-fuji.h:170-181), matching the firmware."
+  },
+  {
+   "name": "FUJI_CLOSE_DIRECTORY",
+   "value": "0xF5",
+   "group": "directory",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:99-101 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:808-818",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": []
+   },
+   "side_effects": "Closes the open directory if any.",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_close_directory",
+     "where": "fujinet-lib/common/fuji_close_directory.c:3-6",
+     "sends": "FUJICALL(FUJICMD_CLOSE_DIRECTORY)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_GET_DIRECTORY_POSITION",
+   "value": "0xE5",
+   "group": "directory",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:149-151 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1378-1391",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "2",
+    "layout": [
+     {
+      "off": 0,
+      "size": 2,
+      "name": "pos",
+      "meaning": "u16 little-endian entry index"
+     }
+    ],
+    "naks_when": [
+     "no directory open, or dir_tell() returns 0xFFFF (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1363-1373, 1384-1388)"
+    ]
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_directory_position",
+     "where": "fujinet-lib/include/fujinet-fuji.h:321",
+     "sends": "FUJICALL_RV(..., pos, 2)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_SET_DIRECTORY_POSITION",
+   "value": "0xE4",
+   "group": "directory",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:105-107 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1487-1507",
+   "fields": [
+    {
+     "index": 0,
+     "size": 2,
+     "name": "pos",
+     "meaning": "u16 entry index (a 1-, 2- or 4-byte field is accepted, truncated to 16 bits)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "no directory open (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1493-1498)",
+     "dir_seek fails (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1500-1505)"
+    ]
+   },
+   "side_effects": "Moves the directory cursor.",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_set_directory_position",
+     "where": "fujinet-lib/common/fuji_set_directory_position.c:3-6",
+     "sends": "FUJICALL_B12 (descriptor 5, one u16 field)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_READ_DEVICE_SLOTS",
+   "value": "0xF2",
+   "group": "slots",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:78-80 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1576-1611",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "304",
+    "layout": [
+     {
+      "off": "38*n",
+      "size": 1,
+      "name": "hostSlot",
+      "meaning": "0-7, 0xFF = empty"
+     },
+     {
+      "off": "38*n+1",
+      "size": 1,
+      "name": "mode",
+      "meaning": "access_mode: 0x01 read, 0x02 write, |0x40 if the disk device is active and not the boot/config disk"
+     },
+     {
+      "off": "38*n+2",
+      "size": 36,
+      "name": "filename",
+      "meaning": "basename only (no directory), NUL-padded, max 35 chars"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [
+    "Empty slots report mode 0x01 (fujiDisk default, fn-h89/lib/fuji/fujiDisk.cpp:9).",
+    "mode reflects SET_DEVICE_FULLPATH / WRITE_DEVICE_SLOTS, not the mode passed to MOUNT_IMAGE (MOUNT_IMAGE never stores it, fn-h89/lib/device/fujiDevice/fujiDevice.cpp:592-635)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_device_slots",
+     "where": "fujinet-lib/include/fujinet-fuji.h:315",
+     "sends": "FUJICALL_RV(..., d, sizeof(DeviceSlot)*count)",
+     "mismatch": "count must be 8 (38*8 = 304)"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": "8 slots = MAX_MOUNT_SLOTS for non-Apple builds (fn-h89/lib/config/fnConfig.h:11-15); 38-byte disk_slot (fn-h89/lib/device/fujiDevice/fujiDevice.h:72-77)."
+  },
+  {
+   "name": "FUJI_WRITE_DEVICE_SLOTS",
+   "value": "0xF1",
+   "group": "slots",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:81-83 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1614-1636",
+   "fields": [],
+   "payload": {
+    "required": true,
+    "len": "304 (fixed)",
+    "format": "8 x {hostSlot u8, mode u8, filename[36]} as READ_DEVICE_SLOTS; filename bytes are ignored"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "no payload (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1621-1625)"
+    ]
+   },
+   "side_effects": "Per slot: host_slot := hostSlot, access_mode := mode & ~0x40; fileh/disk_type/host pointer cleared WITHOUT unmounting the disk device (fn-h89/lib/fuji/fujiDisk.cpp:15-25); fnconfig.ini rewritten with the slots' EXISTING filenames (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1633-1634, 219-228).",
+   "traps": [
+    "Filenames in the payload are ignored: fujiDisk::reset(fname, ...) never copies fname (fn-h89/lib/fuji/fujiDisk.cpp:15-25). Paths can only be set with SET_DEVICE_FULLPATH.",
+    "hostSlot 0xFF drops the slot from fnconfig.ini (path gone after restart) while the RAM filename stays and READ_DEVICE_SLOTS still shows it (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:221-222).",
+    "No host-slot validation: a value 8..254 with an existing filename makes MOUNT_ALL use _fnHosts[] out of bounds (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:239,248).",
+    "Buffer not zeroed (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1619): a short payload gives the remaining slots garbage host/mode."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_put_device_slots",
+     "where": "fujinet-lib/include/fujinet-fuji.h:401",
+     "sends": "FUJICALL_D(..., d, sizeof(DeviceSlot)*count)",
+     "mismatch": "count must be 8"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_SET_DEVICE_FULLPATH",
+   "value": "0xE2",
+   "group": "slots",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:108-110 -> fn-h89/lib/device/fujiDevice/fujiDevice.h:203-207 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1333-1358 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1299-1331)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "device_slot",
+     "meaning": "0-7",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    },
+    {
+     "index": 1,
+     "size": 1,
+     "name": "host_slot",
+     "meaning": "0-7",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    },
+    {
+     "index": 2,
+     "size": 1,
+     "name": "mode",
+     "meaning": "0x01 read-only, 0x02 read/write (stored as access_mode)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": true,
+    "len": "up to 256 (zero-filled buffer)",
+    "format": "NUL-terminated path relative to the host prefix, max 255 chars; cut at the first NUL (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1337-1345)"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "no payload (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1340-1344)",
+     "device_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1305-1309)",
+     "host_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1311-1315)"
+    ]
+   },
+   "side_effects": "Sets the slot's filename, host_slot and access_mode in RAM and saves fnconfig.ini (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1317-1329). Empty filename sets host_slot to 0xFF but leaves the old filename in place (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1317-1324); GET_DEVICE_FULLPATH still returns it. Only UNMOUNT_IMAGE clears a slot (fujiDisk::reset, fn-h89/lib/fuji/fujiDisk.cpp:3-12). Does not mount, unmount or check that the file exists.",
+   "traps": [
+    "Missing field aborts the firmware: the rs232 switch's paramCount<3 guard (fn-h89/lib/device/rs232/rs232Fuji.cpp:334-342) is unreachable."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_set_device_filename",
+     "where": "fujinet-lib/include/fujinet-fuji.h:453",
+     "sends": "FUJICALL_A1_A2_A3_D(..., ds, hs, mode, buffer, 256)",
+     "mismatch": "none on the wire; note macro argument order (mode, hs, ds, buffer) differs from wire order (ds, hs, mode)"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_GET_DEVICE_FULLPATH",
+   "value": "0xDA",
+   "group": "slots",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:111-113 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1283-1296",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "device_slot",
+     "meaning": "0-7",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "256",
+    "layout": [
+     {
+      "off": 0,
+      "size": 256,
+      "name": "path",
+      "meaning": "slot's full path, NUL-padded (zeroed buffer); after MOUNT_IMAGE it includes the host prefix"
+     }
+    ],
+    "naks_when": [
+     "device_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1277-1280, 1295)"
+    ]
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_get_device_filename",
+     "where": "fujinet-lib/include/fujinet-fuji.h:307",
+     "sends": "FUJICALL_A1_RV(..., ds, buffer, 256)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_MOUNT_IMAGE",
+   "value": "0xF8",
+   "group": "mount",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:114-118 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:637-651 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:592-635)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "device_slot",
+     "meaning": "0-7 (drive device 0x31+slot)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    },
+    {
+     "index": 1,
+     "size": 1,
+     "name": "mode",
+     "meaning": "bit 0x02 set = open \"rb+\" (read/write), else \"rb\" (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:596-598); cast to uint8_t",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "device_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:601-602)",
+     "slot host_slot >= 8, e.g. 0xFF (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:604-605)",
+     "file open fails: host not mounted (fn-h89/lib/fuji/fujiHost.cpp:240-241), missing file, read-only file with mode 2 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:614-617)",
+     "media mount returns MEDIATYPE_UNKNOWN, e.g. ROM push failed (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:631-632)"
+    ]
+   },
+   "side_effects": "Opens the slot's file and mounts it on disk device 0x31+slot; sets boot_config=false and is_config_device=false (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:620-626). Rewrites the slot filename to prefix+path (fnfile_open writes the full path back, fn-h89/lib/fuji/fujiHost.cpp:251-254). Media type by extension: .IMD -> IMD, ROM-type -> ROM push, everything else -> raw 512-byte-sector IMG (fn-h89/lib/device/rs232/disk.cpp:283-336).",
+   "traps": [
+    "ROM-type extensions (.ROM .BIN .INT .ITV .CHF .NES .SMS .A78 .A52 .ST2, fn-h89/lib/media/rs232/diskType.cpp:86-93) push the whole file before replying: FujiNet sends its own command frames to device 0xFF (NET_OPEN 0x4F with 5-byte payload id+u32 size, NET_WRITE 0x57 chunks, NET_CLOSE 0x43 [+0x01 abort]) and waits for ACKs (fn-h89/lib/device/rs232/disk.cpp:28-110, 305-315; fn-h89/lib/bus/rs232/rs232.h:178-186). On the H89 a .BIN file is therefore not a disk image.",
+    "Needs filename+host from SET_DEVICE_FULLPATH (or saved config) and a mounted host; it does not mount the host itself.",
+    "Repeated MOUNT_IMAGE with a prefix set re-applies the prefix to the already-prefixed filename."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_mount_disk_image",
+     "where": "fujinet-lib/include/fujinet-fuji.h:374",
+     "sends": "FUJICALL_A1_A2(FUJICMD_MOUNT_IMAGE, ds, mode)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_UNMOUNT_IMAGE",
+   "value": "0xE9",
+   "group": "mount",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:122-124 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1200-1213 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1183-1198)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "device_slot",
+     "meaning": "0-7",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "device_slot >= 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1190-1191)"
+    ]
+   },
+   "side_effects": "Unmounts the disk device, resets the slot (filename cleared, host 0xFF, mode read) and saves fnconfig.ini (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1193-1210): the slot's path is forgotten permanently.",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_unmount_disk_image",
+     "where": "fujinet-lib/include/fujinet-fuji.h:515",
+     "sends": "FUJICALL_A1(FUJICMD_UNMOUNT_IMAGE, ds)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_MOUNT_ALL",
+   "value": "0xD7",
+   "group": "mount",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:131-133 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:271-281 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:232-268)",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "first slot whose host fails to mount or whose image fails to mount; later slots are not attempted (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:248-257)"
+    ]
+   },
+   "side_effects": "For each slot with host_slot != 0xFF and a filename: host.mount() then mount with the slot's stored access_mode. No configured slot -> boot_config=false (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:261-265). Does not set hostMounted.",
+   "traps": [
+    "Out-of-range host_slot 8..254 (possible via WRITE_DEVICE_SLOTS) indexes _fnHosts out of bounds (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:239,248)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_mount_all",
+     "where": "fujinet-lib/include/fujinet-fuji.h:368",
+     "sends": "FUJICALL(FUJICMD_MOUNT_ALL)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_NEW_DISK",
+   "value": "0xE7",
+   "group": "mount",
+   "handler": "fn-h89/lib/device/rs232/rs232Fuji.cpp:331-333 -> fn-h89/lib/device/rs232/rs232Fuji.cpp:108-170",
+   "fields": [],
+   "payload": {
+    "required": true,
+    "len": "262 (fixed)",
+    "format": "u16 LE numSectors @0, u16 LE sectorSize @2, u8 hostSlot @4, u8 deviceSlot @5, char filename[256] @6 NUL-terminated (fn-h89/lib/device/rs232/rs232Fuji.cpp:113-120); uninitialized struct, short payload leaves garbage"
+   },
+   "reply": {
+    "kind": "nak",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "ALWAYS on this build: MediaTypeImg::create() unconditionally returns error (fn-h89/lib/media/rs232/diskTypeImg.cpp:169-172, via fn-h89/lib/device/rs232/disk.cpp:368-373)",
+     "also: no payload (fn-h89/lib/device/rs232/rs232Fuji.cpp:123-128); deviceSlot or hostSlot >= 8 (fn-h89/lib/device/rs232/rs232Fuji.cpp:129-134); file already exists (fn-h89/lib/device/rs232/rs232Fuji.cpp:143-148); open for write fails (fn-h89/lib/device/rs232/rs232Fuji.cpp:150-156)"
+    ]
+   },
+   "side_effects": "Before the inevitable NAK: sets the slot's host_slot, access_mode=write and filename in RAM (fn-h89/lib/device/rs232/rs232Fuji.cpp:139-141); creates/truncates an EMPTY file on the host (\"w\", fn-h89/lib/device/rs232/rs232Fuji.cpp:150) and closes it (fn-h89/lib/device/rs232/rs232Fuji.cpp:159).",
+   "traps": [
+    "Leaves a 0-byte file behind and a dangling _fnDisks[slot].fileh (closed handle never set to nullptr, fn-h89/lib/device/rs232/rs232Fuji.cpp:150,159); fileh != nullptr is what image rotation tests (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:324,349).",
+    "Reached only through rs232Fuji's switch (not in the base table)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_create_new",
+     "where": "fujinet-lib/include/fujinet-fuji.h:266",
+     "sends": "FUJICALL_D(FUJICMD_NEW_DISK, new_disk, sizeof(NewDisk)=262)",
+     "mismatch": "layout matches (fujinet-lib/include/fujinet-fuji.h:111-124); always fails"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_SET_BOOT_MODE",
+   "value": "0xD6",
+   "group": "boot",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:128-130 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1478-1485 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:654-707",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "mode",
+     "meaning": "0 /autorun.img, 1 /mount-and-boot.img, 2 lobby tnfs://tnfs.fujinet.online/MSDOS/lobby.img (fn-h89/lib/device/rs232/rs232Fuji.cpp:14), 3 /hisioboot-fujinet.img; others: nothing",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": []
+   },
+   "side_effects": "Mounts the image read-only on disk device 0 (0x31) straight through disk_dev (FUJI_BOOTDISK, fn-h89/lib/device/fujiDevice/fujiDevice.h:31), marks it is_config_device, sets boot_config=true. Slot 0's record (_fnDisks[0]) is not updated. Mode 2 starts a TNFS session to tnfs.fujinet.online (blocking).",
+   "traps": [
+    "Mode 0 puts the RS232 MS-DOS boot disk (360 KB FAT12, fn-h89/data/webui/device_specific/BUILD_RS232/autorun.img) on drive 0x31 even though setup() deliberately skips it on PINMAP_H89 (fn-h89/lib/device/rs232/rs232Fuji.cpp:38-43).",
+    "Always ACKs: invalid mode, missing image (only autorun.img ships for BUILD_RS232) or TNFS failure mount nothing silently (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:678-702)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_set_boot_mode",
+     "where": "fujinet-lib/include/fujinet-fuji.h:441",
+     "sends": "FUJICALL_A1(FUJICMD_SET_BOOT_MODE, mode)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_CONFIG_BOOT",
+   "value": "0xD9",
+   "group": "boot",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:152-154 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1462-1475",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "enable",
+     "meaning": "nonzero = true",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": []
+   },
+   "side_effects": "enable=0 and slot 0 host_slot==0xFF: unmounts disk device 0 and resets slot 0 (removes a SET_BOOT_MODE disk). Otherwise nothing.",
+   "traps": [
+    "Despite the name it never changes boot_config or the saved config; boot_config is only written, never read, on BUILD_RS232."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_set_boot_config",
+     "where": "fujinet-lib/include/fujinet-fuji.h:435",
+     "sends": "FUJICALL_A1(FUJICMD_CONFIG_BOOT, toggle)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_COPY_FILE",
+   "value": "0xD8",
+   "group": "copy",
+   "handler": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:140-142 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1160-1167 -> fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1169-1181 (core fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1085-1158)",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "src_slot",
+     "meaning": "source host slot, 1-BASED (1-8)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    },
+    {
+     "index": 1,
+     "size": 1,
+     "name": "dst_slot",
+     "meaning": "destination host slot, 1-based (1-8)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": true,
+    "len": "variable",
+    "format": "\"srcpath|dstpath\"; the whole payload becomes the copy spec (dataAsString), including any NUL and padding; paths relative to each host's prefix"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "empty payload or no '|' (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1095-1096)",
+     "slot 0 or > 8 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1099-1107)",
+     "source open fails (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1126-1129)",
+     "dest open fails (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1131-1137)",
+     "malloc fails"
+    ]
+   },
+   "side_effects": "Mounts both hosts (errors ignored, fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1122-1123), copies in 532-byte chunks, creating/overwriting dest. Blocks the bus until done. If dstpath ends in '/', the source basename is appended (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1114-1119).",
+   "traps": [
+    "Fails whenever a host prefix longer than \"/\" is set: each path is opened with fullpathlen = path length + 1 (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1126-1132), so prefix+path never fits and fnfile_open returns null (fn-h89/lib/fuji/fujiHost.cpp:245-254).",
+    "The trailing-'/' rule only works if the LAST payload byte is '/': a NUL-terminated or padded spec disables it.",
+    "fread/fwrite results are not checked: a short copy still ACKs (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1148-1152).",
+    "Missing field aborts: the rs232 switch's guard (fn-h89/lib/device/rs232/rs232Fuji.cpp:375-383) is unreachable."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_copy_file -> fuji_copy_file_common",
+     "where": "fujinet-lib/common/fuji_copy_file_common.c:18-69 (fujinet-lib/include/fujinet-fuji.h:258-259)",
+     "sends": "FUJICALL_A1_A2_D(FUJICMD_COPY_FILE, src, dst, copy_spec, 256)",
+     "mismatch": "always sends 256 bytes: the spec's NUL plus following caller memory become part of dstpath, so the trailing-'/' rule never triggers (and the padding happens to give the DEST path enough room for a prefix; the source path still fails). On failure it polls FUJI_STATUS up to 100 times and compares sizes via fuji_file_stat (lines 36-68)."
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_OPEN_APPKEY",
+   "value": "0xDC",
+   "group": "appkey",
+   "handler": "fn-h89/lib/device/fujiDevice/AppKeyMixin.h:47 -> fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:24-62",
+   "fields": [],
+   "payload": {
+    "required": true,
+    "len": "6 (fixed)",
+    "format": "u16 LE creator @0 (must be != 0), u8 app @2, u8 key @3, i8 mode @4 (0 read, 1 write, 2 read-256; 0xFF invalid), u8 reserved @5 (fn-h89/lib/device/fujiDevice/AppKeyMixin.h:8-23); struct not zeroed, short payload leaves garbage"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "no payload (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:32-36)",
+     "no SD card mounted (fnSDFAT.running() false) (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:39-44)",
+     "creator == 0 or mode == 0xFF (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:47-52)"
+    ]
+   },
+   "side_effects": "Remembers creator/app/key/mode for the next READ/WRITE. Key file: /FujiNet/<creator %04x><app %02x><key %02x>.key on the SD card (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:8-15).",
+   "traps": [
+    "Any mode other than 0xFF is accepted; mode 2 still reads only 64 bytes (MAX_APPKEY_LEN, fn-h89/lib/device/fujiDevice/AppKeyMixin.h:6)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_read_appkey / fuji_write_appkey (internal open)",
+     "where": "fujinet-lib/common/fuji_appkey.c:4-44",
+     "sends": "FUJICALL_D(FUJICMD_OPEN_APPKEY, &appkey, 6) with mode 0 (read) or 1 (write)",
+     "mismatch": "ak_appkey_size is ignored; the lib never sends mode 2"
+    }
+   ],
+   "pc_vs_esp32": "PC: the SD card is the SD directory; ESP32 H89 board needs a physical SD card (fn-h89/include/pinmap/heathkit_h89.h:12-15).",
+   "notes": null
+  },
+  {
+   "name": "FUJI_CLOSE_APPKEY",
+   "value": "0xDB",
+   "group": "appkey",
+   "handler": "fn-h89/lib/device/fujiDevice/AppKeyMixin.h:48 -> fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:69-76",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": []
+   },
+   "side_effects": "Clears the open appkey (creator 0, mode invalid).",
+   "traps": [],
+   "fujinet_lib": [],
+   "pc_vs_esp32": null,
+   "notes": "No fujinet-lib wrapper."
+  },
+  {
+   "name": "FUJI_READ_APPKEY",
+   "value": "0xDD",
+   "group": "appkey",
+   "handler": "fn-h89/lib/device/fujiDevice/AppKeyMixin.h:49 -> fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:127-132 -> fn-h89/lib/device/rs232/rs232Fuji.cpp:407-415 (data: fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:78-125)",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "2+n (n = 0..64)",
+    "layout": [
+     {
+      "off": 0,
+      "size": 2,
+      "name": "length",
+      "meaning": "u16 little-endian n (u16ne_t = little-endian outside CoCo, fn-h89/include/global_types.h:114-120)"
+     },
+     {
+      "off": 2,
+      "size": "n",
+      "name": "data",
+      "meaning": "first n bytes of the key file (max 64)"
+     }
+    ],
+    "naks_when": [
+     "never"
+    ]
+   },
+   "side_effects": "Reads the key file; open state is kept, so it can be re-read.",
+   "traps": [
+    "Never NAKs: no SD, no OPEN, OPEN in write mode, or missing file all return ACK with length 0 (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:84 empty buffer; failure paths fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:87-108)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_read_appkey -> fuji_read_appkey_common + fuji_bus_appkey_read",
+     "where": "fujinet-lib/include/fujinet-fuji.h:534-535; fujinet-lib/common/fuji_appkey.c:30-36; fujinet-lib/bus/h89/appkey.c:75-83",
+     "sends": "OPEN (mode 0) then FUJICALL_RV(FUJICMD_READ_APPKEY, &appkey_buf, 2+64)",
+     "mismatch": "wire layout matches; but a missing key returns true with *count = 0, contrary to the header comment (fujinet-lib/include/fujinet-fuji.h:523-528)"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_WRITE_APPKEY",
+   "value": "0xDE",
+   "group": "appkey",
+   "handler": "fn-h89/lib/device/fujiDevice/AppKeyMixin.h:50 -> fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:185-195 (core fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:134-183)",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "variable",
+    "format": "raw key bytes = whole payload; first 64 stored (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:139)"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "not opened, or opened with mode != 1 (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:142-146)",
+     "no SD (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:149-153)",
+     "file create fails or short write (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:166-180)"
+    ]
+   },
+   "side_effects": "Creates /FujiNet if needed and (over)writes the key file; clears the open state so a new OPEN is needed (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:157-159).",
+   "traps": [
+    "An empty/missing payload writes a 0-byte key (truncating an existing one) and ACKs (fn-h89/lib/device/fujiDevice/AppKeyMixin.cpp:189, 139, 172-175)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_write_appkey",
+     "where": "fujinet-lib/include/fujinet-fuji.h:545; fujinet-lib/common/fuji_appkey.c:38-44; fujinet-lib/bus/h89/appkey.c:86-89",
+     "sends": "OPEN (mode 1) then FUJICALL_D(FUJICMD_WRITE_APPKEY, data, length)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_BASE64_ENCODE_INPUT",
+   "value": "0xD0",
+   "group": "base64",
+   "handler": "fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:5-24",
+   "fields": [
+    {
+     "index": 0,
+     "size": 2,
+     "name": "len",
+     "meaning": "1-65535 bytes to append (param truncated to uint16_t)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "len",
+    "format": "raw bytes; short payload zero-padded to len, excess ignored"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "len == 0 (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:13-18)"
+    ]
+   },
+   "side_effects": "Appends len bytes to the shared base64 buffer.",
+   "traps": [
+    "transaction_get's result is ignored (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:21): no payload appends len zero bytes and ACKs.",
+    "Encode and decode share ONE buffer (global base64.base64_buffer, fn-h89/lib/encoding/base64.h:62) and there is no clear command: unread output from a previous operation is prepended to the next input."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_base64_encode_input",
+     "where": "fujinet-lib/include/fujinet-fuji.h:567",
+     "sends": "FUJICALL_B12_D(..., len, s, len)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_BASE64_ENCODE_COMPUTE",
+   "value": "0xCF",
+   "group": "base64",
+   "handler": "fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:26-49",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "allocation failure only (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:37-42)"
+    ]
+   },
+   "side_effects": "Replaces the buffer with its Base64 encoding.",
+   "traps": [
+    "Output uses the standard alphabet with '=' padding AND inserts '\\n' after every 72 characters plus a final '\\n' (fn-h89/lib/encoding/base64.cpp:39-42, 61-62); ENCODE_LENGTH counts them."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_base64_encode_compute",
+     "where": "fujinet-lib/include/fujinet-fuji.h:566",
+     "sends": "FUJICALL(FUJICMD_BASE64_ENCODE_COMPUTE)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_BASE64_ENCODE_LENGTH",
+   "value": "0xCE",
+   "group": "base64",
+   "handler": "fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:51-61",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "4",
+    "layout": [
+     {
+      "off": 0,
+      "size": 4,
+      "name": "len",
+      "meaning": "u32 little-endian current buffer length"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_base64_encode_length",
+     "where": "fujinet-lib/include/fujinet-fuji.h:568",
+     "sends": "FUJICALL_RV(..., len, sizeof(unsigned long)=4 on z88dk)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_BASE64_ENCODE_OUTPUT",
+   "value": "0xCD",
+   "group": "base64",
+   "handler": "fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:63-91",
+   "fields": [
+    {
+     "index": 0,
+     "size": 2,
+     "name": "len",
+     "meaning": "bytes to fetch, 1..buffer length",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "len",
+    "layout": [
+     {
+      "off": 0,
+      "size": "len",
+      "name": "text",
+      "meaning": "next len bytes of the encoded text"
+     }
+    ],
+    "naks_when": [
+     "len == 0 or len > buffer length (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:70-81)"
+    ]
+   },
+   "side_effects": "Removes the returned bytes from the front of the buffer (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:90).",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_base64_encode_output",
+     "where": "fujinet-lib/include/fujinet-fuji.h:569",
+     "sends": "FUJICALL_B12_RV(..., len, s, len)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_BASE64_DECODE_INPUT",
+   "value": "0xCC",
+   "group": "base64",
+   "handler": "fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:93-113",
+   "fields": [
+    {
+     "index": 0,
+     "size": 2,
+     "name": "len",
+     "meaning": "1-65535 bytes of Base64 text to append",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "len",
+    "format": "Base64 text; zero-padded if short"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "len == 0 (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:101-106)"
+    ]
+   },
+   "side_effects": "Appends to the shared buffer (nativeTextToUnicode is identity on RS232, fn-h89/lib/bus/bus.h:151-153).",
+   "traps": [
+    "Payload result ignored (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:109): missing payload appends zeros and ACKs.",
+    "Encode and decode share ONE buffer (global base64.base64_buffer, fn-h89/lib/encoding/base64.h:62) and there is no clear command: unread output from a previous operation is prepended to the next input."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_base64_decode_input",
+     "where": "fujinet-lib/include/fujinet-fuji.h:562",
+     "sends": "FUJICALL_B12_D(..., len, s, len)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_BASE64_DECODE_COMPUTE",
+   "value": "0xCB",
+   "group": "base64",
+   "handler": "fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:115-136",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "buffer contains no valid Base64 characters, e.g. empty (fn-h89/lib/encoding/base64.cpp count==0 -> nullptr; fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:123-129)"
+    ]
+   },
+   "side_effects": "Replaces the buffer with the decoded bytes; non-alphabet characters (e.g. '\\n') are skipped.",
+   "traps": [
+    "Encode and decode share ONE buffer (global base64.base64_buffer, fn-h89/lib/encoding/base64.h:62) and there is no clear command: unread output from a previous operation is prepended to the next input."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_base64_decode_compute",
+     "where": "fujinet-lib/include/fujinet-fuji.h:561",
+     "sends": "FUJICALL(FUJICMD_BASE64_DECODE_COMPUTE)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_BASE64_DECODE_LENGTH",
+   "value": "0xCA",
+   "group": "base64",
+   "handler": "fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:138-148",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "4",
+    "layout": [
+     {
+      "off": 0,
+      "size": 4,
+      "name": "len",
+      "meaning": "u32 little-endian current buffer length"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_base64_decode_length",
+     "where": "fujinet-lib/include/fujinet-fuji.h:563",
+     "sends": "FUJICALL_RV(..., len, 4)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_BASE64_DECODE_OUTPUT",
+   "value": "0xC9",
+   "group": "base64",
+   "handler": "fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:150-178",
+   "fields": [
+    {
+     "index": 0,
+     "size": 2,
+     "name": "len",
+     "meaning": "bytes to fetch, 1..buffer length",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "len",
+    "layout": [
+     {
+      "off": 0,
+      "size": "len",
+      "name": "data",
+      "meaning": "next len decoded bytes"
+     }
+    ],
+    "naks_when": [
+     "len == 0 or len > buffer length (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:157-168)"
+    ]
+   },
+   "side_effects": "Removes the returned bytes from the buffer (fn-h89/lib/device/fujiDevice/Base64Mixin.cpp:176).",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_base64_decode_output",
+     "where": "fujinet-lib/include/fujinet-fuji.h:564",
+     "sends": "FUJICALL_B12_RV(..., len, s, len)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_HASH_INPUT",
+   "value": "0xC8",
+   "group": "hash",
+   "handler": "fn-h89/lib/device/fujiDevice/HashMixin.cpp:7-26",
+   "fields": [
+    {
+     "index": 0,
+     "size": 2,
+     "name": "len",
+     "meaning": "1-65535 bytes to append",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "len",
+    "format": "raw bytes; zero-padded if short"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "len == 0 (fn-h89/lib/device/fujiDevice/HashMixin.cpp:15-20)"
+    ]
+   },
+   "side_effects": "Appends to the hasher's accumulated data (global hasher).",
+   "traps": [
+    "Payload result ignored (fn-h89/lib/device/fujiDevice/HashMixin.cpp:23): missing payload hashes len zero bytes."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_hash_input / fuji_hash_add",
+     "where": "fujinet-lib/include/fujinet-fuji.h:578,637",
+     "sends": "FUJICALL_B12_D(..., len, data, len)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_HASH_COMPUTE",
+   "value": "0xC7",
+   "group": "hash",
+   "handler": "fn-h89/lib/device/fujiDevice/HashMixin.cpp:28-38",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "algorithm",
+     "meaning": "0 MD5, 1 SHA1, 2 SHA256, 3 SHA512; anything else (incl. 4 SHA224, 5 SHA384) -> UNKNOWN (fn-h89/lib/encoding/hash.cpp:67-80)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": []
+   },
+   "side_effects": "Computes the digest of the accumulated data (HMAC if Hash::key is non-empty), remembers the algorithm for LENGTH/OUTPUT, then CLEARS the accumulated data (fn-h89/lib/encoding/hash.cpp:140-168).",
+   "traps": [
+    "Unknown algorithm still ACKs, leaves an empty digest (LENGTH 0, OUTPUT 0 bytes) and still clears the data."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_hash_compute",
+     "where": "fujinet-lib/include/fujinet-fuji.h:576",
+     "sends": "FUJICALL_A1(FUJICMD_HASH_COMPUTE, type)",
+     "mismatch": "lib hash_alg_t MD5..SHA512 = 0..3 matches (fujinet-lib/include/fujinet-fuji.h:595-601)"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_HASH_COMPUTE_NO_CLEAR",
+   "value": "0xC3",
+   "group": "hash",
+   "handler": "fn-h89/lib/device/fujiDevice/HashMixin.h:29 -> fn-h89/lib/device/fujiDevice/HashMixin.cpp:28-38",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "algorithm",
+     "meaning": "0 MD5, 1 SHA1, 2 SHA256, 3 SHA512; anything else (incl. 4 SHA224, 5 SHA384) -> UNKNOWN (fn-h89/lib/encoding/hash.cpp:67-80)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": []
+   },
+   "side_effects": "As HASH_COMPUTE but keeps the accumulated data (fn-h89/lib/device/fujiDevice/HashMixin.cpp:31).",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_hash_compute_no_clear",
+     "where": "fujinet-lib/include/fujinet-fuji.h:577",
+     "sends": "FUJICALL_A1(FUJICMD_HASH_COMPUTE_NO_CLEAR, type)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_HASH_LENGTH",
+   "value": "0xC6",
+   "group": "hash",
+   "handler": "fn-h89/lib/device/fujiDevice/HashMixin.cpp:40-48",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "mode",
+     "meaning": "1 = hex, anything else = binary",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "1",
+    "layout": [
+     {
+      "off": 0,
+      "size": 1,
+      "name": "len",
+      "meaning": "digest length for the last COMPUTE: 16/20/32/64 binary, doubled for hex, 0 if unknown (fn-h89/lib/encoding/hash.cpp:113-138)"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none",
+   "traps": [
+    "Reply is ONE byte, unlike the u32 Base64/QR lengths."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_hash_length",
+     "where": "fujinet-lib/include/fujinet-fuji.h:590",
+     "sends": "FUJICALL_A1_RV(..., mode, reply, len); used with len 1 by fuji_hash_data/fuji_hash_calculate (fujinet-lib/common/fuji_hash.c:21, fuji_hash_calculate.c:14)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_HASH_OUTPUT",
+   "value": "0xC5",
+   "group": "hash",
+   "handler": "fn-h89/lib/device/fujiDevice/HashMixin.cpp:50-67",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "mode",
+     "meaning": "1 = lower-case hex text (no NUL), anything else = binary",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "HASH_LENGTH value (0 if no digest)",
+    "layout": [
+     {
+      "off": 0,
+      "size": "len",
+      "name": "digest",
+      "meaning": "binary digest or lower-case hex (fn-h89/lib/encoding/hash.cpp:283-290)"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "none (digest is kept; can be fetched again)",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_hash_output",
+     "where": "fujinet-lib/include/fujinet-fuji.h:584",
+     "sends": "FUJICALL_A1_RV(..., type, data, len)",
+     "mismatch": "firmware ignores len and always sends the full digest; lib len must be >= digest length or the call fails"
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_HASH_CLEAR",
+   "value": "0xC2",
+   "group": "hash",
+   "handler": "fn-h89/lib/device/fujiDevice/HashMixin.cpp:69-75",
+   "fields": [],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": []
+   },
+   "side_effects": "Discards accumulated input (the last digest is kept).",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_hash_clear",
+     "where": "fujinet-lib/include/fujinet-fuji.h:628",
+     "sends": "FUJICALL(FUJICMD_HASH_CLEAR)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_QRCODE_INPUT",
+   "value": "0xBC",
+   "group": "qr",
+   "handler": "fn-h89/lib/device/fujiDevice/QRMixin.cpp:6-25",
+   "fields": [
+    {
+     "index": 0,
+     "size": 2,
+     "name": "len",
+     "meaning": "1-65535 bytes to append",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "len",
+    "format": "raw bytes; zero-padded if short"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "len == 0 (fn-h89/lib/device/fujiDevice/QRMixin.cpp:14-19)"
+    ]
+   },
+   "side_effects": "Appends to qrManager.data.",
+   "traps": [
+    "Payload result ignored (fn-h89/lib/device/fujiDevice/QRMixin.cpp:22)."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_qrcode_input",
+     "where": "fujinet-lib/include/fujinet-qrcode.h:31",
+     "sends": "FUJICALL_B12_D(..., len, data, len)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_QRCODE_ENCODE",
+   "value": "0xBD",
+   "group": "qr",
+   "handler": "fn-h89/lib/device/fujiDevice/QRMixin.h:21-25 -> fn-h89/lib/device/fujiDevice/QRMixin.cpp:27-54",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "version",
+     "meaning": "& 0x7F; QR version 1-40 (0 per lib comment = auto)",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    },
+    {
+     "index": 1,
+     "size": 1,
+     "name": "ecc",
+     "meaning": "& 0x03: 0 L, 1 M, 2 Q, 3 H",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    },
+    {
+     "index": 2,
+     "size": 1,
+     "name": "shorten",
+     "meaning": "nonzero = replace input with a FujiNet short URL first",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack",
+    "len": "0",
+    "layout": [],
+    "naks_when": [
+     "encoding produced no output (fn-h89/lib/device/fujiDevice/QRMixin.cpp:45-50)"
+    ]
+   },
+   "side_effects": "Encodes the accumulated input, sets output mode to binary, clears the input (fn-h89/lib/device/fujiDevice/QRMixin.cpp:36-43). shorten registers the URL in FujiNet's web server: ESP32 http://<ip>/url/<n> (fn-h89/lib/http/httpService.cpp:970-979), PC http://<hostname>:8000/url/<n> (fn-h89/lib/http/mgHttpService.cpp:1129-1137).",
+   "traps": [
+    "All three fields are required: a two-field packet aborts the firmware."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_qrcode_encode",
+     "where": "fujinet-lib/include/fujinet-qrcode.h:39-40",
+     "sends": "FUJICALL_A1_A2_A3(..., version, ecc, shorten)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_QRCODE_LENGTH",
+   "value": "0xBE",
+   "group": "qr",
+   "handler": "fn-h89/lib/device/fujiDevice/QRMixin.cpp:56-76",
+   "fields": [
+    {
+     "index": 0,
+     "size": 1,
+     "name": "output_mode",
+     "meaning": "0 binary (1 bit/module, LSB first), 1 ANSI, 2 bitmap (rows byte-padded, MSB = leftmost), 3 SVG, 4 ATASCII, 5 PETSCII; others render as binary",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "4",
+    "layout": [
+     {
+      "off": 0,
+      "size": 4,
+      "name": "len",
+      "meaning": "u32 little-endian length of the rendered code"
+     }
+    ],
+    "naks_when": []
+   },
+   "side_effects": "If the mode differs from the current one and code bytes remain, re-renders the matrix in that mode (fn-h89/lib/device/fujiDevice/QRMixin.cpp:66-71).",
+   "traps": [
+    "After OUTPUT has consumed the whole code, LENGTH returns 0 and cannot re-render."
+   ],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_qrcode_length",
+     "where": "fujinet-lib/include/fujinet-qrcode.h:44-45",
+     "sends": "FUJICALL_A1_RV(..., mode, len, 4)",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  },
+  {
+   "name": "FUJI_QRCODE_OUTPUT",
+   "value": "0xBF",
+   "group": "qr",
+   "handler": "fn-h89/lib/device/fujiDevice/QRMixin.cpp:78-100",
+   "fields": [
+    {
+     "index": 0,
+     "size": 2,
+     "name": "len",
+     "meaning": "1..remaining code length",
+     "if_missing": "abort: param() is vector::at() -> std::out_of_range, never caught (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); fujinet-pc process terminates, ESP32 (C++ exceptions off, fn-h89/sdkconfig.fujinet-heathkit-h89:422) aborts/panics and reboots"
+    }
+   ],
+   "payload": {
+    "required": false,
+    "len": "none",
+    "format": "ignored if present"
+   },
+   "reply": {
+    "kind": "ack-data",
+    "len": "len",
+    "layout": [
+     {
+      "off": 0,
+      "size": "len",
+      "name": "code",
+      "meaning": "next len bytes of the rendered code"
+     }
+    ],
+    "naks_when": [
+     "len == 0 or len > remaining (fn-h89/lib/device/fujiDevice/QRMixin.cpp:85-96)"
+    ]
+   },
+   "side_effects": "Removes the returned bytes (fn-h89/lib/device/fujiDevice/QRMixin.cpp:99).",
+   "traps": [],
+   "fujinet_lib": [
+    {
+     "symbol": "fuji_qrcode_output",
+     "where": "fujinet-lib/include/fujinet-qrcode.h:48",
+     "sends": "FUJICALL_B12_RV(..., len, buf, len)",
+     "mismatch": null
+    },
+    {
+     "symbol": "qrcode_create",
+     "where": "fujinet-lib/common/qrcode_create.c:4-30",
+     "sends": "INPUT, ENCODE, LENGTH, OUTPUT",
+     "mismatch": null
+    }
+   ],
+   "pc_vs_esp32": null,
+   "notes": null
+  }
+ ],
+ "not_dispatched": [
+  {
+   "name": "FUJI_ENABLE_UDPSTREAM",
+   "value": "0xF0",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_SET_BAUDRATE",
+   "value": "0xEB",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_SET_HSIO_INDEX",
+   "value": "0xE3",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_SET_SIO_EXTERNAL_CLOCK",
+   "value": "0xDF",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_ENABLE_DEVICE",
+   "value": "0xD5",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_DISABLE_DEVICE",
+   "value": "0xD4",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_TIME",
+   "value": "0xD2",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_DEVICE_ENABLE_STATUS",
+   "value": "0xD1",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_HEAP",
+   "value": "0xC1",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE10_FULLPATH",
+   "value": "0xA9",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE9_FULLPATH",
+   "value": "0xA8",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE8_FULLPATH",
+   "value": "0xA7",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE7_FULLPATH",
+   "value": "0xA6",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE6_FULLPATH",
+   "value": "0xA5",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE5_FULLPATH",
+   "value": "0xA4",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE4_FULLPATH",
+   "value": "0xA3",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE3_FULLPATH",
+   "value": "0xA2",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE2_FULLPATH",
+   "value": "0xA1",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_GET_DEVICE1_FULLPATH",
+   "value": "0xA0",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_UPDATE_FIRMWARE",
+   "value": "0x90",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_HSIO_INDEX",
+   "value": "0x3F",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_NAK",
+   "value": "0x15",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_ACK",
+   "value": "0x06",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_SEND_ERROR",
+   "value": "0x02",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "FUJI_SEND_RESPONSE",
+   "value": "0x01",
+   "result": "single NAK (no data)",
+   "why": "fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403 default case; not in the mixin or base maps"
+  },
+  {
+   "name": "fujinet-lib fuji_get_time",
+   "value": "0xD2",
+   "result": "NAK -> false",
+   "why": "fujinet-lib/include/fujinet-fuji.h:649 sends FUJICMD_GET_TIME to 0x70; time lives on the clock device 0x45"
+  },
+  {
+   "name": "fujinet-lib fuji_enable_device / fuji_disable_device",
+   "value": "0xD5/0xD4",
+   "result": "NAK -> false",
+   "why": "fujinet-lib/include/fujinet-fuji.h:268-269"
+  },
+  {
+   "name": "fujinet-lib fuji_enable_udpstream, fuji_get_device_enabled_status",
+   "value": "0xF0/0xD1",
+   "result": "declared but not defined for H89 (no implementation in common/ or bus/h89/) -> link error if used",
+   "why": "fujinet-lib/include/fujinet-fuji.h:272, 300"
+  },
+  {
+   "name": "FUJI_QRCODE_CLEAR",
+   "value": "(none)",
+   "result": "not defined",
+   "why": "fn-h89/lib/device/fujiDevice/QRMixin.h:34-37 (#if 0); not in fujiCommandID.h"
+  }
+ ],
+ "structs": {
+  "AdapterConfig": [
+   {
+    "off": 0,
+    "size": 33,
+    "name": "ssid",
+    "meaning": "current SSID, NUL-padded; \"NOT CONNECTED\" when not associated"
+   },
+   {
+    "off": 33,
+    "size": 64,
+    "name": "hostname",
+    "meaning": "network hostname, NUL-padded; empty when not connected"
+   },
+   {
+    "off": 97,
+    "size": 4,
+    "name": "localIP",
+    "meaning": "IPv4 address, network order bytes; 0 when not connected"
+   },
+   {
+    "off": 101,
+    "size": 4,
+    "name": "gateway",
+    "meaning": "IPv4 gateway"
+   },
+   {
+    "off": 105,
+    "size": 4,
+    "name": "netmask",
+    "meaning": "IPv4 netmask"
+   },
+   {
+    "off": 109,
+    "size": 4,
+    "name": "dnsIP",
+    "meaning": "primary DNS"
+   },
+   {
+    "off": 113,
+    "size": 6,
+    "name": "macAddress",
+    "meaning": "MAC, always filled"
+   },
+   {
+    "off": 119,
+    "size": 6,
+    "name": "bssid",
+    "meaning": "AP BSSID; 0 when not connected"
+   },
+   {
+    "off": 125,
+    "size": 15,
+    "name": "fn_version",
+    "meaning": "short firmware version, strlcpy (max 14 chars + NUL)"
+   }
+  ],
+  "AdapterConfigExtended": [
+   {
+    "off": 0,
+    "size": 33,
+    "name": "ssid",
+    "meaning": "current SSID, NUL-padded; \"NOT CONNECTED\" when not associated"
+   },
+   {
+    "off": 33,
+    "size": 64,
+    "name": "hostname",
+    "meaning": "network hostname, NUL-padded; empty when not connected"
+   },
+   {
+    "off": 97,
+    "size": 4,
+    "name": "localIP",
+    "meaning": "IPv4 address, network order bytes; 0 when not connected"
+   },
+   {
+    "off": 101,
+    "size": 4,
+    "name": "gateway",
+    "meaning": "IPv4 gateway"
+   },
+   {
+    "off": 105,
+    "size": 4,
+    "name": "netmask",
+    "meaning": "IPv4 netmask"
+   },
+   {
+    "off": 109,
+    "size": 4,
+    "name": "dnsIP",
+    "meaning": "primary DNS"
+   },
+   {
+    "off": 113,
+    "size": 6,
+    "name": "macAddress",
+    "meaning": "MAC, always filled"
+   },
+   {
+    "off": 119,
+    "size": 6,
+    "name": "bssid",
+    "meaning": "AP BSSID; 0 when not connected"
+   },
+   {
+    "off": 125,
+    "size": 15,
+    "name": "fn_version",
+    "meaning": "short firmware version, strlcpy (max 14 chars + NUL)"
+   },
+   {
+    "off": 140,
+    "size": 16,
+    "name": "sLocalIP",
+    "meaning": "dotted-quad string"
+   },
+   {
+    "off": 156,
+    "size": 16,
+    "name": "sGateway",
+    "meaning": "dotted-quad string"
+   },
+   {
+    "off": 172,
+    "size": 16,
+    "name": "sNetmask",
+    "meaning": "dotted-quad string"
+   },
+   {
+    "off": 188,
+    "size": 16,
+    "name": "sDnsIP",
+    "meaning": "dotted-quad string"
+   },
+   {
+    "off": 204,
+    "size": 18,
+    "name": "sMacAddress",
+    "meaning": "\"XX:XX:XX:XX:XX:XX\" upper-case hex"
+   },
+   {
+    "off": 222,
+    "size": 18,
+    "name": "sBssid",
+    "meaning": "\"XX:XX:XX:XX:XX:XX\" upper-case hex"
+   }
+  ],
+  "DirEntryExt": [
+   {
+    "off": 0,
+    "size": 1,
+    "name": "year",
+    "meaning": "years since 1970 (tm_year-70, fn-h89/lib/device/rs232/rs232Fuji.cpp:194)"
+   },
+   {
+    "off": 1,
+    "size": 1,
+    "name": "month",
+    "meaning": "1-12"
+   },
+   {
+    "off": 2,
+    "size": 1,
+    "name": "day",
+    "meaning": "1-31"
+   },
+   {
+    "off": 3,
+    "size": 1,
+    "name": "hour",
+    "meaning": "0-23 (FujiNet's local time, localtime(): fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1066)"
+   },
+   {
+    "off": 4,
+    "size": 1,
+    "name": "minute",
+    "meaning": "0-59"
+   },
+   {
+    "off": 5,
+    "size": 1,
+    "name": "second",
+    "meaning": "0-59"
+   },
+   {
+    "off": 6,
+    "size": 4,
+    "name": "size",
+    "meaning": "file size, u32 little-endian (htole32, fn-h89/lib/device/rs232/rs232Fuji.cpp:195)"
+   },
+   {
+    "off": 10,
+    "size": 1,
+    "name": "flags",
+    "meaning": "bit0 DET_FF_DIR (0x01) directory, bit1 DET_FF_TRUNC (0x02) name did not fit (fn-h89/lib/device/fujiDevice/fujiDevice.h:97-100)"
+   },
+   {
+    "off": 11,
+    "size": 1,
+    "name": "mediatype",
+    "meaning": "MediaType::discover_mediatype(): 0 unknown (incl. plain .img!), 1 IMG (.XEX only), 2 ROM (.ROM .BIN .INT .ITV .CHF .NES .SMS .A78 .A52 .ST2), 3 IMD (.IMD) (fn-h89/lib/media/rs232/diskType.cpp:59-96, diskType.h:44-48)"
+   },
+   {
+    "off": 12,
+    "size": "maxlen-12",
+    "name": "filename",
+    "meaning": "NUL-terminated name (see READ_DIR_ENTRY), then zero padding to maxlen"
+   }
+  ],
+  "DirEntryExt_notes": "12-byte packed header (fn-h89/lib/device/rs232/rs232Fuji.cpp:184-189: dirEntryTimestamp 6 + u32 size + flags + mediatype), NOT 13 (13 is the Atari/Apple/ADAM layout with separate is_dir/is_trunc bytes, fujinet-lib/include/fujinet-fuji.h:157-168). fujinet-lib's H89 FujiDirEntry is 12 + filename (fujinet-lib/include/fujinet-fuji.h:170-181).",
+  "DirBlock": [
+   {
+    "off": 0,
+    "size": 2,
+    "name": "magic",
+    "meaning": "'M','F'"
+   },
+   {
+    "off": 2,
+    "size": 1,
+    "name": "hdr_size",
+    "meaning": "4"
+   },
+   {
+    "off": 3,
+    "size": 1,
+    "name": "group_count",
+    "meaning": "number of page groups that follow"
+   },
+   {
+    "off": 4,
+    "size": "var",
+    "name": "groups",
+    "meaning": "each group: flags u8 (bit7 = last group), entry_count u8, data_size u16 LE (excl. 5-byte group header), index u8 (dir_pos/group_size); then entries: [0] year-1970, [1] bit7 dir | month(4 bits), [2] day<<3 | hour>>2, [3] (hour&3)<<6 | minute, [4..6] size u24 LE (0 for dirs), [7] mediatype, [8..] NUL-terminated name (no trailing '/') (fn-h89/lib/FileSystem/directoryPageGroup.h:31-125); whole reply zero-padded to num_pages*256"
+   }
+  ],
+  "HostSlot": "32 bytes: NUL-padded host name; 8 slots -> READ/WRITE_HOST_SLOTS = 256 bytes (MAX_HOSTNAME_LEN 32, fn-h89/lib/fuji/fujiHost.h:6; MAX_HOST_SLOTS 8, fn-h89/lib/config/fnConfig.h:10).",
+  "DeviceSlot": "38 bytes: hostSlot u8 @0 (0xFF empty), mode u8 @1 (0x01 read, 0x02 write, 0x40 mounted - read only), filename[36] @2 (basename on read, ignored on write); 8 slots -> 304 bytes (fn-h89/lib/device/fujiDevice/fujiDevice.h:72-77; MAX_DISPLAY_FILENAME_LEN 36, fn-h89/lib/fuji/fujiDisk.h:7; MAX_MOUNT_SLOTS 8, fn-h89/lib/config/fnConfig.h:11-15).",
+  "AppKeyOpen": "6 bytes: creator u16 LE @0, app u8 @2, key u8 @3, mode i8 @4 (0 read, 1 write, 2 read-256, -1 invalid), reserved u8 @5 (fn-h89/lib/device/fujiDevice/AppKeyMixin.h:8-23).",
+  "AppKeyReadReply": "u16 LE length n @0, n bytes @2, n <= 64 (fn-h89/lib/device/rs232/rs232Fuji.cpp:407-415).",
+  "SSIDInfo": "34 bytes: ssid[33] @0, rssi u8 @33 (fn-h89/lib/device/fujiDevice/fujiDevice.h:60-64).",
+  "SSIDConfig": "97 bytes: ssid[33] @0, password[64] @33 (fn-h89/lib/device/fujiDevice/fujiDevice.h:66-70).",
+  "NewDisk": "262 bytes: numSectors u16 @0, sectorSize u16 @2, hostSlot u8 @4, deviceSlot u8 @5, filename[256] @6 (fn-h89/lib/device/rs232/rs232Fuji.cpp:113-120).",
+  "ReplySizes": "SCAN_NETWORKS 1, GET_SCAN_RESULT 34, GET_SSID 97, GET_WIFISTATUS 1, GET_WIFI_ENABLED 1, ADAPTERCONFIG 140, ADAPTERCONFIG_EXTENDED 240, READ_HOST_SLOTS 256, READ_DEVICE_SLOTS 304, GET_DEVICE_FULLPATH 256, GET_HOST_PREFIX 256, READ_DIR_ENTRY maxlen (block maxlen*256), GET_DIRECTORY_POSITION 2, STATUS 4, GENERATE_GUID 37, RANDOM_NUMBER 4 (u32), BASE64_*_LENGTH 4 (u32), QRCODE_LENGTH 4 (u32), HASH_LENGTH 1 (u8), HASH_OUTPUT digest length, READ_APPKEY 2+n, DEVICE_READY 512."
+ },
+ "open_questions": [
+  "Whether the fujinet-pc H89 build defines NDEBUG (assert behaviour on transaction-state violations): no PINMAP_H89 CMake cache was found to check; CMakeLists defaults leave asserts on unless CMAKE_BUILD_TYPE=Release.",
+  "What the H89 side (PPI card / any co-processor) does with the unsolicited device-0xFF NET_OPEN/WRITE/CLOSE frames sent during a ROM-type MOUNT_IMAGE, and how long readBusPacket waits on the PPI channel for their ACKs: not determinable from these trees.",
+  "QR version 0 meaning (auto-size?) depends on the bundled qrcode library's qrcode_initText(); not traced.",
+  "How a TNFS server treats the empty-string pattern the firmware passes when no filter is given, and the realpat[-1] read in fnFsTNFS::dir_open (fn-h89/lib/FileSystem/fnFsTNFS.cpp:296).",
+  "Hash::key (HMAC) is never set by any Fuji-device command; whether another subsystem can leave it set (changing HASH_COMPUTE into HMAC) was not traced.",
+  "ESP32 H89 card: whether the SD socket is populated in practice (appkeys and the \"SD\" host need it)."
+ ]
+}

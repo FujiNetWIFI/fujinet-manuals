@@ -1,0 +1,2225 @@
+{
+ "functions": [
+  {
+   "name": "clock_get_time",
+   "kind": "macro",
+   "proto": "#define clock_get_time(time_data,format)",
+   "header": "fujinet-clock.h",
+   "line": 53,
+   "doc": "",
+   "commands": [
+    "APETIME_GETTIME",
+    "APETIME_GET_ISO_LOCAL",
+    "APETIME_GET_ISO_UTC",
+    "APETIME_GET_PRODOS",
+    "APETIME_GET_SIMPLE_HUNDREDTHS",
+    "APETIME_GET_SOS",
+    "APETIME_SETTZ_ALT2"
+   ],
+   "source": null,
+   "expands": "clock_get_time_common(time_data, format, false)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "clock_get_time_common",
+   "kind": "function",
+   "proto": "uint8_t clock_get_time_common(uint8_t *time_data, TimeFormat format, bool alt);",
+   "header": "fujinet-clock.h",
+   "line": 83,
+   "doc": "@brief Get the current time in the format specified using the FN system timezone. @param time_data pointer to buffer for the response. For string formats the buffer is null terminated. @param format a TimeFormat value to specify how the data should be returned. @return fujinet status/error code (See FN_ERR_* values)",
+   "commands": [],
+   "source": "common/fuji_clock.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "clock_get_time_tz",
+   "kind": "function",
+   "proto": "uint8_t clock_get_time_tz(uint8_t *time_data, const char *tz, TimeFormat format);",
+   "header": "fujinet-clock.h",
+   "line": 92,
+   "doc": "@brief Get the current time in the format specified for the given timezone without affecting the system timezone. @param time_data pointer to buffer for the response. For string formats the buffer is null terminated. @param tz pointer to the timezone to use for this call only. @param format a TimeFormat value to specify how the data should be returned. @return fujinet status/error code (See FN_ERR_* values)",
+   "commands": [
+    "APETIME_SETTZ"
+   ],
+   "source": "common/fuji_clock.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "clock_get_tz",
+   "kind": "function",
+   "proto": "uint8_t clock_get_tz(char *tz);",
+   "header": "fujinet-clock.h",
+   "line": 75,
+   "doc": "@brief Get the FN clock's system timezone @param tz pointer to the receiving timezone buffer @return fujinet status/error code (See FN_ERR_* values)",
+   "commands": [
+    "APETIME_GETTZ_LEN",
+    "APETIME_GET_GENERAL"
+   ],
+   "source": "common/fuji_clock.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "clock_set_tz",
+   "kind": "function",
+   "proto": "uint8_t clock_set_tz(const char *tz);",
+   "header": "fujinet-clock.h",
+   "line": 68,
+   "doc": "@brief Set the FN clock's system timezone @param tz the timezone string to apply @return fujinet status/error code (See FN_ERR_* values)",
+   "commands": [
+    "APETIME_SETTZ_ALT"
+   ],
+   "source": "common/fuji_clock.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_base64_decode_compute",
+   "kind": "macro",
+   "proto": "#define fuji_base64_decode_compute(void)",
+   "header": "fujinet-fuji.h",
+   "line": 561,
+   "doc": "Base64 ALL RETURN VALUES ARE SUCCESS STATUS VALUE, i.e. true == success",
+   "commands": [
+    "FUJI_BASE64_DECODE_COMPUTE"
+   ],
+   "source": null,
+   "expands": "FUJICALL(FUJICMD_BASE64_DECODE_COMPUTE)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_base64_decode_input",
+   "kind": "macro",
+   "proto": "#define fuji_base64_decode_input(s,len)",
+   "header": "fujinet-fuji.h",
+   "line": 562,
+   "doc": "",
+   "commands": [
+    "FUJI_BASE64_DECODE_INPUT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_B12_D(FUJICMD_BASE64_DECODE_INPUT, len, s, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_base64_decode_length",
+   "kind": "macro",
+   "proto": "#define fuji_base64_decode_length(len)",
+   "header": "fujinet-fuji.h",
+   "line": 563,
+   "doc": "",
+   "commands": [
+    "FUJI_BASE64_DECODE_LENGTH"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_BASE64_DECODE_LENGTH, len, sizeof(unsigned long))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_base64_decode_output",
+   "kind": "macro",
+   "proto": "#define fuji_base64_decode_output(s,len)",
+   "header": "fujinet-fuji.h",
+   "line": 564,
+   "doc": "",
+   "commands": [
+    "FUJI_BASE64_DECODE_OUTPUT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_B12_RV(FUJICMD_BASE64_DECODE_OUTPUT, len, s, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_base64_encode_compute",
+   "kind": "macro",
+   "proto": "#define fuji_base64_encode_compute(void)",
+   "header": "fujinet-fuji.h",
+   "line": 566,
+   "doc": "",
+   "commands": [
+    "FUJI_BASE64_ENCODE_COMPUTE"
+   ],
+   "source": null,
+   "expands": "FUJICALL(FUJICMD_BASE64_ENCODE_COMPUTE)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_base64_encode_input",
+   "kind": "macro",
+   "proto": "#define fuji_base64_encode_input(s,len)",
+   "header": "fujinet-fuji.h",
+   "line": 567,
+   "doc": "",
+   "commands": [
+    "FUJI_BASE64_ENCODE_INPUT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_B12_D(FUJICMD_BASE64_ENCODE_INPUT, len, s, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_base64_encode_length",
+   "kind": "macro",
+   "proto": "#define fuji_base64_encode_length(len)",
+   "header": "fujinet-fuji.h",
+   "line": 568,
+   "doc": "",
+   "commands": [
+    "FUJI_BASE64_ENCODE_LENGTH"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_BASE64_ENCODE_LENGTH, len, sizeof(unsigned long))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_base64_encode_output",
+   "kind": "macro",
+   "proto": "#define fuji_base64_encode_output(s,len)",
+   "header": "fujinet-fuji.h",
+   "line": 569,
+   "doc": "",
+   "commands": [
+    "FUJI_BASE64_ENCODE_OUTPUT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_B12_RV(FUJICMD_BASE64_ENCODE_OUTPUT, len, s, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_bus_appkey_read",
+   "kind": "function",
+   "proto": "bool fuji_bus_appkey_read(void *string, uint16_t *length);",
+   "header": "fujinet-appkey.h",
+   "line": 32,
+   "doc": "",
+   "commands": [
+    "FUJI_READ_APPKEY"
+   ],
+   "source": "bus/h89/appkey.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_bus_appkey_write",
+   "kind": "function",
+   "proto": "bool fuji_bus_appkey_write(const void *string, uint16_t length);",
+   "header": "fujinet-appkey.h",
+   "line": 33,
+   "doc": "",
+   "commands": [
+    "FUJI_WRITE_APPKEY"
+   ],
+   "source": "bus/h89/appkey.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_bus_call",
+   "kind": "function",
+   "proto": "bool fuji_bus_call(uint8_t device, uint8_t fuji_cmd, uint8_t fields, uint8_t aux1, uint8_t aux2, uint8_t aux3, uint8_t aux4, const void *buf, size_t buf_length);",
+   "header": "fujinet-bus.h",
+   "line": 19,
+   "doc": "",
+   "commands": [],
+   "source": "bus/h89/fuji_bus_call.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_close_directory",
+   "kind": "function",
+   "proto": "bool fuji_close_directory(void);",
+   "header": "fujinet-fuji.h",
+   "line": 245,
+   "doc": "@brief Closes the currently open directory @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_CLOSE_DIRECTORY"
+   ],
+   "source": "common/fuji_close_directory.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_copy_file",
+   "kind": "macro",
+   "proto": "#define fuji_copy_file(src_slot,dest_slot,copy_spec)",
+   "header": "fujinet-fuji.h",
+   "line": 253,
+   "doc": "",
+   "commands": [
+    "FUJI_COPY_FILE"
+   ],
+   "source": null,
+   "expands": "fuji_copy_file_common(src_slot, dest_slot, copy_spec)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_copy_file_common",
+   "kind": "function",
+   "proto": "bool fuji_copy_file_common(uint8_t src_slot, uint8_t dest_slot, const char *copy_spec);",
+   "header": "fujinet-fuji.h",
+   "line": 258,
+   "doc": "#else /* ! (ADAM || COCO)",
+   "commands": [
+    "FUJI_COPY_FILE"
+   ],
+   "source": "common/fuji_copy_file_common.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_create_new",
+   "kind": "macro",
+   "proto": "#define fuji_create_new(new_disk)",
+   "header": "fujinet-fuji.h",
+   "line": 266,
+   "doc": "@brief Creates a new disk from the given structure. @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_NEW_DISK"
+   ],
+   "source": null,
+   "expands": "FUJICALL_D(FUJICMD_NEW_DISK, new_disk, sizeof(NewDisk))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_devcall_vld",
+   "kind": "function",
+   "proto": "bool fuji_devcall_vld(uint8_t device, uint8_t cmd, const void *data, uint16_t data_len);",
+   "header": "fujinet-bus-ezcall.h",
+   "line": 61,
+   "doc": "Sends a variable length packet with data on systems that have variable length packets, otherwise uses the aux1/aux2 bytes to encode the length of the data using native byte endianness.",
+   "commands": [],
+   "source": "common/fuji_devcall_vld.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_disable_device",
+   "kind": "macro",
+   "proto": "#define fuji_disable_device(d)",
+   "header": "fujinet-fuji.h",
+   "line": 268,
+   "doc": "",
+   "commands": [
+    "FUJI_DISABLE_DEVICE"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_DISABLE_DEVICE, d)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_enable_device",
+   "kind": "macro",
+   "proto": "#define fuji_enable_device(d)",
+   "header": "fujinet-fuji.h",
+   "line": 269,
+   "doc": "",
+   "commands": [
+    "FUJI_ENABLE_DEVICE"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_ENABLE_DEVICE, d)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_enable_udpstream",
+   "kind": "function",
+   "proto": "bool fuji_enable_udpstream(uint16_t port, char *host);",
+   "header": "fujinet-fuji.h",
+   "line": 272,
+   "doc": "TODO: document and fix atari",
+   "commands": [],
+   "source": null,
+   "expands": null,
+   "links": {
+    "hdos": false,
+    "cpm": false
+   }
+  },
+  {
+   "name": "fuji_field_numbytes",
+   "kind": "macro",
+   "proto": "#define fuji_field_numbytes(descr)",
+   "header": "fujinet-bus.h",
+   "line": 64,
+   "doc": "",
+   "commands": [],
+   "source": null,
+   "expands": "fuji_field_numbytes_table[descr & 0x7]",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_field_numfields",
+   "kind": "macro",
+   "proto": "#define fuji_field_numfields(descr)",
+   "header": "fujinet-bus.h",
+   "line": 76,
+   "doc": "",
+   "commands": [],
+   "source": null,
+   "expands": "fuji_field_numfields_table[descr & 0x7]",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_file_stat",
+   "kind": "function",
+   "proto": "FujiDirEntry * fuji_file_stat(uint8_t host, const char *path);",
+   "header": "fujinet-fuji.h",
+   "line": 651,
+   "doc": "",
+   "commands": [
+    "FUJI_READ_DIR_ENTRY"
+   ],
+   "source": "common/fuji_file_stat.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_generate_guid",
+   "kind": "macro",
+   "proto": "#define fuji_generate_guid(guid)",
+   "header": "fujinet-fuji.h",
+   "line": 278,
+   "doc": "@brief Generate a randomized GUID. @return success status of request",
+   "commands": [
+    "FUJI_GENERATE_GUID"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_GENERATE_GUID, guid, MAX_GUID_LEN)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_adapter_config",
+   "kind": "macro",
+   "proto": "#define fuji_get_adapter_config(ac)",
+   "header": "fujinet-fuji.h",
+   "line": 285,
+   "doc": "@brief Gets adapter config information from FN, e.g. IP, MAC, BSSID etc. Raw version that returns bytes for all IP etc related values. @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_GET_ADAPTERCONFIG"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_GET_ADAPTERCONFIG, ac, sizeof(AdapterConfig))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_adapter_config_extended",
+   "kind": "macro",
+   "proto": "#define fuji_get_adapter_config_extended(ac)",
+   "header": "fujinet-fuji.h",
+   "line": 292,
+   "doc": "@brief Gets extended adapter config information from FN, e.g. IP, MAC, BSSID etc. Extended version that returns strings in addition to raw for all IP etc related values. @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_GET_ADAPTERCONFIG_EXTENDED"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_GET_ADAPTERCONFIG_EXTENDED, ac, sizeof(AdapterConfigExtended))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_device_enabled_status",
+   "kind": "function",
+   "proto": "bool fuji_get_device_enabled_status(uint8_t d);",
+   "header": "fujinet-fuji.h",
+   "line": 300,
+   "doc": "THIS IS BOGUS. Apple and Atari both just return \"true\" for any device. TODO: remove this if it isn't going to be properly implemented on FN. which I think it could be by looking on FN side by looking at Config @return the enabled status of the given device: NOTE: ALWAYS RETURNS TRUE AT MOMENT",
+   "commands": [],
+   "source": null,
+   "expands": null,
+   "links": {
+    "hdos": false,
+    "cpm": false
+   }
+  },
+  {
+   "name": "fuji_get_device_filename",
+   "kind": "macro",
+   "proto": "#define fuji_get_device_filename(ds,buffer)",
+   "header": "fujinet-fuji.h",
+   "line": 307,
+   "doc": "@brief Sets the buffer to the device's filename in device id `ds` Note: BUFFER MUST BE ABLE TO ACCEPT UP TO 256 BYTE STRING @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_GET_DEVICE_FULLPATH"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_RV(FUJICMD_GET_DEVICE_FULLPATH, ds, buffer, MAX_FILENAME_LEN)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_device_slots",
+   "kind": "macro",
+   "proto": "#define fuji_get_device_slots(d,count)",
+   "header": "fujinet-fuji.h",
+   "line": 315,
+   "doc": "@brief Sets ALL device slot information into pointer d. `size` is the receiving array size, and the returned data size is checked against this before copying. If it doesn't match, no data is copied, and false is returned. @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_READ_DEVICE_SLOTS"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_READ_DEVICE_SLOTS, d, sizeof(DeviceSlot) * count)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_directory_position",
+   "kind": "macro",
+   "proto": "#define fuji_get_directory_position(pos)",
+   "header": "fujinet-fuji.h",
+   "line": 321,
+   "doc": "@brief Fetch the current directory position for paging through directories into pos. @return success status of request",
+   "commands": [
+    "FUJI_GET_DIRECTORY_POSITION"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_GET_DIRECTORY_POSITION, pos, sizeof(uint16_t))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_host_prefix",
+   "kind": "macro",
+   "proto": "#define fuji_get_host_prefix(hs,prefix)",
+   "header": "fujinet-fuji.h",
+   "line": 327,
+   "doc": "@brief Fetch the host prefix for given host slot id. @return success status of request",
+   "commands": [
+    "FUJI_GET_HOST_PREFIX"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_RV(FUJICMD_GET_HOST_PREFIX, hs, prefix, MAX_FILENAME_LEN)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_host_slots",
+   "kind": "macro",
+   "proto": "#define fuji_get_host_slots(d,count)",
+   "header": "fujinet-fuji.h",
+   "line": 335,
+   "doc": "@brief Sets ALL host slot information into pointer h. `count` is the number of host slots, and the returned data size is checked against this multiple of HostSlot structs before copying. If it doesn't match, no data is copied, and false is returned. @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_READ_HOST_SLOTS"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_READ_HOST_SLOTS, d, sizeof(HostSlot) * count)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_scan_result",
+   "kind": "macro",
+   "proto": "#define fuji_get_scan_result(n,ssid_info)",
+   "header": "fujinet-fuji.h",
+   "line": 342,
+   "doc": "@brief Fills ssid_info with wifi scan results for bssid index n. No data copied if there is an error. @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_GET_SCAN_RESULT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_RV(FUJICMD_GET_SCAN_RESULT, n, ssid_info, sizeof(SSIDInfo))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_ssid",
+   "kind": "macro",
+   "proto": "#define fuji_get_ssid(net_config)",
+   "header": "fujinet-fuji.h",
+   "line": 349,
+   "doc": "@brief Fills net_config with current SSID/password values. No data copied if there is an error. @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_GET_SSID"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_GET_SSID, net_config, sizeof(NetConfig))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_time",
+   "kind": "macro",
+   "proto": "#define fuji_get_time(buffer)",
+   "header": "fujinet-fuji.h",
+   "line": 649,
+   "doc": "",
+   "commands": [
+    "FUJI_GET_TIME"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_GET_TIME, buffer, 7)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_wifi_enabled",
+   "kind": "function",
+   "proto": "bool fuji_get_wifi_enabled(void);",
+   "header": "fujinet-fuji.h",
+   "line": 355,
+   "doc": "@brief Checks if WIFI is enabled or not. Any device errors will return false also. @return enabled status",
+   "commands": [
+    "FUJI_GET_WIFI_ENABLED"
+   ],
+   "source": "common/fuji_get_wifi_enabled.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_get_wifi_status",
+   "kind": "macro",
+   "proto": "#define fuji_get_wifi_status(status)",
+   "header": "fujinet-fuji.h",
+   "line": 362,
+   "doc": "@brief Sets status to the wifi status value. WL_CONNECTED (3), WL_DISCONNECTED (6) are set if there are no underyling errors in FN. @return Success status, true if all OK.",
+   "commands": [
+    "FUJI_GET_WIFISTATUS"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_GET_WIFISTATUS, status, 1)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_add",
+   "kind": "macro",
+   "proto": "#define fuji_hash_add(data,length)",
+   "header": "fujinet-fuji.h",
+   "line": 637,
+   "doc": "@brief Adds data that needs to be hashed. @param data Pointer to the byte data @param length the length of data to add for hashign @return success status of the operation bool fuji_hash_add(uint8_t *data, uint16_t length);",
+   "commands": [
+    "FUJI_HASH_INPUT"
+   ],
+   "source": null,
+   "expands": "fuji_hash_input(data, length)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_calculate",
+   "kind": "function",
+   "proto": "bool fuji_hash_calculate(hash_alg_t hash_type, bool as_hex, bool discard_data, uint8_t *output);",
+   "header": "fujinet-fuji.h",
+   "line": 647,
+   "doc": "@brief Calculates the hash of the accumulated data. Can be called multiple times with different hash_type values on the same data if discard_data is false. If different data is required to be hashed, call \\ref fuji_hash_clear to start over, then add data with \\ref fuji_hash_add again. @param hash_type The \\ref hash_alg_t \"type of hash\" to use: MD5, SHA1, SHA256, SHA512 @param as_hex True if the returned data should be a hex string, false if it should be binary. Hex has twice the length as binary in the output. @param discard_data If true the data will be freed from FujiNet memory after the has",
+   "commands": [],
+   "source": "common/fuji_hash_calculate.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_clear",
+   "kind": "macro",
+   "proto": "#define fuji_hash_clear()",
+   "header": "fujinet-fuji.h",
+   "line": 628,
+   "doc": "@brief Clear any data associated with hashing in the Fujinet. Should be called before calculating new hashes when using \\ref fuji_hash_add and \\ref fuji_hash_calculate. Can also be called to discard any data previously sent to free memory on the FujiNet used for any previous data sent with \\ref fuji_hash_add. @return success status of the operation bool fuji_hash_clear(void);",
+   "commands": [
+    "FUJI_HASH_CLEAR"
+   ],
+   "source": null,
+   "expands": "FUJICALL(FUJICMD_HASH_CLEAR)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_compute",
+   "kind": "macro",
+   "proto": "#define fuji_hash_compute(type)",
+   "header": "fujinet-fuji.h",
+   "line": 576,
+   "doc": "////////////////////////////////////////////////////////////// These are very low level functions and should only be used internally. Please use the new interface functions below this section. ////////////////////////////////////////////////////////////// All return success status (true = worked)",
+   "commands": [
+    "FUJI_HASH_COMPUTE"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_HASH_COMPUTE, type)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_compute_no_clear",
+   "kind": "macro",
+   "proto": "#define fuji_hash_compute_no_clear(type)",
+   "header": "fujinet-fuji.h",
+   "line": 577,
+   "doc": "",
+   "commands": [
+    "FUJI_HASH_COMPUTE_NO_CLEAR"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_HASH_COMPUTE_NO_CLEAR, type)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_data",
+   "kind": "function",
+   "proto": "bool fuji_hash_data(hash_alg_t hash_type, uint8_t *input, uint16_t length, bool as_hex, uint8_t *output);",
+   "header": "fujinet-fuji.h",
+   "line": 621,
+   "doc": "@brief Computes the hash of the given input data in a single operation. This is a simpler interface than using \\ref fuji_hash_clear, \\ref fuji_hash_add, \\ref fuji_hash_calculate, and can be used instead of those 3 operations if there is only 1 piece of data to hash. This will also clear any data previously add using fuji_hash_add, and also clears any memory associated with hashing in the FujiNet at the end of the operation. It is the one stop shop, if you use it with the other 3 functions, you must sequence them correctly so this function doesn't clear the existing sent data. @param hash_type ",
+   "commands": [],
+   "source": "common/fuji_hash.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_input",
+   "kind": "macro",
+   "proto": "#define fuji_hash_input(data,len)",
+   "header": "fujinet-fuji.h",
+   "line": 578,
+   "doc": "",
+   "commands": [
+    "FUJI_HASH_INPUT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_B12_D(FUJICMD_HASH_INPUT, len, data, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_length",
+   "kind": "macro",
+   "proto": "#define fuji_hash_length(mode,reply,len)",
+   "header": "fujinet-fuji.h",
+   "line": 590,
+   "doc": "\\deprecated Use fuji_hash_size instead, as this function is broken. bool fuji_hash_length(uint8_t mode);",
+   "commands": [
+    "FUJI_HASH_LENGTH"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_RV(FUJICMD_HASH_LENGTH, mode, reply, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_output",
+   "kind": "macro",
+   "proto": "#define fuji_hash_output(type,data,len)",
+   "header": "fujinet-fuji.h",
+   "line": 584,
+   "doc": "output_type is 1 for hex, 0 of binary. the len is the length of data, which currently is only up to 128 if hex, but future proofing with word. bool fuji_hash_output(uint8_t output_type, char *s, uint16_t len);",
+   "commands": [
+    "FUJI_HASH_OUTPUT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_RV(FUJICMD_HASH_OUTPUT, type, data, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_hash_size",
+   "kind": "function",
+   "proto": "uint16_t fuji_hash_size(hash_alg_t hash_type, bool as_hex);",
+   "header": "fujinet-fuji.h",
+   "line": 609,
+   "doc": "@brief Returns the size of the hash that will be produced for the given hash_type and whether hex output is required or not. This should be used to calculate the memory needed for the output of \\ref fuji_hash_data @param hash_type The \\ref hash_alg_t \"type of hash\" to use: MD5, SHA1, SHA256, SHA512 @param as_hex True if the returned data should be a hex string, false if it should be binary. Hex has twice the length as binary in the output. @return the length of the hash that will be computed for this algorithm depending on whether hex is being returned or not.",
+   "commands": [],
+   "source": "common/fuji_hash_size.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_mount_all",
+   "kind": "macro",
+   "proto": "#define fuji_mount_all()",
+   "header": "fujinet-fuji.h",
+   "line": 368,
+   "doc": "@brief Mount all devices @return true if successful, false otherwise",
+   "commands": [
+    "FUJI_MOUNT_ALL"
+   ],
+   "source": null,
+   "expands": "FUJICALL(FUJICMD_MOUNT_ALL)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_mount_disk_image",
+   "kind": "macro",
+   "proto": "#define fuji_mount_disk_image(ds,mode)",
+   "header": "fujinet-fuji.h",
+   "line": 374,
+   "doc": "@brief Mount specific device slot @return true if successful, false otherwise",
+   "commands": [
+    "FUJI_MOUNT_IMAGE"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_A2(FUJICMD_MOUNT_IMAGE, ds, mode)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_mount_host_slot",
+   "kind": "macro",
+   "proto": "#define fuji_mount_host_slot(hs)",
+   "header": "fujinet-fuji.h",
+   "line": 380,
+   "doc": "@brief Mount specific host slot @return true if successful, false otherwise",
+   "commands": [
+    "FUJI_MOUNT_HOST"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_MOUNT_HOST, hs)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_open_directory",
+   "kind": "macro",
+   "proto": "#define fuji_open_directory(hs,path_filter)",
+   "header": "fujinet-fuji.h",
+   "line": 387,
+   "doc": "@brief Open the given directory on the given host slot. The path_filter is a buffer (not a string) of 256 bytes, with a separator of the \\0 char between the path and filter parts. @return true if successful, false otherwise",
+   "commands": [
+    "FUJI_OPEN_DIRECTORY"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_D(FUJICMD_OPEN_DIRECTORY, hs, path_filter, MAX_FILENAME_LEN)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_open_directory2",
+   "kind": "macro",
+   "proto": "#define fuji_open_directory2(hs,path,filter)",
+   "header": "fujinet-fuji.h",
+   "line": 395,
+   "doc": "",
+   "commands": [],
+   "source": null,
+   "expands": "fuji_open_directory_filter(hs, path, filter)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_open_directory_filter",
+   "kind": "function",
+   "proto": "bool fuji_open_directory_filter(uint8_t hostSlot, const char *path, const char *filter);",
+   "header": "fujinet-fuji.h",
+   "line": 394,
+   "doc": "@brief Open the given directory on the given host slot. path and filter are separate strings. If filter is not set, it is NULL @return true if successful, false otherwise",
+   "commands": [
+    "FUJI_OPEN_DIRECTORY"
+   ],
+   "source": "common/fuji_open_directory_filter.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_put_device_slots",
+   "kind": "macro",
+   "proto": "#define fuji_put_device_slots(d,count)",
+   "header": "fujinet-fuji.h",
+   "line": 401,
+   "doc": "@brief Save `size` device slots to FN @return true if successful, false if there was an error from FN",
+   "commands": [
+    "FUJI_WRITE_DEVICE_SLOTS"
+   ],
+   "source": null,
+   "expands": "FUJICALL_D(FUJICMD_WRITE_DEVICE_SLOTS, d, sizeof(DeviceSlot) * count)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_put_host_slots",
+   "kind": "macro",
+   "proto": "#define fuji_put_host_slots(d,count)",
+   "header": "fujinet-fuji.h",
+   "line": 407,
+   "doc": "@brief Save `size` hosts slots to FN @return true if successful, false if there was an error from FN",
+   "commands": [
+    "FUJI_WRITE_HOST_SLOTS"
+   ],
+   "source": null,
+   "expands": "FUJICALL_D(FUJICMD_WRITE_HOST_SLOTS, d, sizeof(HostSlot) * count)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_qrcode_encode",
+   "kind": "macro",
+   "proto": "#define fuji_qrcode_encode(version,ecc,shorten)",
+   "header": "fujinet-qrcode.h",
+   "line": 36,
+   "doc": "",
+   "commands": [
+    "FUJI_QRCODE_ENCODE"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_A2_A3(FUJICMD_QRCODE_ENCODE, version, ecc, shorten)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_qrcode_input",
+   "kind": "macro",
+   "proto": "#define fuji_qrcode_input(data,len)",
+   "header": "fujinet-qrcode.h",
+   "line": 31,
+   "doc": "Add data to be encoded. Call one or more times before fuji_qrcode_encode.",
+   "commands": [
+    "FUJI_QRCODE_INPUT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_B12_D(FUJICMD_QRCODE_INPUT, len, data, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_qrcode_length",
+   "kind": "macro",
+   "proto": "#define fuji_qrcode_length(mode,len)",
+   "header": "fujinet-qrcode.h",
+   "line": 44,
+   "doc": "Re-render the code in output_mode (a qr_output_mode_t) and return its byte length in len.",
+   "commands": [
+    "FUJI_QRCODE_LENGTH"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_RV(FUJICMD_QRCODE_LENGTH, mode, len, sizeof(unsigned long))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_qrcode_output",
+   "kind": "macro",
+   "proto": "#define fuji_qrcode_output(buf,len)",
+   "header": "fujinet-qrcode.h",
+   "line": 48,
+   "doc": "Read len bytes of the rendered code into s.",
+   "commands": [
+    "FUJI_QRCODE_OUTPUT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_B12_RV(FUJICMD_QRCODE_OUTPUT, len, buf, len)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_read_appkey",
+   "kind": "macro",
+   "proto": "#define fuji_read_appkey(k,c,d)",
+   "header": "fujinet-fuji.h",
+   "line": 532,
+   "doc": "",
+   "commands": [
+    "FUJI_OPEN_APPKEY",
+    "FUJI_READ_APPKEY"
+   ],
+   "source": null,
+   "expands": "fuji_read_appkey_common(k, c, d)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_read_appkey_common",
+   "kind": "function",
+   "proto": "bool fuji_read_appkey_common(uint8_t key_id, uint16_t *count, uint8_t *data);",
+   "header": "fujinet-fuji.h",
+   "line": 534,
+   "doc": "",
+   "commands": [
+    "FUJI_OPEN_APPKEY",
+    "FUJI_READ_APPKEY"
+   ],
+   "source": "common/fuji_appkey.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_read_directory",
+   "kind": "function",
+   "proto": "bool fuji_read_directory(uint8_t maxlen, uint8_t aux2, void *buffer);",
+   "header": "fujinet-fuji.h",
+   "line": 413,
+   "doc": "@brief Fill buffer with directory information. @return success status of request",
+   "commands": [
+    "FUJI_READ_DIR_ENTRY"
+   ],
+   "source": "common/fuji_read_directory.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_reset",
+   "kind": "macro",
+   "proto": "#define fuji_reset()",
+   "header": "fujinet-fuji.h",
+   "line": 419,
+   "doc": "@brief Reset FN @return true if successful, false if there was an error from FN",
+   "commands": [
+    "FUJI_RESET"
+   ],
+   "source": null,
+   "expands": "FUJICALL(FUJICMD_RESET)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_scan_for_networks",
+   "kind": "macro",
+   "proto": "#define fuji_scan_for_networks(count)",
+   "header": "fujinet-fuji.h",
+   "line": 426,
+   "doc": "",
+   "commands": [
+    "FUJI_SCAN_NETWORKS"
+   ],
+   "source": null,
+   "expands": "FUJICALL_RV(FUJICMD_SCAN_NETWORKS, count, 1)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_set_appkey_details",
+   "kind": "macro",
+   "proto": "#define fuji_set_appkey_details(creator,app,size)",
+   "header": "fujinet-fuji.h",
+   "line": 556,
+   "doc": "",
+   "commands": [],
+   "source": null,
+   "expands": "( ak_creator_id = creator, ak_app_id = app, ak_appkey_size = size )",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_set_boot_config",
+   "kind": "macro",
+   "proto": "#define fuji_set_boot_config(toggle)",
+   "header": "fujinet-fuji.h",
+   "line": 435,
+   "doc": "@brief Scans network for SSIDs and sets count accordingly. @return success status of request.",
+   "commands": [
+    "FUJI_CONFIG_BOOT"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_CONFIG_BOOT, toggle)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_set_boot_mode",
+   "kind": "macro",
+   "proto": "#define fuji_set_boot_mode(mode)",
+   "header": "fujinet-fuji.h",
+   "line": 441,
+   "doc": "@brief Sets the booting mode of the FN device (e.g. lobby). @return success status of request.",
+   "commands": [
+    "FUJI_SET_BOOT_MODE"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_SET_BOOT_MODE, mode)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_set_device_filename",
+   "kind": "macro",
+   "proto": "#define fuji_set_device_filename(mode,hs,ds,buffer)",
+   "header": "fujinet-fuji.h",
+   "line": 448,
+   "doc": "",
+   "commands": [
+    "FUJI_SET_DEVICE_FULLPATH"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_A2_A3_D(FUJICMD_SET_DEVICE_FULLPATH, ds, hs, mode, buffer, MAX_FILENAME_LEN)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_set_directory_position",
+   "kind": "function",
+   "proto": "bool fuji_set_directory_position(uint16_t pos);",
+   "header": "fujinet-fuji.h",
+   "line": 460,
+   "doc": "@brief Sets current directory position @return success status of request.",
+   "commands": [
+    "FUJI_SET_DIRECTORY_POSITION"
+   ],
+   "source": "common/fuji_set_directory_position.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_set_host_prefix",
+   "kind": "macro",
+   "proto": "#define fuji_set_host_prefix(hs,prefix)",
+   "header": "fujinet-fuji.h",
+   "line": 487,
+   "doc": "@brief Set the host prefix for given host slot id for platforms that support it. @return success status of request",
+   "commands": [
+    "FUJI_SET_HOST_PREFIX"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_D(FUJICMD_SET_HOST_PREFIX, hs, prefix, MAX_FILENAME_LEN)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_set_ssid",
+   "kind": "macro",
+   "proto": "#define fuji_set_ssid(nc)",
+   "header": "fujinet-fuji.h",
+   "line": 493,
+   "doc": "@brief Set the SSID information from NetConfig structure @return success status of request",
+   "commands": [
+    "FUJI_SET_SSID"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_D(FUJICMD_SET_SSID, 0, nc, sizeof(NetConfig))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_status",
+   "kind": "macro",
+   "proto": "#define fuji_status(status)",
+   "header": "fujinet-fuji.h",
+   "line": 501,
+   "doc": "",
+   "commands": [
+    "FUJI_STATUS"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1_RV(FUJICMD_STATUS, 0, status, sizeof(FNStatus))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_unmount_disk_image",
+   "kind": "macro",
+   "proto": "#define fuji_unmount_disk_image(ds)",
+   "header": "fujinet-fuji.h",
+   "line": 515,
+   "doc": "@brief Unmounts the device in slot ds @return success status of request",
+   "commands": [
+    "FUJI_UNMOUNT_IMAGE"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_UNMOUNT_IMAGE, ds)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_unmount_host_slot",
+   "kind": "macro",
+   "proto": "#define fuji_unmount_host_slot(hs)",
+   "header": "fujinet-fuji.h",
+   "line": 521,
+   "doc": "@brief Unmounts the host in slot hs @return success status of request",
+   "commands": [
+    "FUJI_UNMOUNT_HOST"
+   ],
+   "source": null,
+   "expands": "FUJICALL_A1(FUJICMD_UNMOUNT_HOST, hs)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "fuji_write_appkey",
+   "kind": "function",
+   "proto": "bool fuji_write_appkey(uint8_t key_id, uint16_t count, uint8_t *data);",
+   "header": "fujinet-fuji.h",
+   "line": 545,
+   "doc": "@brief Writes to an appkey using the provided details previously setup with fuji_set_appkey_details. @param key_id the specific key id of this application. @param count the number of bytes in the buffer to write to the appkey. @param data a pointer to the memory to write from. @return success status of the call. If either the initial OPEN or subsequent WRITE fail, will return false.",
+   "commands": [
+    "FUJI_OPEN_APPKEY",
+    "FUJI_WRITE_APPKEY"
+   ],
+   "source": "common/fuji_appkey.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_accept",
+   "kind": "function",
+   "proto": "FN_ERR network_accept(const char* devicespec);",
+   "header": "fujinet-network.h",
+   "line": 337,
+   "doc": "",
+   "commands": [
+    "NET_ACCEPT"
+   ],
+   "source": "common/network_accept.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_bus_read",
+   "kind": "function",
+   "proto": "size_t network_bus_read(uint8_t device, void *buffer, size_t length);",
+   "header": "fujinet-bus.h",
+   "line": 88,
+   "doc": "",
+   "commands": [
+    "NET_READ"
+   ],
+   "source": "bus/h89/network.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_bus_write",
+   "kind": "function",
+   "proto": "size_t network_bus_write(uint8_t device, const void *buffer, size_t length);",
+   "header": "fujinet-bus.h",
+   "line": 89,
+   "doc": "",
+   "commands": [
+    "NET_WRITE"
+   ],
+   "source": "bus/h89/network.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_close",
+   "kind": "function",
+   "proto": "FN_ERR network_close(const char* devicespec);",
+   "header": "fujinet-network.h",
+   "line": 99,
+   "doc": "@brief Close Connection @param devicespec pointer to device specification of form: N:PROTO://[HOSTNAME]:PORT/PATH/.../ @return fujinet-network error code (See FN_ERR_* values)",
+   "commands": [
+    "NET_CLOSE"
+   ],
+   "source": "common/network_close.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_close_client",
+   "kind": "function",
+   "proto": "FN_ERR network_close_client(const char *devicespec);",
+   "header": "fujinet-network.h",
+   "line": 422,
+   "doc": "@brief Close an accepted TCP client connection, keeping the server listening @param devicespec pointer to device specification, e.g. \"N1:TCP://:6502/\" @return fujinet-network error code (See FN_ERR_* values) Companion to network_accept.",
+   "commands": [
+    "NET_CLOSE_CLIENT"
+   ],
+   "source": "common/network_close_client.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_cd",
+   "kind": "macro",
+   "proto": "#define network_fs_cd(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 329,
+   "doc": "@brief Change directory on FS (e.g. TNFS, FTP, HTTPS, SMB) @param devicespec Pointer to devicespec \"N1:TNFS://TMA-2/dir\" @return fujinet-network error code (see FN_ERR_* values)",
+   "commands": [
+    "NET_CHDIR"
+   ],
+   "source": null,
+   "expands": "(NETCALL_D(NETCMD_CHDIR, network_unit(devicespec), devicespec, NETWORK_FS_LEN(devicespec)) ? FN_ERR_OK : FN_ERR_IO_ERROR)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_command",
+   "kind": "macro",
+   "proto": "#define network_fs_command(cmd,devicespec)",
+   "header": "fujinet-network.h",
+   "line": 282,
+   "doc": "",
+   "commands": [],
+   "source": null,
+   "expands": "(NETCALL_A1_A2_D(cmd, network_unit(devicespec), 0, 0, devicespec, NETWORK_FS_LEN(devicespec)) ? FN_ERR_OK : FN_ERR_IO_ERROR)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_delete",
+   "kind": "macro",
+   "proto": "#define network_fs_delete(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 286,
+   "doc": "",
+   "commands": [
+    "NET_DELETE"
+   ],
+   "source": null,
+   "expands": "network_fs_command(NETCMD_DELETE, devicespec)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_lock",
+   "kind": "macro",
+   "proto": "#define network_fs_lock(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 300,
+   "doc": "@brief Lock file (make read only) on FS (e.g. TNFS, FTP, HTTPS, SMB) @param devicespec Pointer to device specification \"N1:TNFS://TMA-2/foo.txt\" @return fujinet-network error code (see FN_ERR_* values)",
+   "commands": [
+    "NET_LOCK"
+   ],
+   "source": null,
+   "expands": "network_fs_command(NETCMD_LOCK, devicespec)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_mkdir",
+   "kind": "macro",
+   "proto": "#define network_fs_mkdir(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 314,
+   "doc": "@brief Make directory on FS (e.g. TNFS, FTP, HTTPS, SMB) @param devicespec pointer to devicespec \"N1:TNFS://TMA-2/newdir\" @return fujinet-network error code (see FN_ERR_* values)",
+   "commands": [
+    "NET_MKDIR"
+   ],
+   "source": null,
+   "expands": "network_fs_command(NETCMD_MKDIR, devicespec)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_pwd",
+   "kind": "macro",
+   "proto": "#define network_fs_pwd(devicespec,cwd)",
+   "header": "fujinet-network.h",
+   "line": 333,
+   "doc": "",
+   "commands": [
+    "NET_GETCWD"
+   ],
+   "source": null,
+   "expands": "(NETCALL_RV(NETCMD_GETCWD, network_unit(devicespec), cwd, MAX_FILENAME_LEN) ? FN_ERR_OK : FN_ERR_IO_ERROR)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_rename",
+   "kind": "macro",
+   "proto": "#define network_fs_rename(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 293,
+   "doc": "@brief Rename file on FS endpoint (e.g. TNFS, FTP, HTTPS, SMB) @param devicespec Pointer to device specification, with new name after comma, e.g. \"N1:TNFS://TMA-2/foo.txt,bar.txt\" @return fujinet-network error code (see FN_ERR_* values)",
+   "commands": [
+    "NET_RENAME"
+   ],
+   "source": null,
+   "expands": "network_fs_command(NETCMD_RENAME, devicespec)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_rmdir",
+   "kind": "macro",
+   "proto": "#define network_fs_rmdir(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 322,
+   "doc": "@brief Remove directory on FS (e.g. TNFS, FTP, HTTPS, SMB) @param devicespec pointer to devicespec \"N1:TNFS://TMA-2/newdir\" @return fujinet-network error code (see FN_ERR_* values) @verbose Directory must be empty!",
+   "commands": [
+    "NET_RMDIR"
+   ],
+   "source": null,
+   "expands": "network_fs_command(NETCMD_RMDIR, devicespec)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_fs_unlock",
+   "kind": "macro",
+   "proto": "#define network_fs_unlock(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 307,
+   "doc": "@brief Unlock file (make read/write) on FS (e.g. TNFS, FTP, HTTPS, SMB) @param devicespec Pointer to device specification \"N1:TNFS://TMA-2/foo.txt\" @return fujinet-network error code (see FN_ERR_* values)",
+   "commands": [
+    "NET_UNLOCK"
+   ],
+   "source": null,
+   "expands": "network_fs_command(NETCMD_UNLOCK, devicespec)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_get_dstats",
+   "kind": "function",
+   "proto": "FN_ERR network_get_dstats(const char *devicespec, uint8_t cmd, uint8_t *dstats);",
+   "header": "fujinet-network.h",
+   "line": 462,
+   "doc": "@brief Ask which direction a network command transfers data (Atari SIO only) @param devicespec pointer to device specification, e.g. \"N1:\" @param cmd the command byte to query @param dstats pointer to where to put the reply: 0x00 none, 0x40 read, 0x80 write, 0xFF invalid @return fujinet-network error code (See FN_ERR_* values) Replaces the old SIO special-command inquiry mechanism.",
+   "commands": [],
+   "source": null,
+   "expands": null,
+   "links": {
+    "hdos": false,
+    "cpm": false
+   }
+  },
+  {
+   "name": "network_has_proceed",
+   "kind": "function",
+   "proto": "bool network_has_proceed(void);",
+   "header": "fujinet-network.h",
+   "line": 343,
+   "doc": "Returns true if the hardware supports checking a proceed pin",
+   "commands": [],
+   "source": null,
+   "expands": null,
+   "links": {
+    "hdos": false,
+    "cpm": false
+   }
+  },
+  {
+   "name": "network_html_parse",
+   "kind": "function",
+   "proto": "FN_ERR network_html_parse(const char *devicespec);",
+   "header": "fujinet-network.h",
+   "line": 483,
+   "doc": "@brief Parse the currently open channel as HTML @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @return fujinet-network error code (See FN_ERR_* values) Sets the parser to HTML. Query with network_html_query using a CSS selector; repeating the same query advances to the next match.",
+   "commands": [
+    "NET_PARSE",
+    "NET_SET_PARSER"
+   ],
+   "source": "common/network_html_parse.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_html_query",
+   "kind": "macro",
+   "proto": "#define network_html_query(devicespec,selector,buffer)",
+   "header": "fujinet-network.h",
+   "line": 490,
+   "doc": "@brief Perform HTML query with a CSS selector, e.g. \"div.content a\" Same wire command as network_json_query; assumes network_html_parse was called.",
+   "commands": [
+    "NET_QUERY"
+   ],
+   "source": null,
+   "expands": "network_json_query(devicespec, selector, buffer)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_http_add_header",
+   "kind": "macro",
+   "proto": "#define network_http_add_header(devicespec,header)",
+   "header": "fujinet-network.h",
+   "line": 217,
+   "doc": "@brief Add header to HTTP request @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param header pointer to string containing full header to add, e.g. \"Accept: application/json\" @return fujinet-network error code (See FN_ERR_* values) Assumes an open connection.",
+   "commands": [
+    "NET_WRITE"
+   ],
+   "source": null,
+   "expands": "network_write(devicespec, header, strlen(header))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_http_delete",
+   "kind": "macro",
+   "proto": "#define network_http_delete(devicespec,trans)",
+   "header": "fujinet-network.h",
+   "line": 260,
+   "doc": "@brief Send DELETE HTTP request @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param trans translation value @return fujinet-network error code (See FN_ERR_* values) This will open a connection, consumer can then query the data, and must close the connection.",
+   "commands": [
+    "NET_OPEN"
+   ],
+   "source": null,
+   "expands": "network_open(devicespec, OPEN_MODE_HTTP_DELETE_H, trans)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_http_end_add_headers",
+   "kind": "macro",
+   "proto": "#define network_http_end_add_headers(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 207,
+   "doc": "@brief End adding headers. @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @return fujinet-network error code (See FN_ERR_* values) Assumes an open connection. Completes header adding, and sets mode back to BODY",
+   "commands": [
+    "NET_SET_HTTP_MODE"
+   ],
+   "source": null,
+   "expands": "network_http_set_mode(devicespec, HTTP_CHAN_MODE_BODY)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_http_post",
+   "kind": "function",
+   "proto": "FN_ERR network_http_post(const char *devicespec, const char *data);",
+   "header": "fujinet-network.h",
+   "line": 228,
+   "doc": "@brief Send POST HTTP request - assumes data is a string with nul terminator. This will not be able to send the 00 byte @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param data text data to post @return fujinet-network error code (See FN_ERR_* values) Assumes an open connection.",
+   "commands": [
+    "NET_WRITE"
+   ],
+   "source": "common/network_http_post.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_http_post_bin",
+   "kind": "function",
+   "proto": "FN_ERR network_http_post_bin(const char *devicespec, const uint8_t *data, uint16_t len);",
+   "header": "fujinet-network.h",
+   "line": 240,
+   "doc": "@brief Send POST HTTP request, sends binary data from data location for length len, which allows sending arbitrary binary data @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param data binary data to post @param len length of binary data to send @return fujinet-network error code (See FN_ERR_* values) Assumes an open connection.",
+   "commands": [
+    "NET_WRITE"
+   ],
+   "source": "common/network_http_post_bin.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_http_put",
+   "kind": "macro",
+   "proto": "#define network_http_put(devicespec,data)",
+   "header": "fujinet-network.h",
+   "line": 250,
+   "doc": "@brief Send PUT HTTP request @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param data data to put @return fujinet-network error code (See FN_ERR_* values) Assumes an open connection.",
+   "commands": [
+    "NET_WRITE"
+   ],
+   "source": null,
+   "expands": "network_http_post(devicespec, data)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_http_set_mode",
+   "kind": "macro",
+   "proto": "#define network_http_set_mode(devicespec,mode)",
+   "header": "fujinet-network.h",
+   "line": 187,
+   "doc": "@brief Sets the HTTP mode. @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param mode The mode to set @return fujinet-network error code (See FN_ERR_* values) Assumes an open connection.",
+   "commands": [
+    "NET_SET_HTTP_MODE"
+   ],
+   "source": null,
+   "expands": "(NETCALL_A1_A2(NETCMD_SET_HTTP_MODE, network_unit(devicespec), 0, mode) ? FN_ERR_OK : FN_ERR_IO_ERROR)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_http_start_add_headers",
+   "kind": "macro",
+   "proto": "#define network_http_start_add_headers(devicespec)",
+   "header": "fujinet-network.h",
+   "line": 198,
+   "doc": "@brief Start adding headers. @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @return fujinet-network error code (See FN_ERR_* values) Assumes an open connection. After calling this, add any headers with network_http_add_header, and finally call network_http_end_add_headers",
+   "commands": [
+    "NET_SET_HTTP_MODE"
+   ],
+   "source": null,
+   "expands": "network_http_set_mode(devicespec, HTTP_CHAN_MODE_SET_HEADERS)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_init",
+   "kind": "function",
+   "proto": "FN_ERR network_init(void);",
+   "header": "fujinet-network.h",
+   "line": 82,
+   "doc": "@brief Initialize network device Allows initialization of network to perform any platform dependent checks, and allow applications to exit early if there is a network issue. @return fujinet-network status/error code (See FN_ERR_* values) and set device specific error if there is any",
+   "commands": [],
+   "source": "common/network_init.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_json_parse",
+   "kind": "function",
+   "proto": "FN_ERR network_json_parse(const char *devicespec);",
+   "header": "fujinet-network.h",
+   "line": 161,
+   "doc": "@brief Parse the currently open JSON location @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @return fujinet-network error code (See FN_ERR_* values) This will set the parser to JSON, which will be unset in the close.",
+   "commands": [
+    "NET_PARSE",
+    "NET_SET_PARSER"
+   ],
+   "source": "common/network_json_parse.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_json_query",
+   "kind": "function",
+   "proto": "int16_t network_json_query(const char *devicespec, const char *query, char *buffer);",
+   "header": "fujinet-network.h",
+   "line": 176,
+   "doc": "#else /* ! (__ADAM__ || __COLECOADAM__)",
+   "commands": [
+    "NET_QUERY"
+   ],
+   "source": "common/network_json_query.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_json_strip_newlines",
+   "kind": "function",
+   "proto": "size_t network_json_strip_newlines(char *buffer, size_t buflen);",
+   "header": "fujinet-network.h",
+   "line": 338,
+   "doc": "",
+   "commands": [],
+   "source": "common/network_json.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_open",
+   "kind": "function",
+   "proto": "FN_ERR network_open(const char* devicespec, uint8_t mode, uint8_t trans);",
+   "header": "fujinet-network.h",
+   "line": 108,
+   "doc": "@brief Open Connection @param devicespec pointer to device specification of form: N:PROTO://[HOSTNAME]:PORT/PATH/.../ @param mode (4=read, 8=write, 12=read/write, 13=POST, etc.) @param trans translation mode (CR/LF to other line endings; 0=none, 1=CR, 2=LF, 3=CRLF, 4=Pet) @return fujinet-network error code (See FN_ERR_* values)",
+   "commands": [
+    "NET_OPEN"
+   ],
+   "source": "common/network_open.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_proceed",
+   "kind": "function",
+   "proto": "bool network_proceed(void);",
+   "header": "fujinet-network.h",
+   "line": 341,
+   "doc": "Returns true if the network has data/error ready",
+   "commands": [],
+   "source": null,
+   "expands": null,
+   "links": {
+    "hdos": false,
+    "cpm": false
+   }
+  },
+  {
+   "name": "network_read",
+   "kind": "function",
+   "proto": "int16_t network_read(const char* devicespec, void *buf, uint16_t len);",
+   "header": "fujinet-network.h",
+   "line": 143,
+   "doc": "@brief Read from channel The read will block until it has read all the bytes requested from the device, or the EOF is hit. This will block waiting for as much data as it can, so that the client does not need to handle counting. If an error stops it after some bytes arrived, it returns the count read so far; a negative error is returned only when nothing was read. fn_network_error contains the device specific error code. @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param buf Buffer @param len length @return Bytes read, or negative value of fujinet-networ",
+   "commands": [
+    "NET_READ"
+   ],
+   "source": "common/network_read.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_read_nb",
+   "kind": "function",
+   "proto": "int16_t network_read_nb(const char* devicespec, void *buf, uint16_t len);",
+   "header": "fujinet-network.h",
+   "line": 128,
+   "doc": "@brief Read whatever is waiting on the channel, up to len Waits until at least one byte is available, then returns what is there, which can be fewer than len. Returns 0 at end of data, when the device reports an error with nothing waiting, or if the read itself fails. fn_network_error contains the device specific error code. @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param buf Buffer @param len length @return Bytes read, or negative fujinet-network error code (See FN_ERR_* values) if the status check fails",
+   "commands": [
+    "NET_READ"
+   ],
+   "source": "common/network_read_nb.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_seek",
+   "kind": "function",
+   "proto": "FN_ERR network_seek(const char *devicespec, uint32_t pos);",
+   "header": "fujinet-network.h",
+   "line": 360,
+   "doc": "#else /* ! FUJI_PLATFORM_ATARI",
+   "commands": [
+    "NET_SEEK"
+   ],
+   "source": "common/network_seek.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_eol",
+   "kind": "function",
+   "proto": "FN_ERR network_set_eol(const char *devicespec, const char *eol);",
+   "header": "fujinet-network.h",
+   "line": 345,
+   "doc": "Set the native end-of-line string for use with translation",
+   "commands": [
+    "NET_SET_EOL"
+   ],
+   "source": "common/network_set_eol.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_interrupt_rate",
+   "kind": "function",
+   "proto": "FN_ERR network_set_interrupt_rate(const char *devicespec, uint8_t rate);",
+   "header": "fujinet-network.h",
+   "line": 413,
+   "doc": "@brief Set the status-poll interrupt rate (SIO PROCEED timer) @param devicespec pointer to device specification, e.g. \"N1:\" @param rate rate in milliseconds @return fujinet-network error code (See FN_ERR_* values)",
+   "commands": [
+    "NET_SET_INT_RATE"
+   ],
+   "source": "common/network_set_interrupt_rate.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_line_ending",
+   "kind": "macro",
+   "proto": "#define network_set_line_ending(devicespec,ch)",
+   "header": "fujinet-network.h",
+   "line": 451,
+   "doc": "",
+   "commands": [
+    "NET_SET_PARAMETER"
+   ],
+   "source": null,
+   "expands": "network_set_parameter(devicespec, 1, ch)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_parameter",
+   "kind": "function",
+   "proto": "FN_ERR network_set_parameter(const char *devicespec, uint8_t param, uint8_t value);",
+   "header": "fujinet-network.h",
+   "line": 449,
+   "doc": "@brief Set a parser processing parameter @param devicespec pointer to device specification, e.g. \"N1:\" @param param 0 = query flags (bits 0-2 remap, bits 4-5 output mode), 1 = query line-ending character @param value the value to set @return fujinet-network error code (See FN_ERR_* values)",
+   "commands": [
+    "NET_SET_PARAMETER"
+   ],
+   "source": "common/network_set_parameters.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_parser",
+   "kind": "function",
+   "proto": "FN_ERR network_set_parser(const char *devicespec, uint8_t mode);",
+   "header": "fujinet-network.h",
+   "line": 473,
+   "doc": "@brief Set the parser: PARSER_NONE, _JSON, _HTML or _XML @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param parser to set @return fujinet-network error code (See FN_ERR_* values) Assumes an open connection. network_json_parse and network_html_parse set the mode themselves.",
+   "commands": [
+    "NET_SET_PARSER"
+   ],
+   "source": "common/network_set_parser.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_password",
+   "kind": "function",
+   "proto": "FN_ERR network_set_password(const char *devicespec, const char *password);",
+   "header": "fujinet-network.h",
+   "line": 405,
+   "doc": "@brief Set the password used to authenticate the next open (e.g. SMB, FTP) @param devicespec pointer to device specification, e.g. \"N1:\" @param password bare password, no Nn: prefix @return fujinet-network error code (See FN_ERR_* values)",
+   "commands": [
+    "NET_PASSWORD"
+   ],
+   "source": "common/network_set_password.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_query_param",
+   "kind": "macro",
+   "proto": "#define network_set_query_param(devicespec,flags)",
+   "header": "fujinet-network.h",
+   "line": 450,
+   "doc": "",
+   "commands": [
+    "NET_SET_PARAMETER"
+   ],
+   "source": null,
+   "expands": "network_set_parameter(devicespec, 0, flags)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_translation",
+   "kind": "function",
+   "proto": "FN_ERR network_set_translation(const char *devicespec, uint8_t trans);",
+   "header": "fujinet-network.h",
+   "line": 386,
+   "doc": "@brief Set the translation mode applied to subsequent opens @param devicespec pointer to device specification, e.g. \"N1:\" @param trans translation mode (0=none, 1=CR, 2=LF, 3=CRLF; 0xFF makes opens ignore their aux2) @return fujinet-network error code (See FN_ERR_* values) On SIO the value is sticky and ORed into the aux2 of subsequent opens, except for directory opens where aux2 is a format code.",
+   "commands": [
+    "NET_TRANSLATION"
+   ],
+   "source": "common/network_set_translation.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_set_username",
+   "kind": "function",
+   "proto": "FN_ERR network_set_username(const char *devicespec, const char *username);",
+   "header": "fujinet-network.h",
+   "line": 397,
+   "doc": "@brief Set the username used to authenticate the next open (e.g. SMB, FTP) @param devicespec pointer to device specification, e.g. \"N1:\" @param username bare username, no Nn: prefix @return fujinet-network error code (See FN_ERR_* values) Call before network_open. On fixed-length-packet platforms a full 256 byte frame is sent, so up to 256 bytes past the string must be readable.",
+   "commands": [
+    "NET_USERNAME"
+   ],
+   "source": "common/network_set_username.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_status",
+   "kind": "function",
+   "proto": "FN_ERR network_status(const char *devicespec, uint16_t *bw, uint8_t *c, uint8_t *err);",
+   "header": "fujinet-network.h",
+   "line": 92,
+   "doc": "@brief Get Network Device Status byte @param devicespec pointer to device specification of form: N:PROTO://[HOSTNAME]:PORT/PATH/.../ @param bw pointer to where to put bytes waiting @param c pointer to where to put connection status @param err to where to put network error byte. @return fujinet-network status/error code (See FN_ERR_* values)",
+   "commands": [
+    "NET_STATUS"
+   ],
+   "source": "common/network_status.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_tell",
+   "kind": "macro",
+   "proto": "#define network_tell(ds,pos)",
+   "header": "fujinet-network.h",
+   "line": 371,
+   "doc": "",
+   "commands": [
+    "NET_TELL"
+   ],
+   "source": null,
+   "expands": "network_tell_common(ds, pos)",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_tell_common",
+   "kind": "function",
+   "proto": "FN_ERR network_tell_common(const char *devicespec, uint32_t *pos);",
+   "header": "fujinet-network.h",
+   "line": 373,
+   "doc": "#else /* ! FUJI_PLATFORM_ATARI",
+   "commands": [
+    "NET_TELL"
+   ],
+   "source": "common/network_tell_common.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_udp_get_remote",
+   "kind": "function",
+   "proto": "FN_ERR network_udp_get_remote(const char *devicespec, char *buf, uint16_t len);",
+   "header": "fujinet-network.h",
+   "line": 440,
+   "doc": "@brief Get the remote \"ip:port\" a UDP datagram was last received from @param devicespec pointer to device specification, e.g. \"N1:UDP://:5000/\" @param buf receiving buffer, nul terminated on return (256 bytes on fixed-length platforms) @param len buffer length @return fujinet-network error code (See FN_ERR_* values) Only implemented on FujiNet-PC builds; ESP32 firmware rejects it.",
+   "commands": [
+    "NET_GET_REMOTE"
+   ],
+   "source": "common/network_udp_get_remote.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_udp_set_destination",
+   "kind": "function",
+   "proto": "FN_ERR network_udp_set_destination(const char *dest_spec);",
+   "header": "fujinet-network.h",
+   "line": 429,
+   "doc": "@brief Set the destination for an open UDP channel @param dest_spec destination of the form \"N1:host:port\" @return fujinet-network error code (See FN_ERR_* values)",
+   "commands": [
+    "NET_SET_DESTINATION"
+   ],
+   "source": "common/network_udp_set_destination.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_unit",
+   "kind": "function",
+   "proto": "uint8_t network_unit(const char *devicespec);",
+   "header": "fujinet-network.h",
+   "line": 268,
+   "doc": "@brief Internal routine to get the network UNIT id from the devicespec, i.e. Nx: find the \"x\" value @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @return unit number",
+   "commands": [
+    "NET_OPEN"
+   ],
+   "source": "common/network_unit.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_unit_status",
+   "kind": "macro",
+   "proto": "#define network_unit_status(unit,nws)",
+   "header": "fujinet-network.h",
+   "line": 492,
+   "doc": "",
+   "commands": [
+    "FUJI_STATUS",
+    "NET_STATUS"
+   ],
+   "source": null,
+   "expands": "(!NETCALL_RV(FUJICMD_STATUS, unit, nws, sizeof(NetworkStatus)))",
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "network_write",
+   "kind": "function",
+   "proto": "FN_ERR network_write(const char* devicespec, const void *buf, uint16_t len);",
+   "header": "fujinet-network.h",
+   "line": 152,
+   "doc": "@brief Write to network @param devicespec pointer to device specification, e.g. \"N1:HTTPS://fujinet.online/\" @param buf Buffer @param len length @return fujinet-network error code (See FN_ERR_* values)",
+   "commands": [
+    "NET_WRITE"
+   ],
+   "source": "common/network_write.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  },
+  {
+   "name": "qrcode_create",
+   "kind": "function",
+   "proto": "int qrcode_create(uint8_t version, qr_ecc_t ecc, bool shorten, qr_output_mode_t mode, void *input, size_t input_len, void *output, size_t output_max);",
+   "header": "fujinet-qrcode.h",
+   "line": 53,
+   "doc": "Creates encoded QR code using the specified parameters. Returns the final encoded length, or a negative error code if calls failed or not enough space in buffer.",
+   "commands": [
+    "FUJI_QRCODE_OUTPUT"
+   ],
+   "source": "common/qrcode_create.c",
+   "expands": null,
+   "links": {
+    "hdos": true,
+    "cpm": true
+   }
+  }
+ ]
+}

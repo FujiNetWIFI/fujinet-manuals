@@ -1,0 +1,267 @@
+{
+ "fuji.get_adapterconfig": {
+  "reply": "ACK",
+  "len": 140,
+  "tag": "STAND-IN WIFI"
+ },
+ "fuji.get_adapterconfig_extended": {
+  "reply": "ACK",
+  "len": 240,
+  "tag": "STAND-IN WIFI"
+ },
+ "fuji.get_wifi_enabled": {
+  "reply": "ACK",
+  "len": 1,
+  "note": "01: [WiFi] enabled=1 in the rig's fnconfig.ini"
+ },
+ "fuji.get_wifistatus": {
+  "reply": "ACK",
+  "len": 1,
+  "tag": "STAND-IN WIFI",
+  "note": "03 connected: the dummy WiFi is always up"
+ },
+ "fuji.scan_networks": {
+  "reply": "ACK",
+  "len": 1,
+  "tag": "STAND-IN WIFI",
+  "note": "always 16 on fujinet-pc"
+ },
+ "fuji.get_scan_result": {
+  "reply": "ACK",
+  "len": 34,
+  "tag": "STAND-IN WIFI"
+ },
+ "fuji.get_ssid": {
+  "reply": "ACK",
+  "len": 97,
+  "note": "SSID then the passphrase in the clear"
+ },
+ "fuji.set_ssid": {
+  "reply": "ACK",
+  "tag": "STAND-IN WIFI",
+  "note": "the dummy WiFi's connect() always succeeds, so the double NAK (fwspec trap) cannot be shown on fujinet-pc"
+ },
+ "fuji.read_host_slots": {
+  "reply": "ACK",
+  "len": 256
+ },
+ "fuji.write_host_slots": {
+  "reply": "ACK"
+ },
+ "fuji.mount_host": {
+  "reply": "ACK"
+ },
+ "fuji.open_directory": {
+  "reply": "ACK"
+ },
+ "fuji.read_dir_entry": {
+  "reply": "ACK",
+  "len": 32,
+  "note": "four exchanges: blank.h8d, disk.img, readme.txt, then 7F 7F (the end)"
+ },
+ "fuji.get_directory_position": {
+  "reply": "ACK",
+  "len": 2,
+  "note": "03 00: past the third entry"
+ },
+ "fuji.set_directory_position": {
+  "reply": "ACK"
+ },
+ "fuji.read_dir_entry.ext": {
+  "reply": "ACK",
+  "len": 64,
+  "note": "disk.img with the 12-byte details header",
+  "surprise": "fujinet-pc only: the details come back FF 0C 1F 12 00 00 / 00 00 00 00 / 00 / 00 (size 0, date 1969-12-31 18:00) for every entry in /test/. FileSystemSDFAT::dir_open stats <SD>/<name> instead of <SD>/<dir>/<name> (fn-h89/lib/FileSystem/fnFsSD.cpp:306), the stat fails and size/mtime stay 0; localtime() then uses the host's zone (CST), not fnconfig's timezone=UTC. The ESP32 (FatFs) path is separate code. mediatype 0 for .img matches the fwspec trap."
+ },
+ "fuji.close_directory": {
+  "reply": "ACK"
+ },
+ "fuji.set_host_prefix": {
+  "reply": "ACK"
+ },
+ "fuji.get_host_prefix": {
+  "reply": "ACK",
+  "len": 256,
+  "note": "\"/test\"; the bytes after the NUL are uninitialized (fwspec trap)"
+ },
+ "fuji.set_host_prefix.clear": {
+  "reply": "ACK"
+ },
+ "fuji.set_device_fullpath": {
+  "reply": "ACK"
+ },
+ "fuji.get_device_fullpath": {
+  "reply": "ACK",
+  "len": 256
+ },
+ "fuji.mount_image": {
+  "reply": "ACK"
+ },
+ "fuji.read_device_slots": {
+  "reply": "ACK",
+  "len": 304,
+  "surprise": "the 36-byte name is not NUL-padded: slot 0 reads 00 41 'disk.img' 00 'k.img' 00 ... - the whole path is strlcpy'd first (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1589) and the basename over its start (1601), so the tail of '/test/disk.img' survives after the NUL"
+ },
+ "fuji.write_device_slots": {
+  "reply": "ACK"
+ },
+ "fuji.unmount_image": {
+  "reply": "ACK"
+ },
+ "fuji.mount_all": {
+  "reply": "ACK",
+  "note": "nothing left to mount: slot 0 was emptied by UNMOUNT_IMAGE"
+ },
+ "fuji.copy_file": {
+  "reply": "ACK",
+  "note": "SD /test/readme.txt -> /test/copy.txt; slots are 1-based; no host prefix set (COPY_FILE fails with one, fwspec trap)"
+ },
+ "fuji.new_disk": {
+  "reply": "NAK",
+  "tag": "NAK",
+  "trap": "always NAKs on this build: MediaTypeImg::create() returns an error (fn-h89/lib/media/rs232/diskTypeImg.cpp:169-172, via fn-h89/lib/device/rs232/disk.cpp:368-373); a 0-byte /test/new.h8d is left behind"
+ },
+ "fuji.unmount_host": {
+  "reply": "NAK",
+  "tag": "NAK",
+  "trap": "the SD host cannot be unmounted: unmount_success() is false for local hosts (fn-h89/lib/fuji/fujiHost.cpp:621-625); its drive slots are emptied before the NAK (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1553-1568)"
+ },
+ "fuji.set_boot_mode": {
+  "reply": "ACK",
+  "note": "mode 0: fujinet-pc's data/autorun.img on drive 31H"
+ },
+ "fuji.config_boot": {
+  "reply": "ACK",
+  "note": "0 with slot 0 empty: takes the boot disk out again"
+ },
+ "fuji.open_appkey": {
+  "reply": "ACK",
+  "note": "creator 4889H, app 01H, key 00H, mode 1 (write): SD /FujiNet/48890100.key"
+ },
+ "fuji.write_appkey": {
+  "reply": "ACK",
+  "note": "16 bytes \"HIGH SCORE 12345\"; fujinet-lib's fuji_write_appkey() sends OPEN (mode 1) then WRITE, so the C capture has two exchanges"
+ },
+ "fuji.close_appkey": {
+  "reply": "ACK"
+ },
+ "fuji.open_appkey.read": {
+  "reply": "ACK",
+  "note": "the same key, mode 0"
+ },
+ "fuji.read_appkey": {
+  "reply": "ACK",
+  "len": 18,
+  "note": "10 00 then the 16 bytes; fujinet-lib's fuji_read_appkey() sends OPEN (mode 0) then READ, so the C capture has two exchanges"
+ },
+ "fuji.close_appkey.read": {
+  "reply": "ACK"
+ },
+ "fuji.base64_encode_input": {
+  "reply": "ACK"
+ },
+ "fuji.base64_encode_compute": {
+  "reply": "ACK"
+ },
+ "fuji.base64_encode_length": {
+  "reply": "ACK",
+  "len": 4,
+  "note": "11 00 00 00: 16 characters and a newline"
+ },
+ "fuji.base64_encode_output": {
+  "reply": "ACK",
+  "len": 17,
+  "note": "SGVhdGhraXQgSDg5 and 0A"
+ },
+ "fuji.base64_decode_input": {
+  "reply": "ACK"
+ },
+ "fuji.base64_decode_compute": {
+  "reply": "ACK"
+ },
+ "fuji.base64_decode_length": {
+  "reply": "ACK",
+  "len": 4,
+  "note": "0C 00 00 00"
+ },
+ "fuji.base64_decode_output": {
+  "reply": "ACK",
+  "len": 12,
+  "note": "Heathkit H89"
+ },
+ "fuji.hash_input": {
+  "reply": "ACK"
+ },
+ "fuji.hash_compute_no_clear": {
+  "reply": "ACK",
+  "note": "MD5, input kept"
+ },
+ "fuji.hash_compute": {
+  "reply": "ACK",
+  "note": "SHA-1 of the kept \"abc\", then the input is cleared"
+ },
+ "fuji.hash_length": {
+  "reply": "ACK",
+  "len": 1,
+  "note": "28H = 40 hex characters"
+ },
+ "fuji.hash_output": {
+  "reply": "ACK",
+  "len": 40,
+  "note": "a9993e364706816aba3e25717850c26c9cd0d89d = SHA-1(\"abc\"): proves COMPUTE_NO_CLEAR kept the input"
+ },
+ "fuji.hash_output.bin": {
+  "reply": "ACK",
+  "len": 20
+ },
+ "fuji.hash_clear": {
+  "reply": "ACK"
+ },
+ "fuji.qrcode_input": {
+  "reply": "ACK"
+ },
+ "fuji.qrcode_encode": {
+  "reply": "ACK",
+  "note": "version 0 = smallest that fits (qrcode.c VERSION_AUTO): version 1, 21 x 21"
+ },
+ "fuji.qrcode_length": {
+  "reply": "ACK",
+  "len": 4,
+  "note": "40 00 00 00 = 64: a size byte, then 21 rows of 3 bytes",
+  "surprise": "binary and bitmap renderings start with one extra byte, the modules on a side (fn-h89/lib/qrcode/qrmanager.cpp:125,149): 64 = 1 + 21 rows x 3 bytes; fwspec's output_mode text does not mention it"
+ },
+ "fuji.qrcode_output": {
+  "reply": "ACK",
+  "len": 64,
+  "note": "first byte 15H = 21 modules a side",
+  "surprise": "first byte 15H (21) is the size byte, then the rows: 15 FE A3 F8 82 FA 08 ... (see fuji.qrcode_length)"
+ },
+ "fuji.generate_guid": {
+  "reply": "ACK",
+  "len": 37
+ },
+ "fuji.random_number": {
+  "reply": "ACK",
+  "len": 4
+ },
+ "fuji.status": {
+  "reply": "ACK",
+  "len": 4,
+  "note": "always 00 00 00 00"
+ },
+ "fuji.device_ready": {
+  "reply": "ACK",
+  "len": 512,
+  "note": "512 x 41H"
+ },
+ "fuji.get_time": {
+  "reply": "NAK",
+  "tag": "NAK",
+  "note": "not dispatched on 70H: rs232Fuji's default case NAKs (fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403); fujinet-lib's fuji_get_time() sends it anyway (fujinet-lib/include/fujinet-fuji.h:649)"
+ },
+ "fuji.reset": {
+  "reply": "none",
+  "note": "no ACK; fujinet-pc exits (rc 75) and the call times out after 15 s",
+  "last": true
+ }
+}

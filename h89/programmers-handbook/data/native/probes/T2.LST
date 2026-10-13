@@ -1,0 +1,66 @@
+                                                  	HEATH ASM #104.06.00
+                                                  	12-Oct-80  Page    1
+
+                        00001   *	T2 - SYNTAX PROBES
+   042.200              00002   	ORG	42200A
+   000.320              00003   HEX	EQU	0D0H
+   000.322              00004   OCT	EQU	322Q
+   000.322              00005   OCT2	EQU	322O
+   000.320              00006   BIN	EQU	11010000B
+   000.320              00007   DEC	EQU	208D
+   042.200              00008   SPL	EQU	042200A
+   377.377              00009   HEX2	EQU	0FFFFH
+UA                      00010   HEXX	EQU	$D0
+   042.200  000         00011   COLON:	NOP
+   042.201  000         00012   	NOP	; SEMICOLON COMMENT
+FO 042.202  000 000 000 00013   ; SEMI IN COL 1
+FO 042.205  000 000 000 00014   ABCDEFGHIJ	NOP		TEN-CHAR LABEL
+FO 042.210  000 000 000 00015   ABCDEFGHIK	NOP		DIFFERS IN 10TH
+O  042.213  000 000 000 00016   	mvi	a,1		LOWER CASE
+A  042.216  000         00017   	DB	"DQ"
+   042.217  123 121 000 00018   	DB	'SQ',0
+   042.222  111 124 047 00019   	DB	'IT''S'
+   042.226  076 042     00020   	MVI	A,SPL/256
+AV 042.230  076 200     00021   	MVI	A,SPL&377Q
+AV 042.232  076 200     00022   	MVI	A,SPL!1
+AV 042.234  076 200     00023   	MVI	A,SPL\256
+AV 042.236  076 200     00024   	MVI	A,SPL>8
+AV 042.240  076 200     00025   	MVI	A,SPL<8
+   042.242  076 377     00026   	MVI	A,-1
+   042.244  076 320     00027   	MVI	A,HEX AND 0FH
+   042.246  076 200     00028   	MVI	A,#SPL
+   042.250  076 102     00029   	MVI	A,'A'+1
+UA                      00030   HERE	EQU	$
+   042.252              00031   HERE2	EQU	*
+   042.252  252 042 200 00032   	DW	HERE2,SPL
+   042.256              00033   	DS	2
+   000.001              00034   COND	EQU	1
+   000.001              00035   	IF	COND
+                        00037   	ELSE
+   042.260  002         00038   	DB	2
+                        00039   	ENDIF
+   000.000              00040   	IF	COND-1
+   042.261  003         00041   	DB	3
+                        00042   	ENDIF
+   000.000              00043   	ERRNZ	*-*
+P  000.001              00044   	ERRNZ	1
+   000.001              00045   V	SET	1
+   000.002              00046   V	SET	V+1
+   042.262  076 002     00047   	MVI	A,V
+O  042.264  000 000 000 00048   	LD	A,B
+O  042.267  000 000 000 00049   	DJNZ	*
+   042.272  176         00050   	MOV	A,M
+   042.273  333 320     00051   	IN	HEX
+   042.275  323 322     00052   	OUT	OCT
+   042.277  377 003     00053   	SCALL	3
+   042.301  377         00054   	RST	7
+A  042.302  000         00057   	END
+A TITLE                                           	HEATH ASM #104.06.00
+A SUBTITLE                                        	12-Oct-80  Page    2
+
+
+
+00057 Statements Assembled
+40698 Bytes Free
+00016 Errors Detected
+

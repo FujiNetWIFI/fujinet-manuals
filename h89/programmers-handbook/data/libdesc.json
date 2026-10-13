@@ -1,0 +1,926 @@
+{
+ "clock_get_time": {
+  "what": "Gets the time from the clock device (45H) in one of seven formats, in the FujiNet's system time zone. The format picks the command; the string formats come back NUL-terminated.",
+  "returns": "FN_ERR_OK; FN_ERR_IO_ERROR on a NAK or no answer; FN_ERR_BAD_CMD for a format past the end of TimeFormat",
+  "example": "clock.gettime",
+  "warning": "The library writes a NUL after the reply, binary formats too, so the buffer must be one byte longer than the reply: 8 bytes for SIMPLE_BINARY, 5 for PRODOS_BINARY, 7 for APETIME_BINARY, 26 for TZ_ISO_STRING and UTC_ISO_STRING, 20 for APPLE3_SOS_BINARY, 9 for SIMPLE_BINARY_WITH_HUNDREDTHS. SIMPLE_BINARY is command 54H, which the firmware calls APETIME_SETTZ_ALT2 but answers with the time.",
+  "group": "clock"
+ },
+ "clock_get_time_common": {
+  "what": "What clock_get_time() calls. With alt true it asks for the time in the alternate time zone, the one clock_get_time_tz() set, instead of the system zone (field 1 = 1).",
+  "returns": "FN_ERR_OK, FN_ERR_IO_ERROR or FN_ERR_BAD_CMD, as clock_get_time()",
+  "example": "clock.gettime.alt",
+  "warning": "Buffer one byte longer than the reply, as for clock_get_time(). With no alternate zone set, alt true gives the system zone's time.",
+  "group": "clock"
+ },
+ "clock_get_time_tz": {
+  "what": "Sets the alternate time zone (in the FujiNet's memory only), then gets the time there, as clock_get_time_common() with alt true. The system zone is left alone.",
+  "returns": "FN_ERR_OK; FN_ERR_IO_ERROR if either frame fails; FN_ERR_BAD_CMD for a bad format",
+  "example": "clock.settz",
+  "warning": "The alternate zone stays set after the call and is used by every later request with alt true. The FujiNet ACKs the zone before it looks at it: a bad zone is dropped without a word, and the time comes back in the zone that was there before. Buffer one byte longer than the reply.",
+  "group": "clock"
+ },
+ "clock_get_tz": {
+  "what": "Reads the FujiNet's system time zone, a POSIX TZ string such as \"CST6CDT,M3.2.0,M11.1.0\". It asks for the length first, then for the string, which comes with its NUL.",
+  "returns": "FN_ERR_OK or FN_ERR_IO_ERROR",
+  "example": "clock.get_general",
+  "warning": "The FujiNet decides how many bytes come back, not you: the buffer must hold the longest zone that could be set, NUL and all. 64 bytes is plenty for a real zone.",
+  "group": "clock"
+ },
+ "clock_set_tz": {
+  "what": "Sets the FujiNet's system time zone. It is saved in the FujiNet's configuration and is still there after a restart.",
+  "returns": "FN_ERR_OK or FN_ERR_IO_ERROR",
+  "example": "clock.settz_alt",
+  "warning": "ACKed before it is checked: a zone holding a control character (a CR on the end, say) is thrown away and FN_ERR_OK still comes back. Read it back with clock_get_tz() if it matters.",
+  "group": "clock"
+ },
+ "fuji_base64_decode_compute": {
+  "what": "Decodes the Base64 text sent with fuji_base64_decode_input().",
+  "returns": "true on ACK",
+  "example": "fuji.base64_decode_compute",
+  "warning": "Encoding and decoding share one buffer in the FujiNet and nothing clears it: read all of one result before you send the next input, or what is left is put in front of it.",
+  "group": "fuji"
+ },
+ "fuji_base64_decode_input": {
+  "what": "Sends len bytes of Base64 text to be decoded. Call it as often as you need to; each call adds to what is there.",
+  "returns": "true on ACK",
+  "example": "fuji.base64_decode_input",
+  "warning": "Encoding and decoding share one buffer in the FujiNet and nothing clears it: read all of one result before you send the next input, or what is left is put in front of it.",
+  "group": "fuji"
+ },
+ "fuji_base64_decode_length": {
+  "what": "Gets the length of the decoded result into an unsigned long.",
+  "returns": "true on ACK",
+  "example": "fuji.base64_decode_length",
+  "warning": "len points to an unsigned long (4 bytes), not an int.",
+  "group": "fuji"
+ },
+ "fuji_base64_decode_output": {
+  "what": "Reads the next len bytes of the decoded result into s. The FujiNet forgets the bytes it has sent.",
+  "returns": "true on ACK; false if len is 0 or more than is left",
+  "example": "fuji.base64_decode_output",
+  "warning": "No NUL is added: put one on yourself if the result is text.",
+  "group": "fuji"
+ },
+ "fuji_base64_encode_compute": {
+  "what": "Encodes the bytes sent with fuji_base64_encode_input().",
+  "returns": "true on ACK",
+  "example": "fuji.base64_encode_compute",
+  "warning": "The text has a newline after every 72 characters and one at the end, and fuji_base64_encode_length() counts them. Encoding and decoding share one buffer in the FujiNet and nothing clears it: read all of one result before you send the next input, or what is left is put in front of it.",
+  "group": "fuji"
+ },
+ "fuji_base64_encode_input": {
+  "what": "Sends len bytes to be encoded. Call it as often as you need to; each call adds to what is there.",
+  "returns": "true on ACK",
+  "example": "fuji.base64_encode_input",
+  "warning": "Encoding and decoding share one buffer in the FujiNet and nothing clears it: read all of one result before you send the next input, or what is left is put in front of it.",
+  "group": "fuji"
+ },
+ "fuji_base64_encode_length": {
+  "what": "Gets the length of the encoded text, newlines included, into an unsigned long.",
+  "returns": "true on ACK",
+  "example": "fuji.base64_encode_length",
+  "warning": "len points to an unsigned long (4 bytes), not an int.",
+  "group": "fuji"
+ },
+ "fuji_base64_encode_output": {
+  "what": "Reads the next len bytes of the encoded text into s. The FujiNet forgets the bytes it has sent.",
+  "returns": "true on ACK; false if len is 0 or more than is left",
+  "example": "fuji.base64_encode_output",
+  "warning": "No NUL is added, and the text ends with a newline.",
+  "group": "fuji"
+ },
+ "fuji_bus_appkey_read": {
+  "what": "The second half of fuji_read_appkey(): sends READ_APPKEY to a key already opened for reading and copies the key's bytes (up to 64) and their count out of the reply.",
+  "returns": "true on ACK",
+  "example": null,
+  "warning": "Library internal (fujinet-appkey.h); call fuji_read_appkey(). It does not open the key, and the FujiNet never NAKs a READ_APPKEY: with no key open it ACKs with a count of 0.",
+  "group": "appkey"
+ },
+ "fuji_bus_appkey_write": {
+  "what": "The second half of fuji_write_appkey(): sends WRITE_APPKEY with length bytes to a key already opened for writing.",
+  "returns": "true on ACK",
+  "example": null,
+  "warning": "Library internal (fujinet-appkey.h); call fuji_write_appkey(). A write of 0 bytes empties the key and still ACKs.",
+  "group": "appkey"
+ },
+ "fuji_bus_call": {
+  "what": "Sends one frame to any device and waits for the answer: device, command, a field descriptor, up to four field bytes, and a buffer. With FUJI_FIELD_REPLY in the descriptor the buffer receives the reply; otherwise it is sent as the payload. Every other call in fujinet-lib comes down to this one.",
+  "returns": "true on ACK; false on a NAK, a bad checksum, a reply longer than the buffer, or no answer in 15 seconds",
+  "example": "disk.read",
+  "warning": "false does not say whether it was a NAK or no answer. A reply shorter than the buffer still gives true, and you cannot learn its length. Sending has no timeout at all: if the card is not running, the program hangs in port_putc() before the 15 seconds start. Field bytes beyond what the descriptor counts are not sent.",
+  "group": "bus"
+ },
+ "fuji_close_directory": {
+  "what": "Closes the directory that fuji_open_directory() opened. The FujiNet keeps one directory open at a time, for all the host slots together.",
+  "returns": "true on ACK",
+  "example": "fuji.close_directory",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_copy_file": {
+  "what": "Copies a file from one host slot to another, or within one: copy_spec is \"source|destination\". The FujiNet does the copying; the H89 waits for the ACK.",
+  "returns": "true on ACK (see fuji_copy_file_common() for what happens on failure)",
+  "example": "fuji.copy_file",
+  "warning": "Host slots count from 1 here (1-8), not 0. All 256 bytes from copy_spec are sent: build it in a cleared 256-byte buffer. It fails whenever that host has a prefix longer than \"/\". A destination ending in '/' (meaning \"the same name\") is never seen as one, because of the padding. A large copy can take longer than the 15 seconds fuji_bus_call() waits: it then returns false while the copy goes on, and the late ACK puts every later reply one behind (Chapter 8).",
+  "group": "fuji"
+ },
+ "fuji_copy_file_common": {
+  "what": "What the fuji_copy_file() macro calls. If COPY_FILE fails it sends FUJI_STATUS until the FujiNet answers, up to 100 times; if the FujiNet was only busy, it then checks with fuji_file_stat() that both files are there and the same size.",
+  "returns": "true if COPY_FILE was ACKed, or the sizes match afterwards",
+  "example": "fuji.copy_file",
+  "warning": "Slots count from 1, as for fuji_copy_file(). The size check scans both directories, closing any directory you had open.",
+  "group": "fuji"
+ },
+ "fuji_create_new": {
+  "what": "Asks the FujiNet to make a new, empty disk image from a NewDisk block: number of sectors, sector size, host slot, drive slot and path.",
+  "returns": "false on the H89: it always NAKs",
+  "example": "fuji.new_disk",
+  "warning": "Always fails on this firmware (making an image is not supported for the H89's disks), and leaves a 0-byte file behind.",
+  "group": "fuji"
+ },
+ "fuji_devcall_vld": {
+  "what": "Sends a payload and no fields to any device. The H89 has frames of any length, so this is fuji_bus_call() with FUJI_FIELD_DATA, or with no payload at all when data_len is 0. network_set_eol() and network_udp_set_destination() are made of it.",
+  "returns": "true on ACK",
+  "example": "lib.fuji_devcall_vld",
+  "warning": "Exactly data_len bytes go: count the NUL in if the far end needs one.",
+  "group": "bus"
+ },
+ "fuji_disable_device": {
+  "what": "Asks the FujiNet to switch device d off.",
+  "returns": "false on the H89: it always NAKs",
+  "example": "lib.fuji_disable_device",
+  "warning": "This firmware has no DISABLE_DEVICE on 70H, so it always NAKs.",
+  "group": "fuji"
+ },
+ "fuji_enable_device": {
+  "what": "Asks the FujiNet to switch device d on.",
+  "returns": "false on the H89: it always NAKs",
+  "example": "lib.fuji_enable_device",
+  "warning": "This firmware has no ENABLE_DEVICE on 70H, so it always NAKs.",
+  "group": "fuji"
+ },
+ "fuji_enable_udpstream": {
+  "what": "Declared for streaming a serial port over UDP (an Atari feature).",
+  "returns": "does not link",
+  "example": null,
+  "warning": "Does not link on the H89, under HDOS or CP/M: fujinet-lib declares it but has no H89 version. The firmware would NAK ENABLE_UDPSTREAM anyway.",
+  "group": "fuji"
+ },
+ "fuji_field_numbytes": {
+  "what": "How many field bytes a descriptor stands for, from a table: 0-4 for FUJI_FIELD_NONE to FUJI_FIELD_C1234. The DATA and REPLY bits are left out.",
+  "returns": "0 to 4",
+  "example": "lib.fuji_field_numbytes",
+  "warning": null,
+  "group": "helper"
+ },
+ "fuji_field_numfields": {
+  "what": "How many fields a descriptor stands for: a word counts as one field, and so does a long.",
+  "returns": "0 to 4",
+  "example": "lib.fuji_field_numfields",
+  "warning": null,
+  "group": "helper"
+ },
+ "fuji_file_stat": {
+  "what": "Looks a file up by path on host slot host (0-7) and gives its directory entry: date, size, flags and media type. It mounts the host, opens the file's directory, reads entries until the name matches, and closes the directory.",
+  "returns": "a pointer to a FujiDirEntry, or NULL if the file is not there",
+  "example": "lib.fuji_file_stat",
+  "warning": "The entry is the library's own static copy, overwritten by the next call. It closes any directory you had open. It finds files only (a directory's name comes back with '/' on the end). The year counts from 1970. fujinet-pc only: a file in a subdirectory of its SD card shows size 0 and a 1969 date (it stats the wrong path); one at the top is right.",
+  "group": "fuji"
+ },
+ "fuji_generate_guid": {
+  "what": "Gets a random GUID, 36 characters and a NUL, into a 37-byte buffer.",
+  "returns": "true on ACK",
+  "example": "fuji.generate_guid",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_get_adapter_config": {
+  "what": "Gets the FujiNet's network settings as bytes: SSID, host name, IP address, gateway, netmask, DNS server, MAC address, BSSID and the firmware version.",
+  "returns": "true on ACK",
+  "example": "fuji.get_adapterconfig",
+  "warning": "The version string is cut to 14 characters.",
+  "group": "fuji"
+ },
+ "fuji_get_adapter_config_extended": {
+  "what": "As fuji_get_adapter_config(), with the addresses as text too (sLocalIP, sGateway, sNetmask, sDnsIP, sMacAddress, sBssid).",
+  "returns": "true on ACK",
+  "example": "fuji.get_adapterconfig_extended",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_get_device_enabled_status": {
+  "what": "Declared to ask whether a device is enabled; the header itself calls it bogus.",
+  "returns": "does not link",
+  "example": null,
+  "warning": "Does not link on the H89, under HDOS or CP/M: fujinet-lib declares it but has no H89 version. The firmware would NAK DEVICE_ENABLE_STATUS anyway.",
+  "group": "fuji"
+ },
+ "fuji_get_device_filename": {
+  "what": "Gets the full path of the image in drive slot ds (0-7).",
+  "returns": "true on ACK",
+  "example": "fuji.get_device_fullpath",
+  "warning": "The buffer must hold 256 bytes.",
+  "group": "fuji"
+ },
+ "fuji_get_device_slots": {
+  "what": "Gets all eight drive slots: the host slot, mode and file name (36 characters) of each. Host slot FFH means the drive slot is empty.",
+  "returns": "true on ACK",
+  "example": "fuji.read_device_slots",
+  "warning": "count must be 8: the FujiNet always sends all eight (304 bytes), and a smaller count makes the call fail with nothing copied. The name is not padded with NULs: the tail of the full path can follow the NUL.",
+  "group": "fuji"
+ },
+ "fuji_get_directory_position": {
+  "what": "Gets the number of the entry fuji_read_directory() will give next.",
+  "returns": "true on ACK",
+  "example": "fuji.get_directory_position",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_get_host_prefix": {
+  "what": "Gets host slot hs's prefix, the directory every path on that host starts from.",
+  "returns": "true on ACK",
+  "example": "fuji.get_host_prefix",
+  "warning": "256 bytes come back; after the NUL they are whatever was in the FujiNet's memory.",
+  "group": "fuji"
+ },
+ "fuji_get_host_slots": {
+  "what": "Gets the names of all eight host slots, 32 bytes each; an empty slot is an empty string.",
+  "returns": "true on ACK",
+  "example": "fuji.read_host_slots",
+  "warning": "count must be 8: the FujiNet always sends all 256 bytes, and a smaller count makes the call fail with nothing copied.",
+  "group": "fuji"
+ },
+ "fuji_get_scan_result": {
+  "what": "Gets network n of the last scan: its SSID and signal strength (rssi, in dBm).",
+  "returns": "true on ACK",
+  "example": "fuji.get_scan_result",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_get_ssid": {
+  "what": "Gets the saved WiFi network name and passphrase.",
+  "returns": "true on ACK",
+  "example": "fuji.get_ssid",
+  "warning": "The passphrase comes back in plain text.",
+  "group": "fuji"
+ },
+ "fuji_get_time": {
+  "what": "Asks the Fuji device (70H) for the time.",
+  "returns": "false on the H89: it always NAKs",
+  "example": "fuji.get_time",
+  "warning": "Always NAKs: the time lives on the clock device, 45H. Use clock_get_time().",
+  "group": "fuji"
+ },
+ "fuji_get_wifi_enabled": {
+  "what": "Asks whether WiFi is switched on in the FujiNet's configuration.",
+  "returns": "true if WiFi is enabled",
+  "example": "fuji.get_wifi_enabled",
+  "warning": "It does not look at whether the call worked: when the frame fails it gives the answer from the last call that did work (false if none has).",
+  "group": "fuji"
+ },
+ "fuji_get_wifi_status": {
+  "what": "Gets the WiFi status byte: 3 connected, 6 not connected.",
+  "returns": "true on ACK",
+  "example": "fuji.get_wifistatus",
+  "warning": "fujinet-lib's WifiStatus enum has no name for 6.",
+  "group": "fuji"
+ },
+ "fuji_hash_add": {
+  "what": "Adds length bytes to the data to be hashed (it is fuji_hash_input()). Call it as often as you like, then fuji_hash_calculate().",
+  "returns": "true on ACK",
+  "example": "lib.fuji_hash_add",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_hash_calculate": {
+  "what": "Computes a digest (MD5, SHA1, SHA256 or SHA512) of everything added since the last clear and reads it into output, as hex text or bytes. With discard_data false the data stays, for another kind of digest; with true it is cleared.",
+  "returns": "true if the compute and the read worked",
+  "example": "lib.fuji_hash_calculate",
+  "warning": "Hex output has no NUL: make output fuji_hash_size() + 1 bytes and put one on.",
+  "group": "fuji"
+ },
+ "fuji_hash_clear": {
+  "what": "Throws away any data added for hashing.",
+  "returns": "true on ACK",
+  "example": "fuji.hash_clear",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_hash_compute": {
+  "what": "Computes the digest of the added data with algorithm type (MD5 0, SHA1 1, SHA256 2, SHA512 3), then clears the data. The digest stays for fuji_hash_length() and fuji_hash_output().",
+  "returns": "true on ACK",
+  "example": "fuji.hash_compute",
+  "warning": "An unknown algorithm still ACKs, and leaves an empty digest. The header calls this a low-level call; fuji_hash_calculate() does it for you.",
+  "group": "fuji"
+ },
+ "fuji_hash_compute_no_clear": {
+  "what": "As fuji_hash_compute(), but the data stays, so you can compute another kind of digest of it.",
+  "returns": "true on ACK",
+  "example": "fuji.hash_compute_no_clear",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_hash_data": {
+  "what": "Hashes one buffer in one call: clears, adds the input, computes, and reads the digest into output as hex text or as bytes. Five frames.",
+  "returns": "true if all of them worked",
+  "example": "lib.fuji_hash_data",
+  "warning": "Hex output has no NUL: make output fuji_hash_size() + 1 bytes and put one on. Anything you added with fuji_hash_add() first is thrown away.",
+  "group": "fuji"
+ },
+ "fuji_hash_input": {
+  "what": "Sends len bytes to be hashed; the same as fuji_hash_add().",
+  "returns": "true on ACK",
+  "example": "fuji.hash_input",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_hash_length": {
+  "what": "Gets the length of the last digest into reply: mode 1 counts hex characters, 0 counts bytes.",
+  "returns": "true on ACK",
+  "example": "fuji.hash_length",
+  "warning": "The answer is one byte (pass len 1), not an unsigned long like the Base64 and QR lengths. The header calls it deprecated; fuji_hash_size() works it out without asking.",
+  "group": "fuji"
+ },
+ "fuji_hash_output": {
+  "what": "Reads the last digest into data: type 1 as lower-case hex (no NUL), 0 as bytes.",
+  "returns": "true on ACK",
+  "example": "fuji.hash_output",
+  "warning": "The FujiNet sends the whole digest whatever len says: a len smaller than the digest makes the call fail.",
+  "group": "fuji"
+ },
+ "fuji_hash_size": {
+  "what": "The size of a digest, worked out in the library with no frame sent: 16, 20, 32 or 64 bytes for MD5, SHA1, SHA256 and SHA512, twice that as hex.",
+  "returns": "the size; 0 for an unknown type",
+  "example": "lib.fuji_hash_size",
+  "warning": null,
+  "group": "helper"
+ },
+ "fuji_mount_all": {
+  "what": "Mounts every drive slot that names an image, mounting their hosts as it goes.",
+  "returns": "true on ACK",
+  "example": "fuji.mount_all",
+  "warning": "Hosts mounted this way are not marked as mounted, so fuji_unmount_host_slot() on them NAKs afterwards.",
+  "group": "fuji"
+ },
+ "fuji_mount_disk_image": {
+  "what": "Mounts the image set for drive slot ds (with fuji_set_device_filename()) in mode 1 (read) or 2 (read and write). The host must be mounted already.",
+  "returns": "true on ACK",
+  "example": "fuji.mount_image",
+  "warning": "A file whose name ends in ROM, BIN, INT, ITV, CHF, NES, SMS, A78, A52 or ST2 is taken for a cartridge: the FujiNet sends it to the computer in frames of its own, which the H89 does not expect. Do not mount those. The mode shown by fuji_get_device_slots() is the one set with the path, not this one.",
+  "group": "fuji"
+ },
+ "fuji_mount_host_slot": {
+  "what": "Mounts host slot hs (0-7), the SD card or a TNFS server, ready for directories and images.",
+  "returns": "true on ACK",
+  "example": "fuji.mount_host",
+  "warning": "Once a host is mounted it is never mounted again, even if the server has gone away since.",
+  "group": "fuji"
+ },
+ "fuji_open_directory": {
+  "what": "Opens a directory on host slot hs for fuji_read_directory(). path_filter is a 256-byte buffer: the path, a NUL, then a wildcard pattern and a NUL if you want one.",
+  "returns": "true on ACK; false if the host is not mounted or the path is not there",
+  "example": "fuji.open_directory",
+  "warning": "All 256 bytes are always sent, so clear the buffer first: with no pattern, whatever follows the path's NUL becomes the pattern. Mount the host first (fuji_mount_host_slot()). Opening a directory closes any other.",
+  "group": "fuji"
+ },
+ "fuji_open_directory2": {
+  "what": "Another name for fuji_open_directory_filter().",
+  "returns": "true on ACK",
+  "example": "lib.fuji_open_directory2",
+  "warning": "As fuji_open_directory_filter(): with an empty pattern the 256 bytes go from your path, so keep it in a cleared 256-byte buffer.",
+  "group": "fuji"
+ },
+ "fuji_open_directory_filter": {
+  "what": "Opens a directory with the path and the pattern as two strings; the library joins them (path, NUL, pattern) in a 256-byte buffer of its own and calls fuji_open_directory().",
+  "returns": "true on ACK",
+  "example": "lib.fuji_open_directory_filter",
+  "warning": "With an empty pattern it sends 256 bytes straight from your path, so whatever follows its NUL in memory becomes the pattern: keep the path in a cleared 256-byte buffer. A NULL pattern, which the header allows, reads address 0 on the H89 and sends what it finds there as the pattern: pass \"\".",
+  "group": "fuji"
+ },
+ "fuji_put_device_slots": {
+  "what": "Writes all eight drive slots back: the host slot and mode of each. The names are not used; set a path with fuji_set_device_filename().",
+  "returns": "true on ACK",
+  "example": "fuji.write_device_slots",
+  "warning": "count must be 8: the FujiNet does not clear the rest, so fewer slots leave garbage in the others. A host slot of 8 or more is not checked, and makes fuji_mount_all() read past the end of the FujiNet's host table.",
+  "group": "fuji"
+ },
+ "fuji_put_host_slots": {
+  "what": "Writes all eight host slot names back and saves them in the FujiNet's configuration. A slot whose name changed is unmounted.",
+  "returns": "true on ACK",
+  "example": "fuji.write_host_slots",
+  "warning": "count must be 8: the FujiNet does not clear the rest, so fewer slots leave garbage in the others.",
+  "group": "fuji"
+ },
+ "fuji_qrcode_encode": {
+  "what": "Makes a QR code of the data sent: version 1-40 (0, the smallest that fits), error correction QR_ECC_LOW to QR_ECC_HIGH, and shorten (non-zero: a the FujiNet short URL is coded instead). The data is cleared.",
+  "returns": "true on ACK",
+  "example": "fuji.qrcode_encode",
+  "warning": null,
+  "group": "qrcode"
+ },
+ "fuji_qrcode_input": {
+  "what": "Adds len bytes to the data for the next QR code. Call it as often as you need to, then fuji_qrcode_encode().",
+  "returns": "true on ACK; false for len 0",
+  "example": "fuji.qrcode_input",
+  "warning": null,
+  "group": "qrcode"
+ },
+ "fuji_qrcode_length": {
+  "what": "Renders the code in an output mode (QR_OUTPUT_MODE_BINARY, _ANSI, _BITMAP, _SVG, _ATASCII or _PETSCII) and gets its length in bytes into an unsigned long.",
+  "returns": "true on ACK",
+  "example": "fuji.qrcode_length",
+  "warning": "BINARY and BITMAP start with one size byte (the modules on a side) before the rows, and the length counts it. Once fuji_qrcode_output() has taken the whole code this gives 0.",
+  "group": "qrcode"
+ },
+ "fuji_qrcode_output": {
+  "what": "Reads the next len bytes of the rendered code into buf; the FujiNet forgets what it has sent.",
+  "returns": "true on ACK; false if len is 0 or more than is left",
+  "example": "fuji.qrcode_output",
+  "warning": null,
+  "group": "qrcode"
+ },
+ "fuji_read_appkey": {
+  "what": "Reads an application key: opens key key_id of the creator and application set with fuji_set_appkey_details() for reading, then reads up to 64 bytes into data and their count into *count.",
+  "returns": "true if both frames ACK",
+  "example": "fuji.read_appkey",
+  "warning": "A key that does not exist (or no SD card in the FujiNet) still gives true, with *count 0. No NUL is added: data needs 65 bytes if you put one on.",
+  "group": "appkey"
+ },
+ "fuji_read_appkey_common": {
+  "what": "What the fuji_read_appkey() macro calls; the same thing under its own name.",
+  "returns": "true if both frames ACK",
+  "example": "fuji.read_appkey",
+  "warning": "As fuji_read_appkey(): a missing key gives true and a count of 0.",
+  "group": "appkey"
+ },
+ "fuji_read_directory": {
+  "what": "Reads the next entry of the open directory into buffer, padded with zeros to maxlen bytes. With aux2 = FUJI_DIR_FLAG_ADDITIONAL_DATA (80H) a 12-byte header (date, size, flags, media type: a FujiDirEntry) comes before the name. Directories end in '/'. At the end the first byte is FUJI_DIR_EOF (7FH).",
+  "returns": "true on ACK; false if no directory is open",
+  "example": "fuji.read_dir_entry",
+  "warning": "FUJI_DIR_ENTRY_IS_DIR() and FUJI_DIR_ENTRY_IS_TRUNC() do not compile for the H89, whose FujiDirEntry has flags instead of is_dir and is_trunc: test flags & 1 (a directory) and flags & 2 (name cut short). With 80H keep maxlen at 14 or more. Block mode (aux2 C0H + n) does not work through this call, and C0H alone crashes the firmware.",
+  "group": "fuji"
+ },
+ "fuji_reset": {
+  "what": "Restarts the FujiNet.",
+  "returns": "false, after 15 seconds: no answer ever comes",
+  "example": "fuji.reset",
+  "warning": "The FujiNet restarts without answering, so the call waits out the whole 15-second timeout and gives false. Mounted disks are not unmounted first.",
+  "group": "fuji"
+ },
+ "fuji_scan_for_networks": {
+  "what": "Scans for WiFi networks and gets how many it found, in one byte.",
+  "returns": "true on ACK",
+  "example": "fuji.scan_networks",
+  "warning": "On the H89 card (an ESP32) the scan blocks for a while and drops the WiFi connection until it is over.",
+  "group": "fuji"
+ },
+ "fuji_set_appkey_details": {
+  "what": "Sets the creator ID, application ID and key size that fuji_read_appkey() and fuji_write_appkey() use from then on. It is a macro that stores three variables; nothing is sent.",
+  "returns": "nothing useful (the value of an assignment)",
+  "example": "fuji.write_appkey",
+  "warning": "The size is ignored: keys are 64 bytes (DEFAULT) whatever you pass.",
+  "group": "appkey"
+ },
+ "fuji_set_boot_config": {
+  "what": "Sends CONFIG_BOOT with toggle; 0 takes a boot disk that fuji_set_boot_mode() put in out again, if drive slot 0 is empty.",
+  "returns": "true on ACK (always)",
+  "example": "fuji.config_boot",
+  "warning": "Despite its name it changes no saved setting on this firmware.",
+  "group": "fuji"
+ },
+ "fuji_set_boot_mode": {
+  "what": "Sets the boot mode; mode 0 puts the FujiNet's boot image on the first drive (31H), read-only.",
+  "returns": "true on ACK (always)",
+  "example": "fuji.set_boot_mode",
+  "warning": "Always ACKs, even when the mode or its image does not exist. The image mode 0 mounts is an MS-DOS boot disk (the RS-232 build's autorun.img), not something an H89 boots.",
+  "group": "fuji"
+ },
+ "fuji_set_device_filename": {
+  "what": "Sets the image path, host slot and mode (1 read, 2 read and write) of drive slot ds. Mount it afterwards with fuji_mount_disk_image().",
+  "returns": "true on ACK",
+  "example": "fuji.set_device_fullpath",
+  "warning": "The arguments are (mode, hs, ds, buffer), but they go on the wire as drive, host, mode. All 256 bytes from buffer are sent: keep the path in a cleared 256-byte buffer. An empty path does not empty the slot (the old path stays), and host slot 0xFF is refused: use fuji_unmount_disk_image().",
+  "group": "fuji"
+ },
+ "fuji_set_directory_position": {
+  "what": "Moves the open directory to entry pos, for paging through a long one.",
+  "returns": "true on ACK",
+  "example": "fuji.set_directory_position",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_set_host_prefix": {
+  "what": "Sets host slot hs's prefix: paths on that host are taken from there. An empty string clears it.",
+  "returns": "true on ACK",
+  "example": "fuji.set_host_prefix",
+  "warning": "All 256 bytes are sent: use a cleared 256-byte buffer. With a prefix longer than \"/\", fuji_copy_file() fails on that host, and mounting the same image again puts the prefix on twice.",
+  "group": "fuji"
+ },
+ "fuji_set_ssid": {
+  "what": "Sets the WiFi network name and passphrase, joins that network, and saves both.",
+  "returns": "true on ACK",
+  "example": "fuji.set_ssid",
+  "warning": "An ACK does not mean it joined: a wrong passphrase is ACKed and saved. A failure sends two NAKs, and fujinet-lib takes the second for the answer to your next call, so every answer after it is one behind.",
+  "group": "fuji"
+ },
+ "fuji_status": {
+  "what": "Gets the FujiNet's four status bytes.",
+  "returns": "true on ACK",
+  "example": "fuji.status",
+  "warning": "Always four zero bytes on this firmware.",
+  "group": "fuji"
+ },
+ "fuji_unmount_disk_image": {
+  "what": "Empties drive slot ds.",
+  "returns": "true on ACK",
+  "example": "fuji.unmount_image",
+  "warning": null,
+  "group": "fuji"
+ },
+ "fuji_unmount_host_slot": {
+  "what": "Unmounts host slot hs.",
+  "returns": "true on ACK",
+  "example": "fuji.unmount_host",
+  "warning": "The SD card cannot be unmounted: it NAKs, but empties the drive slots that use it first. A host mounted by fuji_mount_all() or fuji_copy_file() NAKs too.",
+  "group": "fuji"
+ },
+ "fuji_write_appkey": {
+  "what": "Writes count bytes (64 at most) from data to application key key_id: opens the key for writing, then writes it. Set the creator and application first with fuji_set_appkey_details().",
+  "returns": "true if both frames ACK",
+  "example": "fuji.write_appkey",
+  "warning": "A count of 0 empties the key and still gives true. Keys live on the FujiNet's own SD card (in /the FujiNet/): without one, nothing is kept.",
+  "group": "appkey"
+ },
+ "network_accept": {
+  "what": "Takes the waiting call on a TCP server channel (one opened with \"N6:TCP://:port/\"). Ask network_status() first: on a listener, connected = 1 means a caller is waiting.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.accept",
+  "warning": null,
+  "group": "network"
+ },
+ "network_bus_read": {
+  "what": "Sends one READ frame for length bytes to a network device (71H-78H) and puts the reply in buffer. network_read() calls it once STATUS has said how much is waiting.",
+  "returns": "length on ACK, whatever arrived; 0 on a NAK or no answer",
+  "example": "net.read.ahead",
+  "warning": "It gives back the length you asked for on any ACK, even when fewer bytes came: ask for no more than STATUS says is waiting. It takes a device number (FUJI_DEVICEID_NETWORK + unit - 1), not a devicespec.",
+  "group": "bus"
+ },
+ "network_bus_write": {
+  "what": "Sends one WRITE frame with length bytes to a network device (71H-78H). network_write() is made of it.",
+  "returns": "length on ACK; 0 on a NAK or no answer",
+  "example": "lib.network_bus_write",
+  "warning": "A device number, not a devicespec. It is one frame, whose length is a word: keep length well under 64K.",
+  "group": "bus"
+ },
+ "network_close": {
+  "what": "Closes the channel on the devicespec's unit. For an HTTP PUT this is when the request goes out.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.close",
+  "warning": "An HTTP POST or DELETE that has seen no STATUS or READ is never sent: the close just drops it.",
+  "group": "network"
+ },
+ "network_close_client": {
+  "what": "Hangs up the caller on a TCP server channel and goes on listening.",
+  "returns": "FN_ERR_IO_ERROR when it did hang up; FN_ERR_OK when there was no one to hang up",
+  "example": "net.close_client",
+  "warning": "The answer is upside down: the firmware NAKs a successful hang-up and ACKs when there was nothing to do, and fujinet-lib passes that on.",
+  "group": "network"
+ },
+ "network_fs_cd": {
+  "what": "Sets the unit's prefix: later opens on that unit with a relative path start there. Give the whole spec, \"N8:SD:/test/\".",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.chdir",
+  "warning": "Do not end it with CR LF: unlike OPEN, CHDIR keeps them, in the prefix and in every relative open after.",
+  "group": "network"
+ },
+ "network_fs_command": {
+  "what": "Sends one of the file commands (NETCMD_RENAME, _DELETE, _LOCK, _UNLOCK, _MKDIR, _RMDIR) with two zero fields and the devicespec as the payload. The network_fs_ macros are made of it.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "lib.network_fs_command",
+  "warning": "It ends whatever channel was open on that unit (unsent writes are lost), and the reason for a failure is lost too: STATUS afterwards says 207.",
+  "group": "network"
+ },
+ "network_fs_delete": {
+  "what": "Deletes the file the devicespec names.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.delete",
+  "warning": "It ends whatever channel was open on that unit (unsent writes are lost), and the reason for a failure is lost too: STATUS afterwards says 207. FTP ACKs and deletes nothing.",
+  "group": "network"
+ },
+ "network_fs_lock": {
+  "what": "Makes a file read-only.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.lock",
+  "warning": "The SD card cannot, and NAKs; FTP, HTTP, SMB and others ACK and do nothing. It ends whatever channel was open on that unit (unsent writes are lost), and the reason for a failure is lost too: STATUS afterwards says 207.",
+  "group": "network"
+ },
+ "network_fs_mkdir": {
+  "what": "Makes a directory.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.mkdir",
+  "warning": "It ends whatever channel was open on that unit (unsent writes are lost), and the reason for a failure is lost too: STATUS afterwards says 207. FTP ACKs and makes nothing.",
+  "group": "network"
+ },
+ "network_fs_pwd": {
+  "what": "Gets the unit's prefix, as network_fs_cd() set it but without the Nn:.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.getcwd",
+  "warning": "No NUL is added: clear the 256-byte buffer first.",
+  "group": "network"
+ },
+ "network_fs_rename": {
+  "what": "Renames a file; the new name follows a comma: \"N8:SD:/test/old.txt,new.txt\".",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.rename",
+  "warning": "It ends whatever channel was open on that unit (unsent writes are lost), and the reason for a failure is lost too: STATUS afterwards says 207. TNFS with no comma ACKs and does nothing.",
+  "group": "network"
+ },
+ "network_fs_rmdir": {
+  "what": "Removes a directory, which must be empty.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.rmdir",
+  "warning": "It ends whatever channel was open on that unit (unsent writes are lost), and the reason for a failure is lost too: STATUS afterwards says 207.",
+  "group": "network"
+ },
+ "network_fs_unlock": {
+  "what": "Makes a read-only file writable again.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.unlock",
+  "warning": "The SD card cannot, and NAKs. It ends whatever channel was open on that unit (unsent writes are lost), and the reason for a failure is lost too: STATUS afterwards says 207.",
+  "group": "network"
+ },
+ "network_get_dstats": {
+  "what": "Declared to ask which way a command moves its data (Atari SIO only).",
+  "returns": "does not link",
+  "example": null,
+  "warning": "Does not link on the H89, under HDOS or CP/M: fujinet-lib declares it but has no H89 version. The firmware would NAK the inquiry anyway.",
+  "group": "network"
+ },
+ "network_has_proceed": {
+  "what": "Declared to say whether the hardware has a data-ready (PROCEED) line.",
+  "returns": "does not link",
+  "example": null,
+  "warning": "Does not link on the H89, under HDOS or CP/M: fujinet-lib declares it but has no H89 version. The H89 has no such line: poll network_status().",
+  "group": "network"
+ },
+ "network_html_parse": {
+  "what": "Sets the HTML parser on an open channel and parses the page: the FujiNet reads all of it first (512K at most). Plain text parses too, as the page's body.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "lib.network_html_parse",
+  "warning": null,
+  "group": "network"
+ },
+ "network_html_query": {
+  "what": "Runs a CSS selector (\"div.content a\", with \"@href\" on the end for an attribute) against the parsed page and reads the first match's text into buffer; the same selector again gives the next match. It is network_json_query() under another name.",
+  "returns": "the length (0 when nothing more matches); a negative FN_ERR",
+  "example": "lib.network_html_query",
+  "warning": "256 bytes are sent and the firmware keeps them all as the selector: build it in a cleared 256-byte buffer, since an @ among the stray bytes would make it an attribute query. The reply has no limit.",
+  "group": "network"
+ },
+ "network_http_add_header": {
+  "what": "Writes one request header, such as \"Accept: application/json\". It is network_write() with strlen().",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.write.header",
+  "warning": "Exactly one space after the colon, and no CR LF on the end: the H89 card keeps a CR LF in the value. A header with no colon NAKs.",
+  "group": "network"
+ },
+ "network_http_delete": {
+  "what": "Opens an HTTP DELETE (mode 9) on the URL.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.open.http_delete",
+  "warning": "Nothing is sent until a network_status() or network_read(); network_close() alone never sends it.",
+  "group": "network"
+ },
+ "network_http_end_add_headers": {
+  "what": "Ends adding headers and puts the channel back in BODY mode (SET_HTTP_MODE 0).",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "lib.network_http_end_add_headers",
+  "warning": "As any mode switch, it throws away an answer already buffered.",
+  "group": "network"
+ },
+ "network_http_post": {
+  "what": "Sends a string as the body of an HTTP POST opened with OPEN_MODE_HTTP_POST: SET_HTTP_MODE 4, WRITE, SET_HTTP_MODE 0. The request goes out at the next network_status() or network_read().",
+  "returns": "FN_ERR_OK, or FN_ERR_IO_ERROR from the first frame that fails",
+  "example": "lib.network_http_post",
+  "warning": "strlen() gives the length, so the body can hold no NUL (network_http_post_bin() can). A STATUS or READ sends it, never network_close(). An empty body fails at the STATUS with error 144.",
+  "group": "network"
+ },
+ "network_http_post_bin": {
+  "what": "As network_http_post(), with len bytes of anything.",
+  "returns": "FN_ERR_OK, or FN_ERR_IO_ERROR from the first frame that fails",
+  "example": "lib.network_http_post_bin",
+  "warning": "A STATUS or READ sends the request, never network_close().",
+  "group": "network"
+ },
+ "network_http_put": {
+  "what": "Sends a string as the body of an HTTP PUT opened with OPEN_MODE_HTTP_PUT (8). It is network_http_post() under another name; the PUT goes out at network_close().",
+  "returns": "FN_ERR_OK, or FN_ERR_IO_ERROR from the first frame that fails",
+  "example": "net.write.http_put",
+  "warning": "With OPEN_MODE_HTTP_PUT_H (14) the firmware sends a POST instead. A network_status() before the close sends the PUT early, and the close PUTs again.",
+  "group": "network"
+ },
+ "network_http_set_mode": {
+  "what": "Switches an HTTP channel's mode: HTTP_CHAN_MODE_BODY (0), COLLECT_HEADERS (1), GET_HEADERS (2), SET_HEADERS (3), POST_SET_DATA (4).",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.set_http_mode",
+  "warning": "The switch throws away any answer still buffered, and any write not yet sent. COLLECT_HEADERS works only with OPEN_MODE_HTTP_GET_H (12).",
+  "group": "network"
+ },
+ "network_http_start_add_headers": {
+  "what": "Starts adding request headers (SET_HTTP_MODE 3). Add them with network_http_add_header(), then call network_http_end_add_headers().",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.set_http_mode.set_headers",
+  "warning": "Before the request goes out: before any STATUS or READ.",
+  "group": "network"
+ },
+ "network_init": {
+  "what": "Checks the network before you start. On the H89 it sends nothing and always gives FN_ERR_OK.",
+  "returns": "FN_ERR_OK, always",
+  "example": "lib.network_init",
+  "warning": "It proves nothing on the H89. To see that the card answers, call fuji_get_adapter_config().",
+  "group": "network"
+ },
+ "network_json_parse": {
+  "what": "Sets the JSON parser on an open channel and parses what it reads (SET_PARSER, then PARSE).",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.parse",
+  "warning": "On a connection that stays open (TCP) PARSE waits for the far end to close, and fujinet-lib gives up after 15 seconds. After it, STATUS says 136 (the body is used up) until you query.",
+  "group": "network"
+ },
+ "network_json_query": {
+  "what": "Asks for the value at a JSON Pointer (\"/name\", \"/ports/2\") and reads it into buffer with the line ending taken off and a NUL put on.",
+  "returns": "the length (0 if the name is not there); a negative FN_ERR",
+  "example": "net.query",
+  "warning": "256 bytes are always sent from query (harmless for JSON). The reply has no limit: buffer must hold the longest value and a NUL. A query whose value is, or holds, an empty array [] crashes the firmware.",
+  "group": "network"
+ },
+ "network_json_strip_newlines": {
+  "what": "Cuts CR, LF and 9BH (the Atari end of line) off the end of buflen bytes and writes a NUL after what is left. network_json_query() uses it.",
+  "returns": "the new length",
+  "example": "lib.network_json_strip_newlines",
+  "warning": "It writes buffer[buflen] when there is nothing to cut: the buffer needs one byte more than buflen.",
+  "group": "helper"
+ },
+ "network_open": {
+  "what": "Opens a channel. The devicespec says which unit and what to talk to (\"N1:HTTP://host/path\", \"N5:TCP://host:port/\", \"N8:SD:/test/x\"); mode is 4 read, 8 write, 12 both, 6 a directory, 13 an HTTP POST and so on; trans is the line-end translation (0 none, 1 CR, 2 LF, 3 CR LF).",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.open",
+  "warning": "HTTP sends nothing until the first STATUS or READ. On SD: and TNFS: a mode other than 4, 6, 7, 8, 9 or 12 crashes the firmware. A * in a URL cuts it short there, and a URL ending in a dot loses the dot. Every failure is FN_ERR_IO_ERROR, here and in the other network calls: the reason is in the error byte network_status() gives.",
+  "group": "network"
+ },
+ "network_proceed": {
+  "what": "Declared to say whether data-ready (PROCEED) is asserted.",
+  "returns": "does not link",
+  "example": null,
+  "warning": "Does not link on the H89, under HDOS or CP/M: fujinet-lib declares it but has no H89 version. Poll network_status() instead.",
+  "group": "network"
+ },
+ "network_read": {
+  "what": "Reads len bytes, waiting for them: it asks STATUS how many are waiting and reads those, again and again, until it has len, reaches the end, or meets an error.",
+  "returns": "the count read (0 at the end); a negative FN_ERR if nothing was read",
+  "example": "net.read",
+  "warning": "It blocks: on a TCP or UDP channel that goes quiet it waits for ever (it is network_read_nb() in a loop). It never asks for more than STATUS says is waiting.",
+  "group": "network"
+ },
+ "network_read_nb": {
+  "what": "Reads what is waiting, up to len: STATUS until something is, then one READ.",
+  "returns": "the count; 0 at the end, or on an error with nothing waiting; a negative FN_ERR if STATUS fails",
+  "example": "net.read.loop",
+  "warning": "Not as non-blocking as its name: while nothing is waiting and there is no error it keeps asking, for ever. An idle TCP server, or a UDP channel (whose STATUS does not count the first datagram), never returns. Poll network_status() yourself there.",
+  "group": "network"
+ },
+ "network_seek": {
+  "what": "Moves the read position of an open file (SD, TNFS, HTTP) to pos.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.seek",
+  "warning": "The firmware seeks twice; over HTTP that is two Range requests.",
+  "group": "network"
+ },
+ "network_set_eol": {
+  "what": "Sets the end of line the unit translates to and from (\"\\r\" suits the H89); \"\" goes back to the default.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.set_eol",
+  "warning": null,
+  "group": "network"
+ },
+ "network_set_interrupt_rate": {
+  "what": "Sets how often, in milliseconds, the unit raises its data-ready signal.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.set_int_rate",
+  "warning": "No use on the H89: the signal goes nowhere. And 0 crashes the firmware once a channel is open on that unit.",
+  "group": "network"
+ },
+ "network_set_line_ending": {
+  "what": "Sets the byte the parser puts after every value (parameter 1; LF to start with).",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "lib.network_set_line_ending",
+  "warning": "Set it after the parse, which resets it. network_json_query() takes a CR, LF or 9BH off again; any other byte stays.",
+  "group": "network"
+ },
+ "network_set_parameter": {
+  "what": "Sets a parser parameter: 0 the query flags (see network_set_query_param()), 1 the line ending (see network_set_line_ending()).",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.set_parameter",
+  "warning": "Needs an open channel with a parser, and SET_PARSER resets both values: call it after network_json_parse().",
+  "group": "network"
+ },
+ "network_set_parser": {
+  "what": "Chooses the parser for an open channel: PARSER_NONE, PARSER_JSON, PARSER_HTML or PARSER_XML.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.set_parser",
+  "warning": "Only after network_open(): with no channel open it ACKs, and the next READ, QUERY, SEEK or TELL on that unit crashes the firmware. An open sets it back to NONE.",
+  "group": "network"
+ },
+ "network_set_password": {
+  "what": "Sets the password for the unit's next open.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.password",
+  "warning": "Ignored unless a user name is set too.",
+  "group": "network"
+ },
+ "network_set_query_param": {
+  "what": "Sets the query flags (parameter 0): 10H gives values as plain ASCII (entities decoded, other characters folded), 00H as they are. Bits 0-2 remap characters for other machines.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "lib.network_set_query_param",
+  "warning": "With 10H a string's line ending is folded with it: the LF (or CR) comes back as a space, which network_json_query() leaves on, so \"the FujiNet\" arrives as \"the FujiNet \". Numbers are not affected. Anything but 00H-07H and 10H-17H NAKs. Never 04H when a value holds a < with no > after it: the firmware loops for ever. Set it after the parse, which resets it.",
+  "group": "network"
+ },
+ "network_set_translation": {
+  "what": "Sets a translation that is ORed into every later open on the unit (0 none, 1 CR, 2 LF, 3 CR LF).",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.translation",
+  "warning": "It ORs: 1 here and 2 in network_open() make 3, CR LF.",
+  "group": "network"
+ },
+ "network_set_username": {
+  "what": "Sets the user name for the unit's next open (FTP, SMB and the like).",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.username",
+  "warning": "With an empty user name the password is not passed either.",
+  "group": "network"
+ },
+ "network_status": {
+  "what": "Asks the unit how many bytes are waiting, whether it is connected, and its last error (1 all well, 136 the end, 207 nothing open, and so on). The answer also lands in nw_status.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.status",
+  "warning": "Over HTTP the first STATUS is what sends the request. On UDP the count leaves out the datagram STATUS has just taken in: one datagram waiting shows 0.",
+  "group": "network"
+ },
+ "network_tell": {
+  "what": "Gets the read position of an open file.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.tell",
+  "warning": "With no channel open the four bytes are garbage, and still ACKed. On SD and TNFS, bytes STATUS has read ahead are thrown away, and the position is past them.",
+  "group": "network"
+ },
+ "network_tell_common": {
+  "what": "What the network_tell() macro calls; the same thing under its own name.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.tell",
+  "warning": "As network_tell(): with no channel open the answer is garbage.",
+  "group": "network"
+ },
+ "network_udp_get_remote": {
+  "what": "Gets \"ip:port\" of whoever sent the last UDP datagram.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.get_remote",
+  "warning": "buf must be 256 bytes, which is what always comes back, or the call fails. Before any datagram it says 255.255.255.255:0.",
+  "group": "network"
+ },
+ "network_udp_set_destination": {
+  "what": "Sets where an open UDP channel sends to, as \"N7:host:port\".",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.set_destination",
+  "warning": "Does not work on the H89 as it stands: it sends the spec with no NUL, which fujinet-pc needs, and the card misreads the \"N7:\" form (only \"N:host:port\" comes out right), so the ACK means nothing. Send SET_DESTINATION with fuji_bus_call() and a NUL, as the example does. A datagram that arrives later makes its sender the destination anyway.",
+  "group": "network"
+ },
+ "network_unit": {
+  "what": "Works out the unit from a devicespec: the digit in \"N3:\", or 1 for \"N:\" and anything else. No frame is sent.",
+  "returns": "the unit number, unchecked",
+  "example": "lib.network_unit",
+  "warning": "No range check. \"N0:\" gives unit 0, which is the Fuji device (70H): network calls on it reach the Fuji commands with the same numbers (NET_SET_PARAMETER, FBH, is SET_SSID). \"N9:\" gives 79H, which NAKs; \"N10:\" gives 1.",
+  "group": "helper"
+ },
+ "network_unit_status": {
+  "what": "STATUS by unit number, into a NetworkStatus (avail, status, errcode); network_status() is made of it.",
+  "returns": "0 when it worked, 1 when it did not",
+  "example": "lib.network_unit_status",
+  "warning": "0 means success here: the macro is !fuji_bus_call(). Its first argument is a unit number (1-8), not a devicespec.",
+  "group": "network"
+ },
+ "network_write": {
+  "what": "Writes len bytes to the channel, in one frame.",
+  "returns": "FN_ERR_OK on ACK, FN_ERR_IO_ERROR otherwise",
+  "example": "net.write",
+  "warning": "A write that fails stays in the FujiNet's buffer and goes again in front of the next one. Translation turns round only the whole native end of line (CR LF unless network_set_eol() changed it); a lone CR goes as it is.",
+  "group": "network"
+ },
+ "qrcode_create": {
+  "what": "Makes a QR code in one call: fuji_qrcode_input(), fuji_qrcode_encode(), fuji_qrcode_length() and fuji_qrcode_output(), into output.",
+  "returns": "the length; -162 if output_max is too small; -215 if a frame failed",
+  "example": "lib.qrcode_create",
+  "warning": "The errors are negative NETWORK_ERROR values, not FN_ERR. When output_max is too small the code is left waiting in the FujiNet.",
+  "group": "qrcode"
+ }
+}

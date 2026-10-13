@@ -1,0 +1,13 @@
+                                                  	HEATH ASM #104.06.00
+                                                  	12-Oct-80  Page    1
+
+   042.200              00001   	XTEXT	SY1:HOSDEF
+   042.200              00067   	ORG	42200A
+   042.200  076 003     00068   	MVI	A,.PRINT
+A  042.202  000         00069   	END
+
+
+00069 Statements Assembled
+40447 Bytes Free
+00001 Errors Detected
+

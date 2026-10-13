@@ -1,0 +1,133 @@
+{
+ "lib.fuji_hash_data": {
+  "reply": "ACK",
+  "len": 32,
+  "note": "five exchanges: HASH_CLEAR, HASH_INPUT 3 'abc', HASH_COMPUTE 00 (MD5), HASH_LENGTH 01 -> 20H, HASH_OUTPUT 01 -> 900150983cd24fb0d6963f7d28e17f72 (no NUL)"
+ },
+ "lib.fuji_hash_add": {
+  "reply": "ACK",
+  "note": "HASH_CLEAR, then HASH_INPUT 2 'ab' and HASH_INPUT 1 'c': fuji_hash_add() is fuji_hash_input()"
+ },
+ "lib.fuji_hash_calculate": {
+  "reply": "ACK",
+  "len": 32,
+  "note": "HASH_COMPUTE_NO_CLEAR 01, LENGTH -> 28H, OUTPUT 40 = a9993e364706816aba3e25717850c26c9cd0d89d (SHA-1 of 'abc': the two pieces were one input); then HASH_COMPUTE 00, LENGTH -> 20H, OUTPUT 32 = 900150983cd24fb0d6963f7d28e17f72 (MD5 of the kept input); then HASH_CLEAR (discard_data true)"
+ },
+ "lib.qrcode_create": {
+  "reply": "ACK",
+  "len": 64,
+  "note": "QRCODE_INPUT 23, QRCODE_ENCODE 00 00 00, QRCODE_LENGTH 02 -> 40 00 00 00, QRCODE_OUTPUT 64: 15H (21 modules a side) then 21 rows of 3 bytes, the same code as fuji.qrcode_output; returns 64"
+ },
+ "lib.fuji_enable_device": {
+  "reply": "NAK",
+  "tag": "NAK",
+  "trap": "FUJI_ENABLE_DEVICE D5H is not dispatched on 70H: rs232Fuji's default case NAKs (fwspec not_dispatched; fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403); fujinet-lib sends it anyway (fujinet-lib/include/fujinet-fuji.h:269)"
+ },
+ "lib.fuji_disable_device": {
+  "reply": "NAK",
+  "tag": "NAK",
+  "trap": "FUJI_DISABLE_DEVICE D4H is not dispatched on 70H (fwspec not_dispatched; fn-h89/lib/device/rs232/rs232Fuji.cpp:402-403; fujinet-lib/include/fujinet-fuji.h:268)"
+ },
+ "lib.network_unit_status": {
+  "reply": "ACK",
+  "len": 4,
+  "note": "OPEN 04 00 'N1:HTTP://127.0.0.1:7802/hello.txt', then STATUS -> 37 00 00 01: 55 waiting (this STATUS sends the GET). network_unit_status() returns 0"
+ },
+ "lib.network_http_post": {
+  "reply": "ACK",
+  "len": 14,
+  "tag": "OUTPUT CHECKED ON HOST",
+  "note": "OPEN 0D 00, SET_HTTP_MODE 00 04, WRITE 16, SET_HTTP_MODE 00 00 (network_http_post), STATUS 0E 00 00 01 (sends the POST), STATUS again (network_read's own), READ 14 'GOT 16 BYTES' CR LF. helpers.jsonl: POST /post, Content-Length 16, body name=H89&cpu=Z80"
+ },
+ "lib.network_http_post_bin": {
+  "reply": "ACK",
+  "len": 13,
+  "tag": "OUTPUT CHECKED ON HOST",
+  "note": "as lib.network_http_post with WRITE 4 = 48 00 38 39; READ 13 'GOT 4 BYTES' CR LF. helpers.jsonl: POST /post, Content-Length 4, body 'H' 00 '89' - the NUL went through"
+ },
+ "lib.network_http_end_add_headers": {
+  "reply": "ACK",
+  "len": 55,
+  "tag": "OUTPUT CHECKED ON HOST",
+  "note": "OPEN 0C 00, SET_HTTP_MODE 00 03, WRITE 14 'X-Machine: H89', SET_HTTP_MODE 00 00 (network_http_end_add_headers), STATUS 37 00 00 01 (sends the GET), STATUS, READ 55 (hello.txt). helpers.jsonl: GET /hello.txt carrying X-Machine: H89"
+ },
+ "lib.network_set_query_param": {
+  "reply": "ACK",
+  "len": 8,
+  "note": "OPEN, SET_PARSER 01 01, PARSE (network_json_parse), SET_PARAMETER 00 10, QUERY (256 payload bytes), STATUS 08 00 00 01, STATUS, READ 8 = 'FujiNet' 20, STATUS 00 00 00 88; prints [FujiNet ]",
+  "surprise": "in ASCII output mode (10H) a STRING value's line ending is folded along with it: FNJSON::getValue calls processString(strValue + lineEnding) (fn-h89/lib/fnjson/fnjson.cpp:228) and fn_utf8_to_ascii turns LF, CR and TAB into a space (fn-h89/lib/fntext/fn_sanitize.cpp:658-660). The value ends in 20H, which network_json_strip_newlines() does not remove, so the program gets 'FujiNet ' (8 bytes) instead of 'FujiNet'. Numbers keep their LF (fnjson.cpp:267); the HTML parser appends its line ending after processString (fnhtml.cpp:130) and is not affected. fwspec does not mention it."
+ },
+ "lib.network_set_line_ending": {
+  "reply": "ACK",
+  "len": 4,
+  "note": "SET_PARAMETER 01 2C, QUERY '/ports/0', STATUS 04 00 00 01, STATUS, READ 4 = '208,'; the comma is not stripped"
+ },
+ "lib.network_html_parse": {
+  "reply": "ACK",
+  "note": "OPEN 04 00 'N2:HTTP://127.0.0.1:7802/hello.txt', SET_PARSER 02 02, PARSE: the text/plain page parses (gumbo puts it in <body>)"
+ },
+ "lib.network_html_query": {
+  "reply": "ACK",
+  "len": 54,
+  "note": "QUERY with 256 payload bytes ('body' and 252 NULs), STATUS 36 00 00 01, STATUS, READ 54 = the page's text with each CR LF made LF by the HTML parser, then the LF line ending; STATUS 00 00 00 88. fujinet-lib strips the last LF: 52 characters, two lines",
+  "surprise": "fwspec says network_html_query's 256-byte send corrupts the selector, and lists the NUL padding as an open question. On this firmware it works: the RS232 handler does keep all 256 bytes (fn-h89/lib/device/rs232/rs232Network.cpp:9), but gumbo-query's parser stops at the first byte that cannot continue a selector and returns what it has, ignoring the rest (fn-h89/components/gumbo-query/Parser.cpp:52-64, 66-104). What does matter is an '@' anywhere in the 256 bytes: FNHTML::resolveQuery splits the selector at the last '@' and asks for an attribute (fn-h89/lib/fnhtml/fnhtml.cpp:108-115). So keep the selector in a cleared buffer."
+ },
+ "lib.network_bus_write": {
+  "reply": "ACK",
+  "note": "OPEN 08 00 'N8:SD:/h89lib.txt', WRITE 19 (network_bus_write to 78H, returns 19), CLOSE. Leaves /h89lib.txt (19 bytes) at the top of the run's SD card, which lib.fuji_file_stat looks up"
+ },
+ "lib.network_fs_command": {
+  "reply": "ACK",
+  "note": "MKDIR 00 00 'N8:SD:/test/libdir' (18 bytes, no NUL); the RMDIR after it is _tidy"
+ },
+ "lib.fuji_devcall_vld": {
+  "reply": "ACK",
+  "note": "SET_EOL to 71H, no fields, payload 0D 0A. The _tidy after it, network_set_eol('N1:', ''), sends SET_EOL with no payload, which clears the override (ACK; fn-h89/lib/device/NDevice/NDevice.cpp:591-611)"
+ },
+ "lib.fuji_open_directory_filter": {
+  "reply": "ACK",
+  "len": 32,
+  "note": "MOUNT_HOST 00, OPEN_DIRECTORY 00 + 256 bytes '/test/' 00 '*.txt' 00 ..., READ_DIR_ENTRY 20 00 -> 'readme.txt', READ_DIR_ENTRY -> 7F 7F, CLOSE_DIRECTORY"
+ },
+ "lib.fuji_open_directory2": {
+  "reply": "ACK",
+  "len": 32,
+  "note": "OPEN_DIRECTORY with the cleared 256-byte path (no pattern), READ_DIR_ENTRY x4: blank.h8d, disk.img, readme.txt, 7F 7F; CLOSE_DIRECTORY; prints 3 entries"
+ },
+ "lib.fuji_file_stat": {
+  "reply": "ACK",
+  "len": 23,
+  "note": "MOUNT_HOST 00, OPEN_DIRECTORY 00 + 256 bytes '' (the top of host 0: the path's directory part is empty), READ_DIR_ENTRY 17 80 (12 + strlen('h89lib.txt') + 1) -> 'test/' (flags 01), READ_DIR_ENTRY 17 80 -> 'h89lib.txt' with size 13 00 00 00 = 19 and the date the run made it (e.g. 38 0A 0D = 2026-10-13: year counts from 1970), CLOSE_DIRECTORY. The date changes from run to run",
+  "surprise": "none on this file, but only because it is at the top of the SD card: fujinet-pc stats <SD>/<name> instead of <SD>/<dir>/<name> (fn-h89/lib/FileSystem/fnFsSD.cpp:306), so fuji_file_stat() of a file in /test/ would report size 0 and a 1969 date (see expect/exfuji.json fuji.read_dir_entry.ext)"
+ },
+ "lib.network_init": {
+  "reply": "none",
+  "tag": "NOT SENT, COMPUTED",
+  "note": "no frame: network_init() just returns FN_ERR_OK (fujinet-lib/common/network_init.c:3-6). Checked on the final screen (ACK)"
+ },
+ "lib.network_unit": {
+  "reply": "none",
+  "tag": "NOT SENT, COMPUTED",
+  "note": "no frame; prints 1 3 8 (fujinet-lib/common/network_unit.c:3-12)"
+ },
+ "lib.fuji_field_numbytes": {
+  "reply": "none",
+  "tag": "NOT SENT, COMPUTED",
+  "note": "no frame; FUJI_FIELD_B12_B34 -> 4 (fujinet-lib/common/fuji_field.c:3)"
+ },
+ "lib.fuji_field_numfields": {
+  "reply": "none",
+  "tag": "NOT SENT, COMPUTED",
+  "note": "no frame; FUJI_FIELD_B12_B34 -> 2 (fujinet-lib/common/fuji_field.c:4)"
+ },
+ "lib.network_json_strip_newlines": {
+  "reply": "none",
+  "tag": "NOT SENT, COMPUTED",
+  "note": "no frame; 'H89' CR LF, 5 -> 3 \"H89\" (fujinet-lib/common/network_json.c:6-20)"
+ },
+ "lib.fuji_hash_size": {
+  "reply": "none",
+  "tag": "NOT SENT, COMPUTED",
+  "note": "no frame; SHA256 as hex -> 64 (fujinet-lib/common/fuji_hash_size.c:11-34)"
+ }
+}

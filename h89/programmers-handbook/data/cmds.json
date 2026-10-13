@@ -1,0 +1,1154 @@
+{
+ "commands": [
+  {
+   "name": "FUJI_RESET",
+   "value": 255,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_SSID",
+   "value": 254,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SCAN_NETWORKS",
+   "value": 253,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_SCAN_RESULT",
+   "value": 252,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SET_SSID",
+   "value": 251,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_WIFISTATUS",
+   "value": 250,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_MOUNT_HOST",
+   "value": 249,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_MOUNT_IMAGE",
+   "value": 248,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_OPEN_DIRECTORY",
+   "value": 247,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_READ_DIR_ENTRY",
+   "value": 246,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_CLOSE_DIRECTORY",
+   "value": 245,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_READ_HOST_SLOTS",
+   "value": 244,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_WRITE_HOST_SLOTS",
+   "value": 243,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_READ_DEVICE_SLOTS",
+   "value": 242,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_WRITE_DEVICE_SLOTS",
+   "value": 241,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_ENABLE_UDPSTREAM",
+   "value": 240,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SET_BAUDRATE",
+   "value": 235,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_WIFI_ENABLED",
+   "value": 234,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_UNMOUNT_IMAGE",
+   "value": 233,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_ADAPTERCONFIG",
+   "value": 232,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_NEW_DISK",
+   "value": 231,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_UNMOUNT_HOST",
+   "value": 230,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DIRECTORY_POSITION",
+   "value": 229,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SET_DIRECTORY_POSITION",
+   "value": 228,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SET_HSIO_INDEX",
+   "value": 227,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SET_DEVICE_FULLPATH",
+   "value": 226,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SET_HOST_PREFIX",
+   "value": 225,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_HOST_PREFIX",
+   "value": 224,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SET_SIO_EXTERNAL_CLOCK",
+   "value": 223,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_WRITE_APPKEY",
+   "value": 222,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_READ_APPKEY",
+   "value": 221,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_OPEN_APPKEY",
+   "value": 220,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_CLOSE_APPKEY",
+   "value": 219,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE_FULLPATH",
+   "value": 218,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_CONFIG_BOOT",
+   "value": 217,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_COPY_FILE",
+   "value": 216,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_MOUNT_ALL",
+   "value": 215,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SET_BOOT_MODE",
+   "value": 214,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_ENABLE_DEVICE",
+   "value": 213,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_DISABLE_DEVICE",
+   "value": 212,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_RANDOM_NUMBER",
+   "value": 211,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_TIME",
+   "value": 210,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_DEVICE_ENABLE_STATUS",
+   "value": 209,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_BASE64_ENCODE_INPUT",
+   "value": 208,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_BASE64_ENCODE_COMPUTE",
+   "value": 207,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_BASE64_ENCODE_LENGTH",
+   "value": 206,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_BASE64_ENCODE_OUTPUT",
+   "value": 205,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_BASE64_DECODE_INPUT",
+   "value": 204,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_BASE64_DECODE_COMPUTE",
+   "value": 203,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_BASE64_DECODE_LENGTH",
+   "value": 202,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_BASE64_DECODE_OUTPUT",
+   "value": 201,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_HASH_INPUT",
+   "value": 200,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_HASH_COMPUTE",
+   "value": 199,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_HASH_LENGTH",
+   "value": 198,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_HASH_OUTPUT",
+   "value": 197,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_ADAPTERCONFIG_EXTENDED",
+   "value": 196,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_HASH_COMPUTE_NO_CLEAR",
+   "value": 195,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_HASH_CLEAR",
+   "value": 194,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_HEAP",
+   "value": 193,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_QRCODE_OUTPUT",
+   "value": 191,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_QRCODE_LENGTH",
+   "value": 190,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_QRCODE_ENCODE",
+   "value": 189,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_QRCODE_INPUT",
+   "value": 188,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GENERATE_GUID",
+   "value": 187,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE10_FULLPATH",
+   "value": 169,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE9_FULLPATH",
+   "value": 168,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE8_FULLPATH",
+   "value": 167,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE7_FULLPATH",
+   "value": 166,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE6_FULLPATH",
+   "value": 165,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE5_FULLPATH",
+   "value": 164,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE4_FULLPATH",
+   "value": 163,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE3_FULLPATH",
+   "value": 162,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE2_FULLPATH",
+   "value": 161,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_GET_DEVICE1_FULLPATH",
+   "value": 160,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_UPDATE_FIRMWARE",
+   "value": 144,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_STATUS",
+   "value": 83,
+   "group": "FUJI",
+   "comment": "S"
+  },
+  {
+   "name": "FUJI_HSIO_INDEX",
+   "value": 63,
+   "group": "FUJI",
+   "comment": "?"
+  },
+  {
+   "name": "FUJI_NAK",
+   "value": 21,
+   "group": "FUJI",
+   "comment": "ASCII NAK"
+  },
+  {
+   "name": "FUJI_ACK",
+   "value": 6,
+   "group": "FUJI",
+   "comment": "ASCII ACK"
+  },
+  {
+   "name": "FUJI_SEND_ERROR",
+   "value": 2,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_SEND_RESPONSE",
+   "value": 1,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "FUJI_DEVICE_READY",
+   "value": 0,
+   "group": "FUJI",
+   "comment": ""
+  },
+  {
+   "name": "DISK_HSIO_WRITE",
+   "value": 215,
+   "group": "DISK",
+   "comment": ""
+  },
+  {
+   "name": "DISK_HSIO_STATUS",
+   "value": 211,
+   "group": "DISK",
+   "comment": ""
+  },
+  {
+   "name": "DISK_HSIO_READ",
+   "value": 210,
+   "group": "DISK",
+   "comment": ""
+  },
+  {
+   "name": "DISK_HSIO_PUT",
+   "value": 208,
+   "group": "DISK",
+   "comment": ""
+  },
+  {
+   "name": "DISK_HSIO_FORMAT_MEDIUM",
+   "value": 162,
+   "group": "DISK",
+   "comment": ""
+  },
+  {
+   "name": "DISK_HSIO_FORMAT",
+   "value": 161,
+   "group": "DISK",
+   "comment": ""
+  },
+  {
+   "name": "DISK_WRITE",
+   "value": 87,
+   "group": "DISK",
+   "comment": "W"
+  },
+  {
+   "name": "DISK_STATUS",
+   "value": 83,
+   "group": "DISK",
+   "comment": "S"
+  },
+  {
+   "name": "DISK_READ",
+   "value": 82,
+   "group": "DISK",
+   "comment": "R"
+  },
+  {
+   "name": "DISK_PUT",
+   "value": 80,
+   "group": "DISK",
+   "comment": "P"
+  },
+  {
+   "name": "DISK_PERCOM_WRITE",
+   "value": 79,
+   "group": "DISK",
+   "comment": "O"
+  },
+  {
+   "name": "DISK_PERCOM_READ",
+   "value": 78,
+   "group": "DISK",
+   "comment": "N"
+  },
+  {
+   "name": "DISK_HSIO_INDEX",
+   "value": 63,
+   "group": "DISK",
+   "comment": "?"
+  },
+  {
+   "name": "DISK_FORMAT_MEDIUM",
+   "value": 34,
+   "group": "DISK",
+   "comment": "\""
+  },
+  {
+   "name": "DISK_FORMAT",
+   "value": 33,
+   "group": "DISK",
+   "comment": "!"
+  },
+  {
+   "name": "NET_GET_DSTATS_VALUE",
+   "value": 255,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_PASSWORD",
+   "value": 254,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_USERNAME",
+   "value": 253,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_SET_PARSER",
+   "value": 252,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_SET_PARAMETER",
+   "value": 251,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_SET_UNIT",
+   "value": 250,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_SET_HSIO_INDEX",
+   "value": 227,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_QUERY_ALT",
+   "value": 129,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_PARSE_ALT",
+   "value": 128,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "NET_GET_REMOTE",
+   "value": 114,
+   "group": "NET",
+   "comment": "r"
+  },
+  {
+   "name": "NET_CLOSE_CLIENT",
+   "value": 99,
+   "group": "NET",
+   "comment": "c"
+  },
+  {
+   "name": "NET_SET_INT_RATE",
+   "value": 90,
+   "group": "NET",
+   "comment": "Z"
+  },
+  {
+   "name": "NET_WRITE",
+   "value": 87,
+   "group": "NET",
+   "comment": "W"
+  },
+  {
+   "name": "NET_TRANSLATION",
+   "value": 84,
+   "group": "NET",
+   "comment": "T"
+  },
+  {
+   "name": "NET_STATUS",
+   "value": 83,
+   "group": "NET",
+   "comment": "S"
+  },
+  {
+   "name": "NET_READ",
+   "value": 82,
+   "group": "NET",
+   "comment": "R"
+  },
+  {
+   "name": "NET_QUERY",
+   "value": 81,
+   "group": "NET",
+   "comment": "Q"
+  },
+  {
+   "name": "NET_PARSE",
+   "value": 80,
+   "group": "NET",
+   "comment": "P"
+  },
+  {
+   "name": "NET_OPEN",
+   "value": 79,
+   "group": "NET",
+   "comment": "O"
+  },
+  {
+   "name": "NET_SET_HTTP_MODE",
+   "value": 77,
+   "group": "NET",
+   "comment": "M"
+  },
+  {
+   "name": "NET_SET_EOL",
+   "value": 76,
+   "group": "NET",
+   "comment": "L"
+  },
+  {
+   "name": "NET_GET_ERROR",
+   "value": 69,
+   "group": "NET",
+   "comment": "E"
+  },
+  {
+   "name": "NET_SET_DESTINATION",
+   "value": 68,
+   "group": "NET",
+   "comment": "D"
+  },
+  {
+   "name": "NET_CLOSE",
+   "value": 67,
+   "group": "NET",
+   "comment": "C"
+  },
+  {
+   "name": "NET_ACCEPT",
+   "value": 65,
+   "group": "NET",
+   "comment": "A"
+  },
+  {
+   "name": "NET_HSIO_INDEX",
+   "value": 63,
+   "group": "NET",
+   "comment": "?"
+  },
+  {
+   "name": "NET_GETCWD",
+   "value": 48,
+   "group": "NET",
+   "comment": "0"
+  },
+  {
+   "name": "NET_CHDIR",
+   "value": 44,
+   "group": "NET",
+   "comment": ","
+  },
+  {
+   "name": "NET_RMDIR",
+   "value": 43,
+   "group": "NET",
+   "comment": "+"
+  },
+  {
+   "name": "NET_MKDIR",
+   "value": 42,
+   "group": "NET",
+   "comment": "*"
+  },
+  {
+   "name": "NET_TELL",
+   "value": 38,
+   "group": "NET",
+   "comment": "&"
+  },
+  {
+   "name": "NET_SEEK",
+   "value": 37,
+   "group": "NET",
+   "comment": "%"
+  },
+  {
+   "name": "NET_UNLOCK",
+   "value": 36,
+   "group": "NET",
+   "comment": "$"
+  },
+  {
+   "name": "NET_LOCK",
+   "value": 35,
+   "group": "NET",
+   "comment": "#"
+  },
+  {
+   "name": "NET_DELETE",
+   "value": 33,
+   "group": "NET",
+   "comment": "!"
+  },
+  {
+   "name": "NET_RENAME",
+   "value": 32,
+   "group": "NET",
+   "comment": ""
+  },
+  {
+   "name": "MODEM_STREAM",
+   "value": 88,
+   "group": "MODEM",
+   "comment": "X"
+  },
+  {
+   "name": "MODEM_WRITE",
+   "value": 87,
+   "group": "MODEM",
+   "comment": "W"
+  },
+  {
+   "name": "MODEM_STATUS",
+   "value": 83,
+   "group": "MODEM",
+   "comment": "S"
+  },
+  {
+   "name": "MODEM_READ",
+   "value": 82,
+   "group": "MODEM",
+   "comment": "R"
+  },
+  {
+   "name": "MODEM_AUTOANSWER",
+   "value": 79,
+   "group": "MODEM",
+   "comment": "O"
+  },
+  {
+   "name": "MODEM_BAUDRATELOCK",
+   "value": 78,
+   "group": "MODEM",
+   "comment": "N"
+  },
+  {
+   "name": "MODEM_UNLISTEN",
+   "value": 77,
+   "group": "MODEM",
+   "comment": "M"
+  },
+  {
+   "name": "MODEM_LISTEN",
+   "value": 76,
+   "group": "MODEM",
+   "comment": "L"
+  },
+  {
+   "name": "MODEM_SET_DUMP",
+   "value": 68,
+   "group": "MODEM",
+   "comment": "D"
+  },
+  {
+   "name": "MODEM_CONFIGURE",
+   "value": 66,
+   "group": "MODEM",
+   "comment": "B"
+  },
+  {
+   "name": "MODEM_CONTROL",
+   "value": 65,
+   "group": "MODEM",
+   "comment": "A"
+  },
+  {
+   "name": "MODEM_TYPE3_POLL",
+   "value": 64,
+   "group": "MODEM",
+   "comment": "@"
+  },
+  {
+   "name": "MODEM_TYPE1_POLL",
+   "value": 63,
+   "group": "MODEM",
+   "comment": "?"
+  },
+  {
+   "name": "MODEM_LOAD_HANDLER",
+   "value": 38,
+   "group": "MODEM",
+   "comment": "&"
+  },
+  {
+   "name": "MODEM_LOAD_RELOCATOR",
+   "value": 33,
+   "group": "MODEM",
+   "comment": "!"
+  },
+  {
+   "name": "APETIME_GETTZTIME",
+   "value": 154,
+   "group": "APETIME",
+   "comment": ""
+  },
+  {
+   "name": "APETIME_SETTZ",
+   "value": 153,
+   "group": "APETIME",
+   "comment": ""
+  },
+  {
+   "name": "APETIME_GETTIME",
+   "value": 147,
+   "group": "APETIME",
+   "comment": ""
+  },
+  {
+   "name": "APETIME_GET_ISO_UTC_ALT",
+   "value": 122,
+   "group": "APETIME",
+   "comment": "z"
+  },
+  {
+   "name": "APETIME_SETTZ_ALT",
+   "value": 116,
+   "group": "APETIME",
+   "comment": "t"
+  },
+  {
+   "name": "APETIME_GET_SOS_ALT",
+   "value": 115,
+   "group": "APETIME",
+   "comment": "s"
+  },
+  {
+   "name": "APETIME_GET_PRODOS_ALT",
+   "value": 112,
+   "group": "APETIME",
+   "comment": "p"
+  },
+  {
+   "name": "APETIME_GET_ISO_LOCAL_ALT",
+   "value": 105,
+   "group": "APETIME",
+   "comment": "i"
+  },
+  {
+   "name": "APETIME_GET_ATARI_ALT",
+   "value": 97,
+   "group": "APETIME",
+   "comment": "a"
+  },
+  {
+   "name": "APETIME_GET_ISO_UTC",
+   "value": 90,
+   "group": "APETIME",
+   "comment": "Z"
+  },
+  {
+   "name": "APETIME_SETTZ_ALT2",
+   "value": 84,
+   "group": "APETIME",
+   "comment": "T"
+  },
+  {
+   "name": "APETIME_GET_SOS",
+   "value": 83,
+   "group": "APETIME",
+   "comment": "S"
+  },
+  {
+   "name": "APETIME_GET_PRODOS",
+   "value": 80,
+   "group": "APETIME",
+   "comment": "P"
+  },
+  {
+   "name": "APETIME_GET_SIMPLE_HUNDREDTHS",
+   "value": 77,
+   "group": "APETIME",
+   "comment": "M - simple binary + 1-byte hundredths (0-99)"
+  },
+  {
+   "name": "APETIME_GETTZ_LEN",
+   "value": 76,
+   "group": "APETIME",
+   "comment": "L"
+  },
+  {
+   "name": "APETIME_GET_ISO_LOCAL",
+   "value": 73,
+   "group": "APETIME",
+   "comment": "I"
+  },
+  {
+   "name": "APETIME_GET_GENERAL",
+   "value": 71,
+   "group": "APETIME",
+   "comment": "G"
+  },
+  {
+   "name": "APETIME_GET_ATARI",
+   "value": 65,
+   "group": "APETIME",
+   "comment": "A"
+  },
+  {
+   "name": "CPM_WRITE",
+   "value": 87,
+   "group": "CPM",
+   "comment": "W"
+  },
+  {
+   "name": "CPM_STATUS",
+   "value": 83,
+   "group": "CPM",
+   "comment": "S"
+  },
+  {
+   "name": "CPM_READ",
+   "value": 82,
+   "group": "CPM",
+   "comment": "R"
+  },
+  {
+   "name": "CPM_INIT",
+   "value": 71,
+   "group": "CPM",
+   "comment": "G"
+  },
+  {
+   "name": "CPM_BOOT",
+   "value": 66,
+   "group": "CPM",
+   "comment": "B"
+  },
+  {
+   "name": "PRINTER_WRITE",
+   "value": 87,
+   "group": "PRINTER",
+   "comment": "W"
+  },
+  {
+   "name": "PRINTER_STATUS",
+   "value": 83,
+   "group": "PRINTER",
+   "comment": "S"
+  },
+  {
+   "name": "PRINTER_PUT",
+   "value": 80,
+   "group": "PRINTER",
+   "comment": "P"
+  },
+  {
+   "name": "PCLINK_STATUS",
+   "value": 83,
+   "group": "PCLINK",
+   "comment": "S"
+  },
+  {
+   "name": "PCLINK_EXEC",
+   "value": 82,
+   "group": "PCLINK",
+   "comment": "R"
+  },
+  {
+   "name": "PCLINK_PARBLK",
+   "value": 80,
+   "group": "PCLINK",
+   "comment": "P"
+  },
+  {
+   "name": "PCLINK_HSI",
+   "value": 63,
+   "group": "PCLINK",
+   "comment": "?"
+  }
+ ],
+ "devices": [
+  {
+   "name": "DEV_FUJINET",
+   "value": 112
+  },
+  {
+   "name": "DEV_DISK",
+   "value": 49
+  },
+  {
+   "name": "DEV_DISK_LAST",
+   "value": 63
+  },
+  {
+   "name": "DEV_PRINTER",
+   "value": 64
+  },
+  {
+   "name": "DEV_PRINTER_LAST",
+   "value": 67
+  },
+  {
+   "name": "DEV_VOICE",
+   "value": 67
+  },
+  {
+   "name": "DEV_CLOCK",
+   "value": 69
+  },
+  {
+   "name": "DEV_SIO2BT_SMART",
+   "value": 69
+  },
+  {
+   "name": "DEV_ASPEQT",
+   "value": 70
+  },
+  {
+   "name": "DEV_SIO2BT_NET",
+   "value": 78
+  },
+  {
+   "name": "DEV_TYPE3POLL",
+   "value": 79
+  },
+  {
+   "name": "DEV_SERIAL",
+   "value": 80
+  },
+  {
+   "name": "DEV_SERIAL_LAST",
+   "value": 83
+  },
+  {
+   "name": "DEV_CPM",
+   "value": 90
+  },
+  {
+   "name": "DEV_CASSETTE",
+   "value": 95
+  },
+  {
+   "name": "DEV_PCLINK",
+   "value": 111
+  },
+  {
+   "name": "DEV_NETWORK",
+   "value": 113
+  },
+  {
+   "name": "DEV_NETWORK_LAST",
+   "value": 120
+  },
+  {
+   "name": "DEV_MIDI",
+   "value": 153
+  },
+  {
+   "name": "DEV_DBC",
+   "value": 255
+  }
+ ]
+}

@@ -1,0 +1,41 @@
+
+
+                ; C1 - DRI ASM PROBES
+ 0100           	ORG	100H
+ 0100 00        ALONGLABELNAME16X:	NOP
+ 0101 00        ALONGLABELNAME16Y:	NOP
+ 0102 C30001    	JMP	ALONGLABELNAME16X
+ 0105 00        label1:	nop			;LOWER CASE
+                * STAR COMMENT
+ 0106 =         HERE	EQU	$
+ 0106 3E06      	MVI	A,HERE AND 0FFH
+ 0108 3E01      	MVI	A,HERE SHR 8
+U010A 3E00      	MVI	A,HIGH HERE
+U010C 3E00      	MVI	A,LOW HERE
+V010E 3EFF      	MVI	A,NOT 0
+ 0110 3E04      	MVI	A,(5+3)/2
+ 0112 3E0B      	MVI	A,5+3*2
+ 0114 3E02      	MVI	A,17 MOD 5
+ 0116 3E00      	MVI	A,1 OR 2 XOR 3
+ 0118 4954275300	DB	'IT''S',0
+E011D 00        	DB	"DQ"
+                	IF	1
+ 011E 01        	DB	1
+                	ENDIF
+                	IF	0
+                	DB	2
+                	ENDIF
+                	IF	1
+ 011F 03        	DB	3
+                	ELSE
+ 0120 04        	DB	4
+                	ENDIF
+S               	LD	A,B
+L               	DJNZ	$
+V0121 3EFF      	MVI	A,1FFH
+ 0123 2301      	DW	$
+                X	SET	1
+ 0008 =         D$O$L	EQU	1$000B
+ 0125 3E08      	MVI	A,D$O$L
+ 0127 3E08      	MVI	A,DOL
+ 0129           	END

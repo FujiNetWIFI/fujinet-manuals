@@ -1,0 +1,43 @@
+                                                  	HEATH ASM #104.06.00
+                                                  	12-Oct-80  Page    1
+
+                        00001   *	T4 - LABELS, .PRINT, IF
+   042.200              00002   	XTEXT	HOSDEF
+   000.207              00068   	XTEXT	ASCII
+   042.200              00097   	ORG	42200A
+   042.200  000         00098   L6CHAR	NOP
+   042.201  000         00099   L7CHARS	NOP
+F  042.202  000         00100   L8CHARSX	NOP
+   042.203  000         00101   L7CHARX	NOP		SAME FIRST 6 AS L7CHARS
+   042.204  303 201 042 00102   	JMP	L7CHARS
+   042.207  303 203 042 00103   	JMP	L7CHARX
+   042.212  041 244 042 00104   START	LXI	H,M1
+   042.215  377 003     00105   	SCALL	.PRINT
+   042.217  041 247 042 00106   	LXI	H,M2
+   042.222  377 003     00107   	SCALL	.PRINT
+   042.224  041 252 042 00108   	LXI	H,M3
+   042.227  377 003     00109   	SCALL	.PRINT
+   042.231  076 170     00110   	MVI	A,'x'
+   042.233  377 002     00111   	SCALL	.SCOUT
+   042.235  076 012     00112   	MVI	A,NL
+   042.237  377 002     00113   	SCALL	.SCOUT
+   042.241  257         00114   	XRA	A
+   042.242  377 000     00115   	SCALL	.EXIT
+   042.244  101 102 200 00116   M1	DB	'AB',NULL
+   042.247  103 104 240 00117   M2	DB	'CD',' '+200Q
+   042.252  105 146 040 00118   M3	DB	'Ef lower',ENL
+   000.000              00119   	IF	0
+   042.263  001         00120   	DB	1
+                        00121   	ELSE
+                        00123   	ENDIF
+   000.001              00124   	IF	1
+                        00126   	ELSE
+   042.264  004         00127   	DB	4
+                        00128   	ENDIF
+   042.265  000         00129   	END	START
+
+
+00129 Statements Assembled
+40223 Bytes Free
+00001 Errors Detected
+

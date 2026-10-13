@@ -1,0 +1,773 @@
+{
+  "device": "network",
+  "dev_ids": ["0x71", "0x72", "0x73", "0x74", "0x75", "0x76", "0x77", "0x78"],
+  "sources": {
+    "firmware": "fn-h89 branch h89-disk-fixes @ 7ab84ae64, BUILD_RS232 + PINMAP_H89 (ESP32 card) / fujinet-pc FUJINET_TARGET=RS232",
+    "client": "fujinet-lib branch h89-keep-esp32-running @ 9e6d4dd (common/ + bus/h89/)",
+    "names": "h89/programmers-handbook/src/asm/inc/fncmd.inc"
+  },
+
+  "dispatch": [
+    "fn-h89/lib/bus/rs232/rs232.cpp:92-136 - service loop reads one SLIP frame, looks the device byte up in the daisy chain and calls its rs232_process(); an unregistered device byte gets a NAK (rs232.cpp:126-133)",
+    "fn-h89/lib/device/rs232/rs232Fuji.cpp:26,59-61 - eight rs232Network objects registered as 0x71..0x78 (MAX_NETWORK_DEVICES = 8, fn-h89/lib/device/fujiDevice/fujiDevice.h:21); every unit has its own channel, parser, prefix, login, password, EOL override, translation override and timer rate (fn-h89/lib/device/NDevice/NDevice.h:78-115)",
+    "fn-h89/lib/device/rs232/rs232Network.h:9 - rs232_process() forwards straight to NDevice::processCommand()",
+    "fn-h89/lib/device/NDevice/NDevice.cpp:97-115 - processCommand() looks the command byte up in the static dispatch_table; not found -> transaction_error() = NAK",
+    "fn-h89/lib/device/NDevice/NDevice.cpp:32-68 - dispatch_table: 29 commands (OPEN, CLOSE, READ, WRITE, STATUS, PARSE, QUERY, SET_PARAMETER, SET_PARSER, TRANSLATION, SET_EOL, SET_INT_RATE, SEEK, TELL, GETCWD, CHDIR, USERNAME, PASSWORD, RENAME, DELETE, LOCK, UNLOCK, MKDIR, RMDIR, ACCEPT, CLOSE_CLIENT, SET_HTTP_MODE, GET_REMOTE, SET_DESTINATION)",
+    "fn-h89/lib/device/rs232/rs232Network.cpp:6-15 - the only RS232-specific override: NET_QUERY takes the whole packet payload as the query (no 256-byte cap, no NUL truncation)",
+    "fn-h89/lib/bus/rs232/rs232.cpp:173-202 - after every command/idle pass each unit's poll_interrupt() runs (protocol status side effects happen in the background); ESP32 drives RI, which on the H89 PPI channel is a no-op (fn-h89/lib/hardware/PPIChannel.h:48); fujinet-pc drives DTR or RTS per config, nothing under BoIP"
+  ],
+
+  "packet_rules": [
+    "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:55-95 - SLIP: frame is C0 <body> C0; inside the body C0 is sent as DB DC and DB as DB DD; an unknown escape pair is dropped",
+    "fn-h89/lib/bus/rs232/rs232.cpp:337-359 - the firmware takes the first C0 as frame start and the next C0 as frame end; a doubled C0 at frame start yields an empty frame (dropped) and desynchronises the rest",
+    "fn-h89/lib/bus/rs232/rs232.cpp:99-107 - bytes that arrive before a frame's opening C0 are handed to the modem (R:) device's tx(), not discarded",
+    "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:17-23 - 6-byte header: device, command, length (u16 little-endian, total decoded length including header), checksum, first descriptor",
+    "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:150-176 + rs232.cpp:111-116 - frame shorter than 8 raw bytes, length field != decoded size, or bad checksum -> packet silently dropped: NO reply at all",
+    "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:126-137 - checksum: 8-bit sum with end-around carry over every decoded byte, checksum byte taken as 0 (fujinet-lib/bus/h89/fuji_bus_call.c:56-65 computes the same)",
+    "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:28-35,203-208 - descriptor low 3 bits: 0 none, 1..4 = that many u8 fields, 5 = one u16, 6 = two u16, 7 = one u32",
+    "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:187-198 - descriptor bit 7 set: another descriptor byte follows the header (chained descriptors precede all field bytes); bits 3-6 are ignored - fujinet-lib puts its FUJI_FIELD_DATA (0x08) and FUJI_FIELD_REPLY (0x10) flags there on the wire (fujinet-lib/include/fujinet-bus-ezcall.h:16-17, fujinet-lib/bus/h89/fuji_bus_call.c:201)",
+    "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:210-226 - field values little-endian, in descriptor order; every byte after the last field is the payload (there is no separate payload length)",
+    "fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77 - handlers read fields by POSITION with _params.at(n); a missing field throws std::out_of_range and nothing catches it (no try/catch in lib/bus, lib/device, src). ESP32 H89 build has C++ exceptions disabled (fn-h89/sdkconfig.fujinet-heathkit-h89:422) -> abort -> panic/reboot; fujinet-pc -> std::terminate (process dies)",
+    "fn-h89/lib/device/NDevice/NDevice.h:31-44 - field WIDTH is not checked: the handler casts whatever value arrived to the type it wants (u8 for modes, u16 for lengths, u32 for SEEK)",
+    "fn-h89/lib/bus/rs232/rs232.cpp:66-82 - payload copy (transaction_get) copies min(payload, handler buffer) and succeeds even if the payload is short; it fails only if the packet has no payload at all",
+    "fn-h89/lib/bus/rs232/rs232.cpp:379-399 - reply packet: device = unit ID, command 0x06 ACK or 0x15 NAK, descriptor 0, no fields; ACK may carry a payload, NAK never does (data is dropped when ack is false)",
+    "fn-h89/lib/bus/rs232/rs232.cpp:60-64 + rs232.cpp:126-133 - unknown device byte: NAK sent with whatever id() a null device yields (0x00), which fujinet-lib rejects as device mismatch (fujinet-lib/bus/h89/fuji_bus_call.c:149-156)",
+    "fn-h89/lib/bus/rs232/rs232.h:23-25 + fn-h89/include/pinmap/heathkit_h89.h - on the ESP32 H89 card the link is the 82C55 at port 0xD0 (FUJINET_OVER_PPI); fujinet-pc uses a serial port or BoIP (rs232.cpp:216-244)",
+    "fn-h89/lib/bus/rs232/rs232.h:165 - computer-side (native) line ending on this bus is CR LF (0x0D 0x0A); used by OPEN spec trimming and by translation",
+    "fujinet-lib/bus/h89/fuji_bus_call.c:14,106-108 + port_slip.c:39-102 - client side: reply is accepted if its header length equals the bytes received; a reply SHORTER than the caller's buffer is accepted silently, a reply LONGER than the buffer fails (receive stops when the buffer is full); 15 s of silence (per character) = timeout"
+  ],
+
+  "commands": [
+    {
+      "name": "NET_OPEN", "value": "0x4F", "group": "channel",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:134",
+      "fields": [
+        {"index": 0, "size": 1, "name": "aux1 / mode", "meaning": "access mode, see open_modes (cast to u8, NDevice.cpp:136)", "if_missing": "firmware crash (_params.at, FujiBusPacket.h:75-77)"},
+        {"index": 1, "size": 1, "name": "aux2 / trans", "meaning": "translation mode for file/stream opens (see translation_modes); directory listing format when aux1 is 6 or 7 (see directory_formats)", "if_missing": "firmware crash"}
+      ],
+      "payload": {"required": true, "len": "first 256 bytes used; longer payload silently truncated (NDevice.cpp:139-141)",
+        "format": "devicespec ASCII, e.g. 'N:HTTPS://host/path'. Cut at the first NUL, then at the first CR LF pair - a lone CR or LF is NOT removed (NDevice.cpp:23-30, native EOL rs232.h:165). Optional 'N:', 'n:' or 'N<digits>:' prefix stripped, digit ignored - the packet's device byte picks the unit (fn-h89/lib/utils/utils.cpp:883-910). A spec without its own 'SCHEME:' is appended to the unit prefix set by NET_CHDIR (utils.cpp:942-943). Then bytes >0x7F become NUL (utils.cpp:848-854,949), '*' becomes NUL unless aux1 is 6/7 (utils.cpp:953), one trailing '.' is removed (utils.cpp:957-960), trailing spaces removed (utils.cpp:840-846,963). Scheme compared case-insensitively (NetworkProtocolFactory.cpp:37). A valid URL needs a scheme (peoples_url_parser.cpp:333-339)."},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "no payload at all - the channel already open stays open (NDevice.cpp:141-146)",
+          "spec has no scheme -> STATUS err 165 INVALID_DEVICESPEC (NDevice.cpp:157-164)",
+          "unknown scheme -> STATUS err 144 GENERAL, not 165 (NDevice.cpp:157-164, NDevice.cpp:500-506)",
+          "protocol open failed (connect refused, file not found, bad aux1 for HTTP ...) -> STATUS err = protocol error (NDevice.cpp:178-186)"
+        ]},
+      "side_effects": "Closes a channel already open on the unit first, ignoring that close's result; this happens before the new spec is parsed, so even a failed OPEN loses the old channel (NDevice.cpp:150-157). Parser reset to NONE (NDevice.cpp:154,188); closeFailed cleared. Protocol native_eol set from NET_SET_EOL override or CR LF (NDevice.cpp:508, NDevice.cpp:127-130). For non-directory opens aux2 is ORed with the NET_TRANSLATION override; override 0xFF forces translation off (NDevice.cpp:169-176). HTTP opens do not send the request: GET/POST/DELETE go out on the first STATUS or READ (HTTP.cpp:430-436, 505-506), PUT at CLOSE (HTTP.cpp:553-554).",
+      "traps": [
+        "Two fields are mandatory even when aux2 is 0; one field (or a single u16) crashes the firmware (NDevice.cpp:136-137, FujiBusPacket.h:75-77)",
+        "On TNFS:// and SD:// an aux1 other than 4/6/7/8/9/12 reaches abort() - firmware reboot (fn-h89/lib/network-protocol/TNFS.cpp:54-56, SD.cpp:56-58)",
+        "A '*' in a non-directory URL (e.g. in an HTTP query string) is turned into NUL and truncates the URL (utils.cpp:953)",
+        "A URL ending in '.' loses the dot (utils.cpp:957-960)",
+        "Terminate the spec with NUL or CR LF; a lone CR stays inside the URL (NDevice.cpp:27-29)",
+        "HTTP aux1 4 and 8 URL-encode the path (so do not pre-encode); 5/9/12/13/14 send it verbatim (HTTP.cpp:310-316)",
+        "UDP OPEN without a port NAKs but leaves STATUS err = 1 (error never set) (UDP.cpp:50-54, NDevice.cpp:182)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_open", "where": "fujinet-lib/common/network_open.c:9", "sends": "NETCALL_A1_A2_D(NETCMD_OPEN, unit, mode, trans, devicespec, strlen(devicespec)): two u8 fields + spec without NUL (NETWORK_OPEN_LEN = strlen on variable-length platforms, fujinet-lib/include/fujinet-network.h:109-113; H89 is variable-length, fujinet-lib/include/fujinet-bus.h:6-14)", "mismatch": null},
+        {"symbol": "network_http_delete (macro)", "where": "fujinet-lib/include/fujinet-network.h:260", "sends": "network_open(devicespec, 9, trans)", "mismatch": "OPEN alone sends no DELETE; the request only goes out if the caller then STATUSes or READs (HTTP.cpp:430-436); CLOSE without that sends nothing (HTTP.cpp:557-564)"},
+        {"symbol": "network_unit", "where": "fujinet-lib/common/network_unit.c:3-12", "sends": "unit = 1 for 'N:', else devicespec[1]-'0' when devicespec[2] is ':', else 1; device = 0x70 + unit (fujinet-lib/include/fujinet-bus-eznet.h:84-85)", "mismatch": "no range check: 'N9:' addresses 0x79, which is NAKed"}
+      ],
+      "pc_vs_esp32": "TCP connect: 5000 ms timeout on PC, fnTcpClient default (-1) on ESP32 (TCP.cpp:277-281, fn-h89/lib/tcpip/fnTcpClient.h:27). UDP bind differs (UDP.cpp:62-67). HTTP client class fnHttpClient (ESP32) vs mgHttpClient (PC) (HTTP.h:9-15). Missing-field crash: panic+reboot vs process exit.",
+      "notes": "aux1 is ignored by TCP/UDP (any value works; only 6/7 change how aux2 is used). Opening is synchronous: TCP connect, TNFS mount, FS stat/resolve all happen before the reply; the H89 library gives up after 15 s of silence (fujinet-lib/bus/h89/fuji_bus_call.c:14)."
+    },
+    {
+      "name": "NET_CLOSE", "value": "0x43", "group": "channel",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:193",
+      "fields": [],
+      "payload": {"required": false, "len": "0", "format": "ignored"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "the protocol's close() failed (HTTP PUT got an error status, upload failed, FS close error); STATUS then reports that error (NDevice.cpp:201-206)",
+          "every following CLOSE also NAKs until the next OPEN (NDevice.cpp:199-214)"
+        ]},
+      "side_effects": "Protocol close: bytes still in the transmit buffer are written first (Protocol.cpp:127-128); HTTP PUT is sent here (HTTP.cpp:553-554); FS file/dir close and unmount (FS.cpp:230-259). Parser discarded. Unit settings (prefix, login, password, EOL override, translation override, timer rate) are kept. With no channel open: ACK; this also clears an error left by a failed OPEN, so STATUS then reads 00 00 00 CF.",
+      "traps": [
+        "HTTP POST (aux1 13/14) and DELETE (5/9) are never sent if no STATUS/READ happened before CLOSE: resultCode 0 means 'no transaction' and close just succeeds (HTTP.cpp:553-564)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_close", "where": "fujinet-lib/common/network_close.c:5", "sends": "NETCALL(NETCMD_CLOSE, unit), no fields", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_READ", "value": "0x52", "group": "io",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:231",
+      "fields": [
+        {"index": 0, "size": 2, "name": "length", "meaning": "most bytes to return; any field width accepted, value taken as u16 (NDevice.cpp:235)", "if_missing": "firmware crash"}
+      ],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack-data", "len": "0..length; can be fewer than asked (NParser.cpp:3-12)",
+        "layout": [{"off": 0, "size": "n", "name": "data", "meaning": "channel bytes, after aux2 translation; with a JSON/HTML/XML parser these are the bytes queued by NET_QUERY"}],
+        "naks_when": [
+          "length 0 (NDevice.cpp:237-241)",
+          "no channel open (NDevice.cpp:219-220)",
+          "protocol read failed: FS file at EOF/nothing left (FS.cpp:303-312), TCP short socket read with empty buffer (TCP.cpp:123-139), UDP nothing waiting (UDP.cpp:106-112), HTTP short body read (HTTP.cpp:508-514), HTTP header-set modes err 131 (HTTP.cpp:478-482); after a failed OPEN/CLOSE (NParser.h:39)"
+        ]},
+      "side_effects": "Data read from the network passes through translation once (Protocol.cpp:146-154, FS.cpp:318-319, TCP.cpp:144-145); a translated surplus stays buffered for the next READ.",
+      "traps": [
+        "TCP: READ with nothing pre-buffered asks the socket for exactly 'length'; a short read NAKs with err 202 and the bytes that did arrive are thrown away (TCP.cpp:123-139). Always STATUS first (it pre-reads into the buffer, Protocol.cpp:169-175) and ask for no more than bytes-waiting",
+        "HTTP body with nothing buffered: client read short -> NAK and the partial bytes are lost (HTTP.cpp:508-514, FS.cpp:303-312)",
+        "UDP with empty buffer pads the reply with zero bytes up to 'length' (UDP.cpp:102,115-118)",
+        "HTTP GET_HEADERS mode: each READ consumes one header and copies exactly 'length' bytes from it (over-read when length > header); a READ after the last header indexes past the vector - undefined, may crash (HTTP.cpp:490-495)",
+        "If NET_SET_PARSER was sent while no channel was open, READ dereferences a null protocol - crash (NDevice.cpp:543-561, NParser.cpp:5)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_bus_read", "where": "fujinet-lib/bus/h89/network.c:4-10", "sends": "NETCALL_B12_RV(NETCMD_READ, unit, length, buffer, length): one u16 field, reply into buffer", "mismatch": "returns 'length' for any ACK even when the firmware sent fewer bytes - fuji_packet_call only checks received == header length (fujinet-lib/bus/h89/fuji_bus_call.c:108); short replies are invisible"},
+        {"symbol": "network_read_nb", "where": "fujinet-lib/common/network_read_nb.c:9-24", "sends": "STATUS polls until avail>0 (returns 0 if err>1 and nothing waiting), caps length to avail, then network_bus_read", "mismatch": "busy-loops forever while err==1 and avail==0 (e.g. UDP under-report, idle TCP server)"},
+        {"symbol": "network_read", "where": "fujinet-lib/common/network_read.c:10-14", "sends": "loops network_read_nb until len satisfied or 0/negative", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same logic; socket/HTTP client timing differs",
+      "notes": "Rule for assembly programmers: STATUS, then READ min(want, bytes-waiting). The reply's header length tells how many bytes actually came."
+    },
+    {
+      "name": "NET_WRITE", "value": "0x57", "group": "io",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:264",
+      "fields": [
+        {"index": 0, "size": 2, "name": "length", "meaning": "number of bytes to write (u16)", "if_missing": "firmware crash"}
+      ],
+      "payload": {"required": true, "len": "should equal field 0", "format": "raw bytes"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "length 0 (NDevice.cpp:270-274)",
+          "packet has no payload (rs232.cpp:74-76)",
+          "no channel open (NDevice.cpp:283-287)",
+          "JSON/HTML/XML parser set - parser write always fails (JSONParser.cpp:3-6, HTMLParser.cpp:3-6, XMLParser.cpp:3-6)",
+          "TCP not connected, err 207 (TCP.cpp:166-170); short send err 202 (TCP.cpp:184-189)",
+          "UDP with no destination, err 207 (UDP.cpp:139-143)",
+          "HTTP: BODY-mode write on anything but PUT err 132 (HTTP.cpp:677-687); GET_HEADERS mode err 135 (HTTP.cpp:596-598); SET_HEADERS text without ':' (HTTP.cpp:641-642); COLLECT_HEADERS on non-GET err 146 (HTTP.cpp:606-610); SET_POST_DATA on non-POST/PUT err 132 (HTTP.cpp:667-671)"
+        ]},
+      "side_effects": "Bytes are appended to the protocol transmit buffer, then translated (native EOL -> network EOL) and sent (NParser.cpp:14-21, FS.cpp:344-349, TCP.cpp:173, UDP.cpp:134). HTTP buffers PUT/POST bodies and request headers for later.",
+      "traps": [
+        "Payload shorter than the length field: zero bytes are appended up to 'length' and written (NDevice.cpp:276-281, rs232.cpp:77-81); longer: the excess is ignored",
+        "A failed write leaves its bytes in the transmit buffer; they are prepended to the next WRITE and retried at CLOSE (FS.cpp:351-356, TCP.cpp:166-196, Protocol.cpp:127-128). NET_SET_HTTP_MODE clears the buffer (HTTP.cpp:69-70)",
+        "Write translation looks for the full native EOL (CR LF unless NET_SET_EOL changed it); a lone CR is not translated (Protocol.cpp:231, rs232.h:165)",
+        "A STATUS on an HTTP PUT channel before CLOSE fires the PUT early with the data so far (empty body -> client returns -1 -> err 144); CLOSE then PUTs again (HTTP.cpp:430-436, 553-554, fn-h89/lib/http/mgHttpClient.cpp:982-983)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_bus_write", "where": "fujinet-lib/bus/h89/network.c:12-18", "sends": "NETCALL_B12_D(NETCMD_WRITE, unit, length, buffer, length): one u16 field + payload", "mismatch": null},
+        {"symbol": "network_write", "where": "fujinet-lib/common/network_write.c:11-17", "sends": "whole buffer in one packet (no chunking)", "mismatch": "header length is u16, so a single write must keep the packet under 65536 bytes"},
+        {"symbol": "network_http_add_header (macro)", "where": "fujinet-lib/include/fujinet-network.h:217", "sends": "network_write(header, strlen(header))", "mismatch": null},
+        {"symbol": "network_http_post / network_http_post_bin / network_http_put", "where": "fujinet-lib/common/network_http_post.c:13-19, network_http_post_bin.c:11-15, fujinet-network.h:250", "sends": "SET_HTTP_MODE 4, WRITE body, SET_HTTP_MODE 0", "mismatch": "network_http_put is just network_http_post: it works for aux1 8 only because SET_POST_DATA accepts PUT too (HTTP.cpp:667)"}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_STATUS", "value": "0x53", "group": "status",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:337",
+      "fields": [],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack-data", "len": "4 (NDevice.h:12-17)",
+        "layout": [
+          {"off": 0, "size": 2, "name": "avail", "meaning": "bytes the next READ can return, u16 little-endian, capped at 65535 (NDevice.cpp:319)"},
+          {"off": 2, "size": 1, "name": "connected", "meaning": "FS file: 1 while bytes remain (FS.cpp:394); FS dir: 1 while listing remains (FS.cpp:405); HTTP body: 1 until the HTTP transaction is finished (HTTP.cpp:441), 0 in header modes; TCP client: socket connected (TCP.cpp:217); TCP server with no accepted client: 1 if a client is waiting (TCP.cpp:227); UDP: always 1 (UDP.cpp:185)"},
+          {"off": 3, "size": 1, "name": "err", "meaning": "NDEV_STATUS code (see error_codes): 1 OK, 136 end of data, others = failure reason"}
+        ],
+        "naks_when": ["never (NDevice.cpp:344)"]},
+      "side_effects": "First STATUS on an HTTP channel in BODY mode performs the HTTP request and blocks until the response starts (HTTP.cpp:430-436). If the receive buffer is empty, data already available is pre-read into it for TCP, UDP, directory listings, and for FS/HTTP when translation is on (Protocol.cpp:162-178, FS.cpp:389-390, HTTP.cpp:438-439). UDP: replaces the send destination with the last datagram's sender (UDP.cpp:169-183). Resets the interrupt timer (NDevice.cpp:333,343).",
+      "traps": [
+        "No channel: 00 00 00 CF (207 NOT_CONNECTED) (NDevice.cpp:309-314); after a failed OPEN or CLOSE: 00 00 00 <reason> (NParser.h:31-51)",
+        "UDP under-reports: STATUS pre-reads the waiting datagram into the receive buffer, then computes avail from udp.available() - the NEXT datagram - so a single pending datagram shows avail 0 (Protocol.cpp:169-175, NDevice.cpp:317-319, UDP.h:72, fn-h89/lib/tcpip/fnUDP.cpp:286-314). The datagram is still returned by a READ",
+        "err 136 appears as soon as an FS file or HTTP body is fully consumed, including right after a JSON PARSE (body consumed) and before QUERY fills the buffer (FS.cpp:398, HTTP.cpp:443-444)",
+        "After a failed PARSE err stays 213 (JSON) or 144 (HTML/XML) on every STATUS (NParser.cpp:58-59)",
+        "HTTP GET_HEADERS mode: STATUS (and the background interrupt poll via available()) fires the request if not done yet (HTTP.cpp:456-458, 959-961)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_unit_status (macro)", "where": "fujinet-lib/include/fujinet-network.h:492", "sends": "NETCALL_RV(FUJICMD_STATUS = 0x53, unit, &nw_status, 4); NetworkStatus {u16 avail; u8 status; u8 errcode} (fujinet-network.h:60-64) matches the firmware layout", "mismatch": null},
+        {"symbol": "network_status", "where": "fujinet-lib/common/network_status.c:5-16", "sends": "network_unit_status, copies the 3 values", "mismatch": null}
+      ],
+      "pc_vs_esp32": "UDP status: ESP32 refreshes the destination whenever remoteIP != IPADDR_NONE, PC only when a datagram is waiting (UDP.cpp:174-178)",
+      "notes": ""
+    },
+    {
+      "name": "NET_PARSE", "value": "0x50", "group": "json",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:571",
+      "fields": [],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "no channel / no parser (NDevice.cpp:577-581)",
+          "parser is NONE (NParser.cpp:42-46)",
+          "document does not parse or is empty -> err 213 for JSON (JSONParser.cpp:26-32, fn-h89/lib/fnjson/fnjson.cpp:381-393), err 144 for HTML/XML (HTMLParser.cpp:30, XMLParser.cpp:30)"
+        ]},
+      "side_effects": "JSON: frees the previous document, then reads the whole remaining stream into memory, looping while the protocol says connected or has bytes (fnjson.cpp:347-377) - for HTTP this performs the request. The body is consumed: afterwards READ returns only NET_QUERY results.",
+      "traps": [
+        "On a stream that stays connected (e.g. TCP) PARSE does not return until the peer disconnects (fnjson.cpp:364); the H89 library times out after 15 s of silence (fujinet-lib/bus/h89/fuji_bus_call.c:14)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_json_parse", "where": "fujinet-lib/common/network_json_parse.c:10-14", "sends": "SET_PARSER fields (1,1) then PARSE with no fields", "mismatch": null},
+        {"symbol": "network_html_parse", "where": "fujinet-lib/common/network_html_parse.c:6-12", "sends": "SET_PARSER (2,2) then PARSE", "mismatch": null}
+      ],
+      "pc_vs_esp32": "ESP32 yields 10 ticks per loop pass (fnjson.cpp:374-376)",
+      "notes": ""
+    },
+    {
+      "name": "NET_QUERY", "value": "0x51", "group": "json",
+      "handler": "fn-h89/lib/device/rs232/rs232Network.cpp:6 (overrides NDevice.cpp:451)",
+      "fields": [],
+      "payload": {"required": false, "len": "any; the whole payload is the query, no 256-byte cap, no NUL truncation, no text conversion (rs232Network.cpp:9)",
+        "format": "JSON: JSON Pointer (RFC 6901), e.g. '/data/0/name', resolved with cJSONUtils_GetPointer on the C string, so anything after a NUL is ignored; empty = whole document (fnjson.cpp:120-126). HTML: CSS selector with optional '@attr' suffix (fn-h89/lib/fnhtml/fnhtml.cpp:106-112). XML: XPath subset (NDevice.h:23). HTML/XML: sending the identical query string again returns the next match (fnhtml.cpp:80-88, fn-h89/lib/fnxml/fnxml.cpp:83-91). No payload = empty query."},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "no channel / no parser (NDevice.cpp:433-434)",
+          "parser is NONE (NParser.cpp:36-40)",
+          "JSON path not found is NOT an error: ACK and nothing is queued (fnjson.cpp:320-321,332-335; JSONParser.cpp:13-24 ignores readValue's result)"
+        ]},
+      "side_effects": "The formatted value is APPENDED to the receive buffer (JSONParser.cpp:23): read it with STATUS (avail = length) then READ. Unread results accumulate. JSON formatting (fnjson.cpp:209-313): string = text + line ending; integer-valued number as integer, else up to 10 significant digits; true/false -> TRUE/FALSE; null -> NULL; object -> for each member: key, line ending, value (recursive); array -> each element's value. Line ending default 0x0A (JSONParser.h:15), changed with NET_SET_PARAMETER 1. Value cut at an embedded NUL (JSONParser.cpp:20). aux2 translation is NOT applied to query output. Query flags (NET_SET_PARAMETER 0): 0x04 strip <tags>, 0x10 ASCII output mode (fnjson.cpp:131-151); 0x01/0x02 character remaps are compiled only for Atari (fnjson.cpp:162-201).",
+      "traps": [
+        "Querying a value that is, or contains, an empty array [] crashes the firmware: the array loop dereferences a null child (fnjson.cpp:301-307). Any query whose result includes [] - including the empty query on a document containing [] - triggers it",
+        "Flag 0x04 with a string holding '<' but no later '>' loops forever (fnjson.cpp:135-144)",
+        "HTML/XML: the RS232 handler keeps a trailing NUL and any bytes after it in the selector string (rs232Network.cpp:9; fnhtml.cpp:80-112 compares/parses the whole std::string) - send exactly the selector bytes",
+        "NET_SET_PARSER while no channel was open, then QUERY -> null protocol dereference crash (JSONParser.cpp:23)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_json_query", "where": "fujinet-lib/common/network_json_query.c:12-32", "sends": "NETCALL_D(NETCMD_QUERY, unit, query, MAX_JSON_QUERY_LEN = 256) then STATUS/READ until avail==0, then strips trailing 0x9B/CR/LF and NUL-terminates (fujinet-lib/common/network_json.c:6-20)", "mismatch": "always sends 256 bytes whatever strlen(query) is (reads past short query strings; a query of 256+ chars is truncated); harmless for JSON (firmware stops at NUL) but corrupts HTML/XML selectors. The READ loop has no buffer limit: a value longer than the caller's buffer overflows it, and the terminating NUL needs one more byte"},
+        {"symbol": "network_html_query (macro)", "where": "fujinet-lib/include/fujinet-network.h:490", "sends": "network_json_query", "mismatch": "inherits the 256-byte send -> selector gets NUL + garbage on RS232"}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": "Typical sequence: OPEN, SET_PARSER(1), [SET_PARAMETER], PARSE, then per value: QUERY, STATUS, READ avail bytes."
+    },
+    {
+      "name": "NET_SET_PARAMETER", "value": "0xFB", "group": "json",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:614",
+      "fields": [
+        {"index": 0, "size": 1, "name": "param", "meaning": "0 = query flags, 1 = query line-ending character (NDevice.cpp:624-629, NDevice.h:26-29)", "if_missing": "crash, but only when a parser exists - with none it NAKs before reading fields (NDevice.cpp:616-620)"},
+        {"index": 1, "size": 1, "name": "value", "meaning": "param 0: flags, bits 0-2 remap/strip, bits 4-5 output mode 0x00 verbatim or 0x10 ASCII (fn-h89/lib/fntext/fn_query_flags.h:13-36); param 1: the line-ending byte", "if_missing": "crash"}
+      ],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "no parser (no channel) (NDevice.cpp:616-620)",
+          "param 0 with bits outside 0x37 or output mode 0x20/0x30 (fn_query_flags.h:29-36, NDevice.cpp:637-641)",
+          "param 0 when parser is NONE (NParser.cpp:63-66)",
+          "param other than 0 or 1 (NDevice.cpp:661-663)"
+        ]},
+      "side_effects": "param 1 with JSON/HTML/XML: sets the line ending appended to query values (single byte). With parser NONE it sets the protocol lineEnding, which is only used when an FS directory listing is built at OPEN (FS.cpp:90-92), so it has no visible effect afterwards.",
+      "traps": [
+        "NET_SET_PARSER builds a fresh parser and resets flags and line ending: send SET_PARAMETER after SET_PARSER (NDevice.cpp:543-569, JSONParser.h:14-17)",
+        "param 1 with parser NONE after SET_PARSER-before-OPEN dereferences a null protocol (NParser.cpp:68-72)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_set_parameter", "where": "fujinet-lib/common/network_set_parameters.c:8", "sends": "NETCALL_A1_A2(NETCMD_SET_PARAMETER, unit, param, value)", "mismatch": null},
+        {"symbol": "network_set_query_param / network_set_line_ending (macros)", "where": "fujinet-lib/include/fujinet-network.h:450-451", "sends": "network_set_parameter(ds, 0, flags) / (ds, 1, ch)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_SET_PARSER", "value": "0xFC", "group": "json",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:532",
+      "fields": [
+        {"index": 0, "size": 1, "name": "unused", "meaning": "ignored, but must be present", "if_missing": "crash (field 1 read by index)"},
+        {"index": 1, "size": 1, "name": "mode", "meaning": "0 NONE, 1 JSON, 2 HTML (CSS selectors), 3 XML (XPath subset) (NDevice.h:19-24)", "if_missing": "crash"}
+      ],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [], "naks_when": ["mode > 3 (NDevice.cpp:563-566)"]},
+      "side_effects": "Replaces the parser with a new instance over the current protocol (NDevice.cpp:543-569): earlier PARSE results, flags and line ending are gone. With JSON/HTML/XML set, WRITE always NAKs and SEEK fails.",
+      "traps": [
+        "Does not check for an open channel: with none it creates a parser bound to a null protocol, and a later READ, QUERY, SEEK/TELL (mode 0) or SET_PARAMETER 1 (mode 0) crashes the firmware (NDevice.cpp:548-561, NParser.cpp:5,33,70, JSONParser.cpp:23)",
+        "OPEN resets the parser to NONE (NDevice.cpp:154,188): send SET_PARSER after OPEN",
+        "Write HTTP POST data before switching to JSON - writes NAK afterwards (JSONParser.cpp:3-6)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_set_parser", "where": "fujinet-lib/common/network_set_parser.c:9", "sends": "NETCALL_A1_A2(NETCMD_SET_PARSER, unit, mode, mode)", "mismatch": null},
+        {"symbol": "network_json_parse / network_html_parse", "where": "fujinet-lib/common/network_json_parse.c:10, network_html_parse.c:6", "sends": "SET_PARSER then PARSE", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_TRANSLATION", "value": "0x54", "group": "translation",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.h:183",
+      "fields": [
+        {"index": 0, "size": 1, "name": "unused", "meaning": "ignored, must be present", "if_missing": "crash"},
+        {"index": 1, "size": 1, "name": "trans", "meaning": "translation override 0-4, or 0xFF (NDevice.h:185)", "if_missing": "crash"}
+      ],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": []},
+      "side_effects": "Stores a per-unit override. It does NOT change the channel already open; each later non-directory OPEN ORs it into aux2 (NDevice.cpp:172-176). 0xFF makes later OPENs use no translation whatever aux2 says (NDevice.cpp:170-171). Persists until changed.",
+      "traps": ["OR semantics: override 1 with aux2 2 gives mode 3 (CR LF) (NDevice.cpp:174)"],
+      "fujinet_lib": [
+        {"symbol": "network_set_translation", "where": "fujinet-lib/common/network_set_translation.c:12", "sends": "NETCALL_A1_A2(NETCMD_TRANSLATION, unit, trans, trans)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_SET_EOL", "value": "0x4C", "group": "translation",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:592",
+      "fields": [],
+      "payload": {"required": false, "len": "any", "format": "raw bytes that become the computer-side line ending used by translation; NOT NUL-trimmed. Empty/no payload restores the default CR LF (NDevice.cpp:604-607, NDevice.cpp:127-130)"},
+      "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["never on RS232 (varlen read cannot fail here, fn-h89/lib/bus/bus.h:94-123)"]},
+      "side_effects": "Applies at once to the open protocol and to later opens (NDevice.cpp:608-610, NDevice.cpp:508).",
+      "traps": ["A NUL terminator in the payload becomes part of the line ending"],
+      "fujinet_lib": [
+        {"symbol": "network_set_eol", "where": "fujinet-lib/common/network_set_eol.c:9", "sends": "NETCALL_VLD -> DEVCALL_D with strlen(eol) bytes, or DEVCALL with no data for '' (fujinet-lib/common/fuji_devcall_vld.c:10-14)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": "For an H89 program that ends lines with a bare CR, SET_EOL 0x0D makes mode 2/3 translation map CR<->LF / CR<->CR LF."
+    },
+    {
+      "name": "NET_SET_INT_RATE", "value": "0x5A", "group": "misc",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:886",
+      "fields": [
+        {"index": 0, "size": 1, "name": "rate", "meaning": "interrupt poll period in ms (NDevice.cpp:889)", "if_missing": "crash"}
+      ],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": []},
+      "side_effects": "Sets timerRate (default 100 ms ESP32, 20 ms PC, NDevice.h:72-76) used by poll_interrupt to pace the data-ready signal (NDevice.cpp:859-884).",
+      "traps": [
+        "rate 0: poll_interrupt divides by timerRate*2 - integer division by zero, firmware crash once a channel is open on that unit (NDevice.cpp:861,867); poll_interrupt runs on the H89 card too (rs232.cpp:173-183)",
+        "On the H89 card the data-ready signal goes nowhere: ESP32 calls setRI(), a no-op on PPIChannel (rs232.cpp:186-187, PPIChannel.h:48); fujinet-pc drives DTR/RTS only on a real serial port with serial_proceed configured, never under BoIP (rs232.cpp:184-199)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_set_interrupt_rate", "where": "fujinet-lib/common/network_set_interrupt_rate.c:9", "sends": "NETCALL_A1_A2(NETCMD_SET_INT_RATE, unit, rate, rate)", "mismatch": "comment says RS232 reads aux2; firmware reads field 0 - harmless since both carry rate"}
+      ],
+      "pc_vs_esp32": "default 100 ms vs 20 ms; signal line RI (no-op on H89) vs DTR/RTS",
+      "notes": ""
+    },
+    {
+      "name": "NET_SEEK", "value": "0x25", "group": "seek",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:681",
+      "fields": [
+        {"index": 0, "size": 4, "name": "offset", "meaning": "absolute byte position (SEEK_SET only), u32; narrower field widths also accepted (NDevice.cpp:686)", "if_missing": "crash"}
+      ],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "no channel (NDevice.cpp:669-670)",
+          "protocol cannot seek - only TNFS, SD, SMB, NFS, SFTP and HTTP (BODY-mode GET only) implement it; default returns -1 (Protocol.h:228, HTTP.cpp:807-808)",
+          "JSON/HTML/XML parser set (JSONParser.cpp:8-11)"
+        ]},
+      "side_effects": "TNFS/SD: seek, re-stat, bytes-remaining recomputed, receive buffer cleared (TNFS.cpp:327-342, SD.cpp:333-347). HTTP: re-requests with a Range header; falls back to skipping bytes when the server ignores Range (HTTP.cpp:839-882).",
+      "traps": ["The seek is performed twice (NDevice.cpp:672-676) - on HTTP that is two Range requests"],
+      "fujinet_lib": [
+        {"symbol": "network_seek", "where": "fujinet-lib/common/network_seek.c:9", "sends": "NETCALL_C1234(NETCMD_SEEK, unit, pos): one u32 field (descriptor 7)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_TELL", "value": "0x26", "group": "seek",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:695",
+      "fields": [],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack-data", "len": "4",
+        "layout": [{"off": 0, "size": 4, "name": "position", "meaning": "u32 little-endian; FF FF FF FF when the protocol cannot seek"}],
+        "naks_when": ["never (NDevice.cpp:704)"]},
+      "side_effects": "Implemented as seek(0, SEEK_CUR).",
+      "traps": [
+        "No channel: the 4 bytes are uninitialised stack contents - u32le_t has no constructor (NDevice.cpp:697-704, fn-h89/include/global_types.h:69-71)",
+        "TNFS/SD: the seek(0,SEEK_CUR) clears the receive buffer, so bytes STATUS pre-read (translation read-ahead) are discarded and the position reported is past them (TNFS.cpp:333-341, SD.cpp:338-346)",
+        "HTTP reports bytes fetched from the server so far (HTTP.cpp:510-512, 811-812)",
+        "Parser NONE bound to a null protocol (SET_PARSER before OPEN) -> crash (NParser.cpp:33)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_tell (macro) -> network_tell_common", "where": "fujinet-lib/common/network_tell_common.c:10-13, fujinet-lib/include/fujinet-network.h:373-374", "sends": "NETCALL_RV(NETCMD_TELL, unit, buf, 4), assembles LE u32", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_GETCWD", "value": "0x30", "group": "fs",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:347",
+      "fields": [],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack-data", "len": "length of the unit prefix (0 when unset)",
+        "layout": [{"off": 0, "size": "n", "name": "prefix", "meaning": "prefix exactly as stored, e.g. 'TNFS://host/dir/'; no N:, no NUL terminator (NDevice.cpp:350)"}],
+        "naks_when": ["never"]},
+      "side_effects": "none",
+      "traps": [],
+      "fujinet_lib": [
+        {"symbol": "network_fs_pwd (macro)", "where": "fujinet-lib/include/fujinet-network.h:333-335", "sends": "NETCALL_RV(NETCMD_GETCWD, unit, cwd, MAX_FILENAME_LEN = 256)", "mismatch": "library does not NUL-terminate cwd (pre-clear it); a prefix longer than 256 bytes makes the call fail (reply longer than buffer, fujinet-lib/bus/h89/port_slip.c:87-90 + fuji_bus_call.c:108)"}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_CHDIR", "value": "0x2C", "group": "fs",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:414",
+      "fields": [],
+      "payload": {"required": false, "len": "first 256 bytes", "format": "path, cut at the first NUL only (NDevice.cpp:416-420); optional N:/Nn: stripped (NDevice.cpp:355). Rules (NDevice.cpp:358-408): empty -> clear prefix; contains ':' (SCHEME://...) -> replace; '/path' -> keep SCHEME://host, replace path; '..' or '<' -> up one level; '/' or '>' -> back to the host root; anything else -> appended. A trailing '/' is added and the result canonicalised."},
+      "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["never - fujicore_set_prefix cannot fail (NDevice.cpp:353-412)"]},
+      "side_effects": "Updates the unit prefix used by later OPEN and fs commands whose spec has no scheme (utils.cpp:942-943). Does not touch the open channel and does not check that the directory exists.",
+      "traps": [
+        "CR/LF are NOT stripped (unlike OPEN): a CR LF-terminated payload puts CR LF into the prefix and into every later relative OPEN (NDevice.cpp:420)",
+        "A packet with no payload clears the prefix (transaction_get failure ignored, NDevice.cpp:419)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_fs_cd (macro)", "where": "fujinet-lib/include/fujinet-network.h:329-331", "sends": "NETCALL_D(NETCMD_CHDIR, unit, devicespec, strlen(devicespec)) - no fields, spec incl. 'Nn:' and no NUL", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_USERNAME", "value": "0xFD", "group": "login",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:514",
+      "fields": [],
+      "payload": {"required": false, "len": "first 256 bytes", "format": "bare user name, cut at the first NUL; CR/LF kept (NDevice.cpp:516-519)"},
+      "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["never"]},
+      "side_effects": "Stored per unit. Handed to a protocol when it is created (OPEN or fs command) only if non-empty; passed by pointer, so a change after OPEN is seen by the open protocol (NetworkProtocolFactory.cpp:125-129). No payload clears it.",
+      "traps": ["If the user name is empty the password is not passed either (NetworkProtocolFactory.cpp:125-129)"],
+      "fujinet_lib": [
+        {"symbol": "network_set_username", "where": "fujinet-lib/common/network_set_username.c:9", "sends": "NETCALL_A1_A2_D(NETCMD_USERNAME, unit, 0, 0, username, strlen) - two dummy fields (ignored) + name without NUL", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": "URL userinfo (user:pass@host) is the alternative for schemes that parse it (e.g. IMAPS.h header, S3.h header)."
+    },
+    {
+      "name": "NET_PASSWORD", "value": "0xFE", "group": "login",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:523",
+      "fields": [],
+      "payload": {"required": false, "len": "first 256 bytes", "format": "bare password, cut at the first NUL; CR/LF kept (NDevice.cpp:525-528)"},
+      "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["never"]},
+      "side_effects": "As NET_USERNAME.",
+      "traps": ["Ignored unless a user name is also set (NetworkProtocolFactory.cpp:125)"],
+      "fujinet_lib": [
+        {"symbol": "network_set_password", "where": "fujinet-lib/common/network_set_password.c:9", "sends": "NETCALL_A1_A2_D(NETCMD_PASSWORD, unit, 0, 0, password, strlen)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_RENAME", "value": "0x20", "group": "fs",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:747 -> fs_op NDevice.cpp:709",
+      "fields": [
+        {"index": 0, "size": 1, "name": "mode", "meaning": "only tested for 6/7 (directory: '*' kept in spec) (NDevice.cpp:711,720)", "if_missing": "crash"},
+        {"index": 1, "size": 1, "name": "unused", "meaning": "read but unused (NDevice.cpp:712)", "if_missing": "crash"}
+      ],
+      "payload": {"required": true, "len": "first 256 bytes", "format": "devicespec as for OPEN with the new name after a comma in the last path component: 'N:TNFS://host/dir/old.txt,new.txt'; the new name lands in the same directory and may not contain '/' (FS.cpp:463-486)"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": ["bad URL / unknown scheme (NDevice.cpp:720-724)", "scheme is not a filesystem protocol (TCP, UDP, WS, SSH, ...) (NDevice.cpp:726-733)", "no comma -> err 165 (FS.cpp:469-476) except TNFS", "server/OS refused"]},
+      "side_effects": "One-shot protocol: creating it destroys the unit's open channel without closing it (NDevice.cpp:498), and the unit is left with no channel (NDevice.cpp:738-739).",
+      "traps": [
+        "Kills whatever channel was open on the unit - buffered writes/HTTP PUT lost, no close (NDevice.cpp:498,738-739)",
+        "Failure reason is lost: STATUS afterwards says 207 (NDevice.cpp:309-314)",
+        "TNFS without a comma ACKs and does nothing (TNFS.cpp:231-232)",
+        "FTP: ACK, nothing done (FTP.h:37); GDRIVE has no override - only parses, ACKs (FS.cpp:463-486, GDRIVE.h:41-43)",
+        "HTTP: WebDAV MOVE with Destination set to a server path, not a full URL (HTTP.cpp:885-900)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_fs_rename (macro)", "where": "fujinet-lib/include/fujinet-network.h:293, 282-284", "sends": "NETCALL_A1_A2_D(NETCMD_RENAME, unit, 0, 0, devicespec, strlen)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": "Implemented by TNFS, SD, SMB, NFS, SFTP, S3, ONEDRIVE, HTTP (grep of ::rename in lib/network-protocol)."
+    },
+    {
+      "name": "NET_DELETE", "value": "0x21", "group": "fs",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:750 -> fs_op NDevice.cpp:709",
+      "fields": [
+        {"index": 0, "size": 1, "name": "mode", "meaning": "as NET_RENAME", "if_missing": "crash"},
+        {"index": 1, "size": 1, "name": "unused", "meaning": "", "if_missing": "crash"}
+      ],
+      "payload": {"required": true, "len": "first 256 bytes", "format": "devicespec of the file, as for OPEN"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [], "naks_when": ["as NET_RENAME (minus the comma rule)"]},
+      "side_effects": "As NET_RENAME (destroys the unit's channel). HTTP: sends DELETE (HTTP.cpp:902-915).",
+      "traps": ["FTP: ACK, nothing deleted (FTP.h:44)", "channel on the unit destroyed; error reason lost"],
+      "fujinet_lib": [
+        {"symbol": "network_fs_delete (macro)", "where": "fujinet-lib/include/fujinet-network.h:286", "sends": "NETCALL_A1_A2_D(NETCMD_DELETE, unit, 0, 0, devicespec, strlen)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": "Implemented by TNFS, SD, SMB, NFS, SFTP, S3, GDRIVE, ONEDRIVE, HTTP."
+    },
+    {
+      "name": "NET_LOCK", "value": "0x23", "group": "fs",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:753 -> fs_op NDevice.cpp:709",
+      "fields": [
+        {"index": 0, "size": 1, "name": "mode", "meaning": "as NET_RENAME", "if_missing": "crash"},
+        {"index": 1, "size": 1, "name": "unused", "meaning": "", "if_missing": "crash"}
+      ],
+      "payload": {"required": true, "len": "first 256 bytes", "format": "devicespec of the file"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [], "naks_when": ["as NET_RENAME", "SD: always (err 146) (SD.cpp:307-317)"]},
+      "side_effects": "TNFS: chmod 0444 (TNFS.cpp:298-311); SFTP implements it (SFTP.cpp:508); destroys the unit's channel.",
+      "traps": ["Silent no-op ACK on FTP (FTP.h:65), NFS (NFS.cpp:360-363) and every protocol without an override - HTTP, SMB, S3, GDRIVE, ONEDRIVE (FS.h:124)"],
+      "fujinet_lib": [
+        {"symbol": "network_fs_lock (macro)", "where": "fujinet-lib/include/fujinet-network.h:300", "sends": "NETCALL_A1_A2_D(NETCMD_LOCK, unit, 0, 0, devicespec, strlen)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_UNLOCK", "value": "0x24", "group": "fs",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:756 -> fs_op NDevice.cpp:709",
+      "fields": [
+        {"index": 0, "size": 1, "name": "mode", "meaning": "as NET_RENAME", "if_missing": "crash"},
+        {"index": 1, "size": 1, "name": "unused", "meaning": "", "if_missing": "crash"}
+      ],
+      "payload": {"required": true, "len": "first 256 bytes", "format": "devicespec of the file"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [], "naks_when": ["as NET_RENAME", "SD: always (err 146) (SD.cpp:320-330)"]},
+      "side_effects": "TNFS: chmod 0644 (TNFS.cpp:313-325); destroys the unit's channel.",
+      "traps": ["Silent no-op ACK where not implemented (FS.h:131; NFS.cpp:365-368; FTP has no unlock override so the FS default applies)"],
+      "fujinet_lib": [
+        {"symbol": "network_fs_unlock (macro)", "where": "fujinet-lib/include/fujinet-network.h:307", "sends": "NETCALL_A1_A2_D(NETCMD_UNLOCK, unit, 0, 0, devicespec, strlen)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_MKDIR", "value": "0x2A", "group": "fs",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:759 -> fs_op NDevice.cpp:709",
+      "fields": [
+        {"index": 0, "size": 1, "name": "mode", "meaning": "as NET_RENAME", "if_missing": "crash"},
+        {"index": 1, "size": 1, "name": "unused", "meaning": "", "if_missing": "crash"}
+      ],
+      "payload": {"required": true, "len": "first 256 bytes", "format": "devicespec of the new directory"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [], "naks_when": ["as NET_RENAME"]},
+      "side_effects": "HTTP: WebDAV MKCOL (HTTP.cpp:917-930); destroys the unit's channel.",
+      "traps": ["FTP: ACK, nothing created (FTP.h:51)", "TNFS MKDIR/RMDIR never unmount their session (TNFS.cpp:260-284)"],
+      "fujinet_lib": [
+        {"symbol": "network_fs_mkdir (macro)", "where": "fujinet-lib/include/fujinet-network.h:314", "sends": "NETCALL_A1_A2_D(NETCMD_MKDIR, unit, 0, 0, devicespec, strlen)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": "Implemented by TNFS, SD, SMB, NFS, SFTP, S3, GDRIVE, ONEDRIVE, HTTP."
+    },
+    {
+      "name": "NET_RMDIR", "value": "0x2B", "group": "fs",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:762 -> fs_op NDevice.cpp:709",
+      "fields": [
+        {"index": 0, "size": 1, "name": "mode", "meaning": "as NET_RENAME", "if_missing": "crash"},
+        {"index": 1, "size": 1, "name": "unused", "meaning": "", "if_missing": "crash"}
+      ],
+      "payload": {"required": true, "len": "first 256 bytes", "format": "devicespec of the (empty) directory"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [], "naks_when": ["as NET_RENAME"]},
+      "side_effects": "HTTP: same as DELETE (HTTP.cpp:932-935); destroys the unit's channel.",
+      "traps": ["FTP: ACK, nothing removed (FTP.h:58)"],
+      "fujinet_lib": [
+        {"symbol": "network_fs_rmdir (macro)", "where": "fujinet-lib/include/fujinet-network.h:322", "sends": "NETCALL_A1_A2_D(NETCMD_RMDIR, unit, 0, 0, devicespec, strlen)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_ACCEPT", "value": "0x41", "group": "tcp-server",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:768",
+      "fields": [],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "channel is not TCP or TELNET (NDevice.cpp:770-775)",
+          "channel is a TCP client, not a listener -> err 208 (TCP.cpp:297-302)",
+          "no connection waiting -> err 209 (TCP.cpp:329-331)",
+          "client vanished at once -> err 204 (TCP.cpp:321-326)"
+        ]},
+      "side_effects": "The waiting connection becomes the channel's client socket; READ/WRITE/STATUS now act on it (TCP.cpp:205-231, 310-319). Server keeps listening.",
+      "traps": ["Poll STATUS first: on a listener with no client 'connected' = 1 means a client is waiting (TCP.cpp:225-229)"],
+      "fujinet_lib": [
+        {"symbol": "network_accept", "where": "fujinet-lib/common/network_accept.c:10", "sends": "NETCALL(NETCMD_ACCEPT, unit)", "mismatch": null}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": "Listener: OPEN 'N:TCP://:port' (no host) (TCP.cpp:61-66); client: 'N:TCP://host:port', port defaults to 23 (TCP.cpp:72-78)."
+    },
+    {
+      "name": "NET_CLOSE_CLIENT", "value": "0x63", "group": "tcp-server",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:785",
+      "fields": [],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": [
+          "channel is not TCP/TELNET (NDevice.cpp:787-792)",
+          "INVERTED: it NAKs when it actually disconnected the client (close_client_connection returns UNSPECIFIED on success, TCP.cpp:357-370)"
+        ]},
+      "side_effects": "Clears receive/transmit/special buffers and stops the client socket; listener stays up (TCP.cpp:363-368). When there is nothing to do it ACKs and sets err 208 (no listener) or 207 (no client) (TCP.cpp:343-355).",
+      "traps": ["Return value inverted: NAK = client closed, ACK = nothing was closed (TCP.cpp:347,354,370)"],
+      "fujinet_lib": [
+        {"symbol": "network_close_client", "where": "fujinet-lib/common/network_close_client.c:8", "sends": "NETCALL(NETCMD_CLOSE_CLIENT, unit)", "mismatch": "returns FN_ERR_IO_ERROR after a successful disconnect and FN_ERR_OK when nothing was connected (firmware inversion)"}
+      ],
+      "pc_vs_esp32": "same",
+      "notes": ""
+    },
+    {
+      "name": "NET_SET_HTTP_MODE", "value": "0x4D", "group": "http",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:804",
+      "fields": [
+        {"index": 0, "size": 1, "name": "unused", "meaning": "ignored, must be present", "if_missing": "crash (only reached on an HTTP channel)"},
+        {"index": 1, "size": 1, "name": "mode", "meaning": "HTTP channel mode 0-4, see http_channel_modes (NDevice.cpp:815, HTTP.h:22-28)", "if_missing": "crash (only reached on an HTTP channel)"}
+      ],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [],
+        "naks_when": ["channel is not HTTP/HTTPS - checked before the fields are read (NDevice.cpp:806-811)", "mode > 4 -> err 132 (HTTP.cpp:91-93)"]},
+      "side_effects": "Clears the receive and transmit buffers (HTTP.cpp:69-70). BODY: bytes-remaining reset to the body size (HTTP.cpp:74-77). GET_HEADERS: header cursor reset (HTTP.cpp:81-84).",
+      "traps": ["Any response bytes still buffered are discarded by the mode switch (HTTP.cpp:69)"],
+      "fujinet_lib": [
+        {"symbol": "network_http_set_mode / network_http_set_channel_mode (macros)", "where": "fujinet-lib/include/fujinet-network.h:187-189", "sends": "NETCALL_A1_A2(NETCMD_SET_HTTP_MODE, unit, 0, mode)", "mismatch": null},
+        {"symbol": "network_http_start_add_headers / network_http_end_add_headers", "where": "fujinet-lib/include/fujinet-network.h:198,207", "sends": "mode 3 / mode 0", "mismatch": null}
+      ],
+      "pc_vs_esp32": "header parsing differs, see http_channel_modes mode 3",
+      "notes": ""
+    },
+    {
+      "name": "NET_GET_REMOTE", "value": "0x72", "group": "udp",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:824",
+      "fields": [],
+      "payload": {"required": false, "len": "0", "format": "none"},
+      "reply": {"kind": "ack-data", "len": "256, always (SPECIAL_BUFFER_SIZE, NDevice.h:10; NDevice.cpp:834-835)",
+        "layout": [
+          {"off": 0, "size": "n", "name": "remote", "meaning": "ASCII 'a.b.c.d:port' of the last datagram's sender (UDP.cpp:230-232)"},
+          {"off": "n", "size": 1, "name": "eol", "meaning": "0x9B (Atari EOL) (UDP.cpp:230)"},
+          {"off": "n+1", "size": 1, "name": "nul", "meaning": "0x00"},
+          {"off": "n+2", "size": "254-n", "name": "junk", "meaning": "whatever memory follows"}
+        ],
+        "naks_when": ["channel is not UDP (NDevice.cpp:826-831); get_remote itself never fails (UDP.cpp:235)"]},
+      "side_effects": "Writes the text into the receive buffer's storage without resizing it.",
+      "traps": [
+        "Overwrites the first ~22 bytes of an unread datagram, and writes past the string's allocation when the receive buffer is empty/small; then sends 256 bytes read from that storage (NDevice.cpp:834-835)",
+        "Before any datagram arrived the address is fnUDP's initial remote_ip/remote_port (fn-h89/lib/tcpip/fnUDP.cpp:349-357)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_udp_get_remote", "where": "fujinet-lib/common/network_udp_get_remote.c:12-18", "sends": "NETCALL_RV(NETCMD_GET_REMOTE, unit, buf, len), then buf[len-1]=0 and strips trailing 0x9B/CR/LF", "mismatch": "works on H89 only when len >= 256: a smaller buffer makes the 256-byte reply 'too long' -> receive stops (port_slip.c:87-90) -> length check fails (fuji_bus_call.c:108) -> FN_ERR_IO_ERROR. The header comment 'ESP32 firmware rejects it' (fujinet-network.h:438) is stale - this firmware dispatches it on every build (NDevice.cpp:66)"}
+      ],
+      "pc_vs_esp32": "same handler",
+      "notes": ""
+    },
+    {
+      "name": "NET_SET_DESTINATION", "value": "0x44", "group": "udp",
+      "handler": "fn-h89/lib/device/NDevice/NDevice.cpp:838",
+      "fields": [],
+      "payload": {"required": true, "len": "any", "format": "'N:host:port' - needs two colons: text between the first and last colon is the host, digits after the last colon the port (UDP.cpp:202-221)"},
+      "reply": {"kind": "ack|nak", "len": "0", "layout": [], "naks_when": ["channel is not UDP (NDevice.cpp:840-845)", "fewer than two colons (UDP.cpp:205-209)"]},
+      "side_effects": "Next WRITE goes to host:port (UDP.cpp:146-158).",
+      "traps": [
+        "ESP32 extracts the host with substr(first_colon+1, last_colon-2), correct only when the first colon is at index 1: 'N:host:port' works, 'N1:host:port' yields 'host:' and sends fail (UDP.cpp:211-212)",
+        "fujinet-pc builds the string with strlen on a payload that is not NUL-terminated - send a trailing NUL (UDP.cpp:197-200, NDevice.cpp:847)",
+        "Any STATUS after a datagram arrives replaces the destination with that datagram's sender (UDP.cpp:169-183)"
+      ],
+      "fujinet_lib": [
+        {"symbol": "network_udp_set_destination", "where": "fujinet-lib/common/network_udp_set_destination.c:12", "sends": "NETCALL_VLD(NETCMD_SET_DESTINATION, unit, dest_spec, strlen) - no NUL", "mismatch": "its documented form 'N1:host:port' (fujinet-network.h:426) hits the ESP32 substr bug; the unit digit is needed to address units 2-8, so only unit 1 ('N:host:port') works on ESP32. No NUL for the PC strlen"}
+      ],
+      "pc_vs_esp32": "host extraction differs (UDP.cpp:195-215)",
+      "notes": ""
+    }
+  ],
+
+  "open_modes": [
+    {"aux1": "0x04", "meaning": "READ. FS: open for reading (TNFS.cpp:38-41). HTTP: GET; path URL-encoded, filename resolve (HTTP.cpp:114-117,310-316); request sent on first STATUS/READ. TCP/UDP: aux1 ignored.", "cite": "fn-h89/lib/network-protocol/Protocol.h:16"},
+    {"aux1": "0x05", "meaning": "HTTP DELETE, no headers (HTTP.cpp:121-124); sent on first STATUS/READ, never by CLOSE alone. On TNFS/SD: abort().", "cite": "fn-h89/lib/network-protocol/HTTP.h:32"},
+    {"aux1": "0x06", "meaning": "DIRECTORY. FS: listing built at OPEN, aux2 = listing format (FS.cpp:52-53,87-207). HTTP: WebDAV PROPFIND; 405/408 falls back to GET (HTTP.cpp:144-277).", "cite": "fn-h89/lib/network-protocol/Protocol.h:17"},
+    {"aux1": "0x07", "meaning": "DIRECTORY_ALT, same as 6 (IS_DIR_MODE, NDevice.cpp:19-21); HTTP strips '*.*' only for 6 (HTTP.cpp:304-308).", "cite": "fn-h89/lib/network-protocol/Protocol.h:18"},
+    {"aux1": "0x08", "meaning": "WRITE. FS: create/truncate (TNFS.cpp:42-45). HTTP: PUT, path URL-encoded; BODY-mode writes buffered and the PUT is sent at CLOSE (HTTP.cpp:118-120,677-683,553-554) - or early by any STATUS/READ (HTTP.cpp:430-436).", "cite": "fn-h89/lib/network-protocol/Protocol.h:19"},
+    {"aux1": "0x09", "meaning": "FS: APPEND (TNFS.cpp:46-49). HTTP: DELETE with headers allowed (HTTP.cpp:122-124).", "cite": "fn-h89/lib/network-protocol/Protocol.h:20, HTTP.h:34"},
+    {"aux1": "0x0C", "meaning": "FS: READWRITE (TNFS.cpp:50-53). HTTP: GET with request/response headers, path sent verbatim, no resolve (HTTP.cpp:115-117); the only mode where COLLECT_HEADERS works (HTTP.cpp:606,731).", "cite": "fn-h89/lib/network-protocol/Protocol.h:21, HTTP.h:35"},
+    {"aux1": "0x0D", "meaning": "HTTP POST: body written in SET_POST_DATA mode (4), then BODY mode (0) and STATUS/READ sends it (HTTP.cpp:125-128,665-675,742). Empty body -> client returns -1 -> err 144 (mgHttpClient.cpp:1120-1121, fnHttpClient.cpp:804-805).", "cite": "fn-h89/lib/network-protocol/HTTP.h:36"},
+    {"aux1": "0x0E", "meaning": "HTTP 'PUT with headers' - BUG: normalised to POST, so a POST is sent (HTTP.cpp:125-128).", "cite": "fn-h89/lib/network-protocol/HTTP.h:37"},
+    {"aux1": "other", "meaning": "HTTP: NAK, err 146 (HTTP.cpp:129-131). TNFS/SD: abort() -> firmware reboot (TNFS.cpp:54-56, SD.cpp:56-58). NFS/SMB: logged, open proceeds with default flags (NFS.cpp:66-67, SMB.cpp:68-69). SFTP: fails (SFTP.cpp:289-291).", "cite": "see meaning"}
+  ],
+
+  "translation_modes": [
+    {"aux2": "0", "meaning": "none - binary", "cite": "fn-h89/lib/network-protocol/Protocol.h:26, Protocol.cpp:44"},
+    {"aux2": "1", "meaning": "network side uses CR: reads replace each CR with the native EOL (CR LF unless NET_SET_EOL), writes replace native EOL with CR", "cite": "Protocol.h:27, Protocol.cpp:60-69,184-232"},
+    {"aux2": "2", "meaning": "network side uses LF: reads LF -> native EOL, writes native EOL -> LF", "cite": "Protocol.h:28, Protocol.cpp:60-69"},
+    {"aux2": "3", "meaning": "network side uses CR LF: with the default native EOL CR LF this is a no-op both ways", "cite": "Protocol.h:29, Protocol.cpp:60-69, rs232.h:165"},
+    {"aux2": "4", "meaning": "PETSCII <-> UTF-8 (Commodore); no EOL change; meaningless on H89", "cite": "Protocol.h:30, Protocol.cpp:190-194,217-221"},
+    {"aux2": "5-255", "meaning": "no translation for file/stream opens (netproto_is_translation_enabled checks 1..4)", "cite": "Protocol.h:34-37"},
+    {"aux2": "note", "meaning": "Effective mode = aux2 OR NET_TRANSLATION override (0xFF override = none). Translation happens once, when bytes come off the network (Protocol.cpp:146-154 via TCP.cpp:145, UDP.cpp:122, FS.cpp:319, FS.cpp:339) and when written (FS.cpp:347, TCP.cpp:173, UDP.cpp:134). With translation on, FS/HTTP STATUS reads ahead up to 512 bytes so avail counts translated bytes (FS.cpp:30, Protocol.cpp:172-174). A CR LF split across two writes/reads is not matched. Directory opens use aux2 as the listing format, but aux2 1-4 still also enables translation of the listing (Protocol.cpp:115, FS.cpp:339).", "cite": "NDevice.cpp:169-176"}
+  ],
+
+  "directory_formats": [
+    {"aux2": "0x00-0x7F", "meaning": "short entries: RS232 build formats 'NAME     EXT       size  1-01-24 12:00p' (8.3 crunched name, size or <DIR>, fixed fake date) (fn-h89/lib/utils/utils.cpp:225-279, FS.cpp:171)"},
+    {"aux2": "0x80", "meaning": "LONG: 37-column entries (dirLongWidth, Protocol.h:175), '/' after directory names, size as n/nK/n.nM; a name longer than 30 chars wraps with an embedded 0x9B (utils.cpp:328-370, FS.cpp:168-169)"},
+    {"aux2": "0x81", "meaning": "A2COL80 Apple II 80-column (FS.cpp:151-153)"},
+    {"aux2": "0x82", "meaning": "GDRIVE: entry with Google Drive id (FS.cpp:154-156)"},
+    {"aux2": "0x83", "meaning": "RAW: exact name, '/' appended for directories (FS.cpp:157-166)"},
+    {"aux2": "0x84 / 0x85", "meaning": "ProDOS CAT / CATALOG with header and trailer (FS.cpp:123-134,182-194)"},
+    {"aux2": "note", "meaning": "Lines end CR LF on non-Atari builds (FS.cpp:90-92); entries starting with '.' or '/' are skipped (FS.cpp:138-139); whole listing is built at OPEN and served from memory (FS.cpp:328-342)"}
+  ],
+
+  "http_channel_modes": [
+    {"mode": 0, "name": "BODY", "meaning": "READ returns the response body (request sent on first STATUS/READ); for PUT (aux1 8) WRITE appends to the body; bytes-remaining reset to body size", "cite": "fn-h89/lib/network-protocol/HTTP.cpp:74-77,428-449,497-515,677-687"},
+    {"mode": 1, "name": "COLLECT_HEADERS", "meaning": "each WRITE registers one response-header name to capture; one trailing 0x9B/CR/LF is dropped; GET only (aux1 4 or 12) else err 146, and only aux1 12 actually captures (http_transaction ignores the list for aux1 4/8). Must precede the request.", "cite": "HTTP.cpp:604-627,731-734,756-766"},
+    {"mode": 2, "name": "GET_HEADERS", "meaning": "STATUS avail = length of the next captured value + 1; each READ returns one value followed by 0x9B; values come in alphabetical order of the lower-cased header name (std::map), not registration order; absent headers give an empty value; err 136 after the last. Entering this mode fires the request if not yet sent.", "cite": "HTTP.cpp:81-84,456-461,490-495,762-765,959-964; fn-h89/lib/http/mgHttpClient.cpp:1242-1252; mgHttpClient.h:173; fnHttpClient.h:108"},
+    {"mode": 3, "name": "SET_HEADERS", "meaning": "each WRITE is one request header 'Name: value' - split at the first ':', value taken from 2 bytes after it (so exactly one space is expected), 0x9B and anything after it removed, no ':' -> NAK. fujinet-pc trims whitespace (incl. CR/LF) from name and value; ESP32 does not trim (a trailing CR LF stays in the value). Must precede the request.", "cite": "HTTP.cpp:629-663; fn-h89/lib/utils/utils.cpp:52-76"},
+    {"mode": 4, "name": "SET_POST_DATA", "meaning": "WRITEs append to the request body for POST (13/14) and PUT (8); other methods err 132", "cite": "HTTP.cpp:665-675"},
+    {"mode": "other", "name": "-", "meaning": "NAK, err 132", "cite": "HTTP.cpp:91-93"}
+  ],
+
+  "error_codes": [
+    {"code": 1, "name": "SUCCESS", "meaning": "OK", "cite": "fn-h89/lib/network-protocol/status_error_codes.h:11"},
+    {"code": 131, "name": "WRITE_ONLY", "meaning": "READ on HTTP channel in a header-set/post-data mode (HTTP.cpp:478-482); also CLIPBOARD/Calendar/Mailbox", "cite": "status_error_codes.h:12"},
+    {"code": 132, "name": "INVALID_COMMAND", "meaning": "bad HTTP channel mode (HTTP.cpp:92); write not allowed in this HTTP method/mode (HTTP.cpp:669,685)", "cite": "status_error_codes.h:13"},
+    {"code": 135, "name": "READ_ONLY", "meaning": "WRITE in HTTP GET_HEADERS mode (HTTP.cpp:597)", "cite": "status_error_codes.h:14"},
+    {"code": 136, "name": "END_OF_FILE", "meaning": "no more data: FS file/dir consumed, HTTP body done, TCP peer disconnected, all headers read (FS.cpp:398,406; HTTP.cpp:443-444,460; TCP.cpp:218)", "cite": "status_error_codes.h:15"},
+    {"code": 138, "name": "GENERAL_TIMEOUT", "meaning": "HTTP 408 (HTTP.cpp:368-370); TNFS mount failure (TNFS.cpp:103-104)", "cite": "status_error_codes.h:16"},
+    {"code": 144, "name": "GENERAL", "meaning": "fatal/unclassified: unknown scheme at OPEN (NDevice.cpp:159-161), unmapped errno (Protocol.cpp:321-326), unmapped HTTP status incl. client -1 for empty POST/PUT (HTTP.cpp:409-411), HTML/XML parse failure (HTMLParser.cpp:30)", "cite": "status_error_codes.h:17"},
+    {"code": 146, "name": "NOT_IMPLEMENTED", "meaning": "HTTP aux1 not supported (HTTP.cpp:130), HTTP 405, COLLECT_HEADERS on non-GET (HTTP.cpp:608), SD LOCK/UNLOCK (SD.cpp:316)", "cite": "status_error_codes.h:18"},
+    {"code": 151, "name": "FILE_EXISTS", "meaning": "TNFS file exists (TNFS.cpp:122-123)", "cite": "status_error_codes.h:19"},
+    {"code": 162, "name": "NO_SPACE_ON_DEVICE", "meaning": "TNFS no space (TNFS.cpp:116-117)", "cite": "status_error_codes.h:20"},
+    {"code": 165, "name": "INVALID_DEVICESPEC", "meaning": "OPEN spec is not a URL (no scheme) (NDevice.cpp:159-161); RENAME without comma (FS.cpp:474)", "cite": "status_error_codes.h:21"},
+    {"code": 166, "name": "INVALID_POINT", "meaning": "defined, not produced by any code in this tree", "cite": "status_error_codes.h:22"},
+    {"code": 167, "name": "ACCESS_DENIED", "meaning": "HTTP 423/451 (HTTP.cpp:371-374); TNFS read-only/denied (TNFS.cpp:112-114)", "cite": "status_error_codes.h:23"},
+    {"code": 170, "name": "FILE_NOT_FOUND", "meaning": "HTTP 404/410 (HTTP.cpp:361-364); TNFS not found (TNFS.cpp:109-110)", "cite": "status_error_codes.h:24"},
+    {"code": 200, "name": "CONNECTION_REFUSED", "meaning": "ECONNREFUSED (Protocol.cpp:308-310)", "cite": "status_error_codes.h:25"},
+    {"code": 201, "name": "NETWORK_UNREACHABLE", "meaning": "ENETUNREACH (Protocol.cpp:311-313)", "cite": "status_error_codes.h:26"},
+    {"code": 202, "name": "SOCKET_TIMEOUT", "meaning": "ETIMEDOUT (Protocol.cpp:314-316); TCP short read/write (TCP.cpp:137,187)", "cite": "status_error_codes.h:27"},
+    {"code": 203, "name": "NETWORK_DOWN", "meaning": "ENETDOWN (Protocol.cpp:317-319)", "cite": "status_error_codes.h:28"},
+    {"code": 204, "name": "CONNECTION_RESET", "meaning": "ECONNRESET (Protocol.cpp:305-307, TCP.cpp:129-133,179-183); accepted client gone (TCP.cpp:323)", "cite": "status_error_codes.h:29"},
+    {"code": 205, "name": "CONNECTION_ALREADY_IN_PROGRESS", "meaning": "EINPROGRESS (Protocol.cpp:302-304)", "cite": "status_error_codes.h:30"},
+    {"code": 206, "name": "ADDRESS_IN_USE", "meaning": "EADDRINUSE, e.g. TCP listen/UDP bind on a busy port (Protocol.cpp:299-301)", "cite": "status_error_codes.h:31"},
+    {"code": 207, "name": "NOT_CONNECTED", "meaning": "no channel open on the unit (NDevice.cpp:313) - also after every fs command; TCP write while disconnected (TCP.cpp:168); UDP write with no destination (UDP.cpp:141); HTTP fake status 901 (HTTP.cpp:340-342); CLOSE_CLIENT with no client (TCP.cpp:353)", "cite": "status_error_codes.h:32"},
+    {"code": 208, "name": "SERVER_NOT_RUNNING", "meaning": "ACCEPT/CLOSE_CLIENT on a channel that is not a listener (TCP.cpp:300,346)", "cite": "status_error_codes.h:33"},
+    {"code": 209, "name": "NO_CONNECTION_WAITING", "meaning": "ACCEPT with no pending client (TCP.cpp:330)", "cite": "status_error_codes.h:34"},
+    {"code": 210, "name": "SERVICE_NOT_AVAILABLE", "meaning": "used by FTP, GMAIL, IMAPS, Calendar adapters", "cite": "status_error_codes.h:35"},
+    {"code": 211, "name": "CONNECTION_ABORTED", "meaning": "defined, not produced by any code in this tree", "cite": "status_error_codes.h:36"},
+    {"code": 212, "name": "INVALID_USERNAME_OR_PASSWORD", "meaning": "HTTP 401/402/403/407 (HTTP.cpp:355-360)", "cite": "status_error_codes.h:37"},
+    {"code": 213, "name": "COULD_NOT_PARSE_JSON", "meaning": "JSON PARSE failed; sticks in STATUS (JSONParser.cpp:30, NParser.cpp:58-59)", "cite": "status_error_codes.h:38"},
+    {"code": 214, "name": "CLIENT_GENERAL", "meaning": "other HTTP 4xx (HTTP.cpp:375-395)", "cite": "status_error_codes.h:39"},
+    {"code": 215, "name": "SERVER_GENERAL", "meaning": "HTTP 5xx (HTTP.cpp:396-408)", "cite": "status_error_codes.h:40"},
+    {"code": 255, "name": "COULD_NOT_ALLOCATE_BUFFERS", "meaning": "SD adapter only", "cite": "status_error_codes.h:41"}
+  ],
+
+  "schemes": [
+    {"scheme": "CLIPBOARD", "class": "NetworkProtocolClipboard", "cite": "fn-h89/lib/network-protocol/NetworkProtocolFactory.cpp:41-43; CLIPBOARD.h:1-20", "what": "FujiNet clipboard: read N:CLIPBOARD:///0..9 (0 = current), write replaces it on CLOSE, append (aux1 9) adds", "build_conditional": null},
+    {"scheme": "CPM", "class": "NetworkProtocolCPM", "cite": "NetworkProtocolFactory.cpp:44-46; CPM.h:14-22", "what": "embedded RunCPM Z80 CP/M 2.2 emulator: READ = its console output, WRITE = keystrokes; one shared instance (file-static queues, CPM.cpp:20-23)", "build_conditional": "thread model only: FreeRTOS task on ESP32, std::thread on PC (CPM.h:6-12)"},
+    {"scheme": "GCAL", "class": "NetworkProtocolGCAL (Calendar)", "cite": "NetworkProtocolFactory.cpp:47-49; GCAL.h:1-20", "what": "Google Calendar list/DAY/WEEK/MONTH views as text; RS232 default line width 80 (Calendar.cpp:108-109)", "build_conditional": null},
+    {"scheme": "GDRIVE", "class": "NetworkProtocolGDRIVE (FS)", "cite": "NetworkProtocolFactory.cpp:50-52; GDRIVE.h:1-14", "what": "Google Drive files/folders, OAuth2 device grant from config; writes uploaded at CLOSE", "build_conditional": "different HTTP client code paths per platform (GDRIVE.cpp:144,254)"},
+    {"scheme": "GMAIL", "class": "NetworkProtocolGMAIL (Mailbox)", "cite": "NetworkProtocolFactory.cpp:53-55; GMAIL.h:1-16", "what": "Gmail folders, messages, attachments; aux1 8 = compose/reply; uses the Google Drive OAuth grant", "build_conditional": null},
+    {"scheme": "ICAL / WEBCAL / ICALH", "class": "NetworkProtocolICAL (Calendar)", "cite": "NetworkProtocolFactory.cpp:56-61; ICAL.h:1-14", "what": "iCalendar (RFC 5545) feed views; ICAL/WEBCAL fetch over https, ICALH over http", "build_conditional": null},
+    {"scheme": "IMAPS", "class": "NetworkProtocolIMAPS (Mailbox)", "cite": "NetworkProtocolFactory.cpp:62-64; IMAPS.h:1-14", "what": "IMAP over TLS mailbox (default port 993); credentials from URL or NET_USERNAME/NET_PASSWORD", "build_conditional": null},
+    {"scheme": "ONEDRIVE", "class": "NetworkProtocolONEDRIVE (FS)", "cite": "NetworkProtocolFactory.cpp:65-67; ONEDRIVE.h:1-14", "what": "Microsoft OneDrive via Graph, OAuth through auth.fujinet.online relay", "build_conditional": null},
+    {"scheme": "TCP", "class": "NetworkProtocolTCP", "cite": "NetworkProtocolFactory.cpp:68-70; TCP.cpp:53-85", "what": "raw TCP: 'TCP://host:port' client (port default 23), 'TCP://:port' listener with ACCEPT/CLOSE_CLIENT, 'TCP://' empty socket", "build_conditional": null},
+    {"scheme": "UDP", "class": "NetworkProtocolUDP", "cite": "NetworkProtocolFactory.cpp:71-73; UDP.cpp:34-87", "what": "UDP datagrams; port required; SET_DESTINATION/GET_REMOTE", "build_conditional": "bind/destination code differs ESP32 vs PC (UDP.cpp:40-79,174-215)"},
+    {"scheme": "TEST", "class": "NetworkProtocolTest", "cite": "NetworkProtocolFactory.cpp:74-76; Test.cpp:34-66", "what": "diagnostic: READ returns a fixed test sentence, writes are logged", "build_conditional": null},
+    {"scheme": "TELNET", "class": "NetworkProtocolTELNET (TCP subclass)", "cite": "NetworkProtocolFactory.cpp:77-79; Telnet.h:11; Telnet.cpp:16", "what": "TCP with libtelnet option negotiation; ACCEPT/CLOSE_CLIENT apply. The telnet state is one file-static pointer shared by all units (Telnet.cpp:29,94)", "build_conditional": null},
+    {"scheme": "TNFS", "class": "NetworkProtocolTNFS (FS)", "cite": "NetworkProtocolFactory.cpp:80-82; TNFS.cpp", "what": "TNFS file server: read/write/append/rw, directories, all six fs commands, SEEK/TELL", "build_conditional": null},
+    {"scheme": "FTP", "class": "NetworkProtocolFTP (FS)", "cite": "NetworkProtocolFactory.cpp:83-85; FTP.h", "what": "FTP files and directories; fs commands are stubs that ACK (FTP.h:37-65)", "build_conditional": null},
+    {"scheme": "HTTP / HTTPS", "class": "NetworkProtocolHTTP (FS)", "cite": "NetworkProtocolFactory.cpp:86-89; HTTP.cpp:23-39", "what": "HTTP(S) client: GET/POST/PUT/DELETE, request/response headers, WebDAV directory (PROPFIND), MOVE, MKCOL, Range seek", "build_conditional": "fnHttpClient on ESP32, mgHttpClient (mongoose) on PC (HTTP.h:9-15)"},
+    {"scheme": "WS", "class": "NetworkProtocolWS", "cite": "NetworkProtocolFactory.cpp:90-92; WS.h:1-14", "what": "WebSocket client", "build_conditional": "fnWebSocketClient on ESP32, mgWebSocketClient on PC (WS.h:10-14)"},
+    {"scheme": "WSS", "class": "NetworkProtocolWSS (WS subclass)", "cite": "NetworkProtocolFactory.cpp:93-95; WSS.h:1-6", "what": "WebSocket over TLS", "build_conditional": "as WS"},
+    {"scheme": "SSH", "class": "NetworkProtocolSSH", "cite": "NetworkProtocolFactory.cpp:96-98; SSH.h:17", "what": "interactive SSH session (libssh)", "build_conditional": "socket glue differs (SSH.cpp:34-63)"},
+    {"scheme": "SFTP", "class": "NetworkProtocolSFTP (FS)", "cite": "NetworkProtocolFactory.cpp:99-101; SFTP.h:6-7", "what": "files over SFTP (libssh sftp), all fs commands, seek", "build_conditional": null},
+    {"scheme": "SSH.KEYGEN", "class": "NetworkProtocolSSHKeygen", "cite": "NetworkProtocolFactory.cpp:102-104; SSHKeygen.h:1-14", "what": "generates /.ssh/id_ed25519(.pub) on the SD card; READ returns a status text", "build_conditional": null},
+    {"scheme": "SSH.COPYID", "class": "NetworkProtocolSSHCopyId", "cite": "NetworkProtocolFactory.cpp:105-107; SSHCopyId.h:1-14", "what": "appends the FujiNet public key to ~/.ssh/authorized_keys on a remote host", "build_conditional": null},
+    {"scheme": "SMB", "class": "NetworkProtocolSMB (FS)", "cite": "NetworkProtocolFactory.cpp:108-110; SMB.cpp", "what": "SMB2/3 shares (libsmb2): files, directories, rename/delete/mkdir/rmdir, seek", "build_conditional": null},
+    {"scheme": "NFS", "class": "NetworkProtocolNFS (FS)", "cite": "NetworkProtocolFactory.cpp:111-113; NFS.cpp", "what": "NFS exports (libnfs): files, directories, fs commands (lock/unlock no-ops), seek", "build_conditional": null},
+    {"scheme": "S3", "class": "NetworkProtocolS3 (FS)", "cite": "NetworkProtocolFactory.cpp:114-116; S3.h:1-14", "what": "Amazon S3 / compatible object storage, SigV4, path-style", "build_conditional": "HTTP client per platform (S3.h:10-14)"},
+    {"scheme": "SD", "class": "NetworkProtocolSD (FS)", "cite": "NetworkProtocolFactory.cpp:117-119; SD.cpp", "what": "FujiNet's own SD card (on PC: the configured SD directory): files, directories, fs commands (no lock/unlock), seek", "build_conditional": null},
+    {"scheme": "summary", "class": "-", "cite": "NetworkProtocolFactory.cpp:33-132", "what": "28 scheme strings, no #if around any case: every scheme is compiled into both the ESP32 H89 build and fujinet-pc RS232; anything else -> NULL -> OPEN NAK with err 144", "build_conditional": null}
+  ],
+
+  "not_dispatched": [
+    {"name": "NET_GET_DSTATS_VALUE", "value": "0xFF", "result": "NAK (NDevice.cpp:105-111); fujinet-lib declares network_get_dstats (fujinet-network.h:462) but has no H89 implementation"},
+    {"name": "NET_SET_UNIT", "value": "0xFA", "result": "NAK"},
+    {"name": "NET_SET_HSIO_INDEX", "value": "0xE3", "result": "NAK"},
+    {"name": "NET_QUERY_ALT", "value": "0x81", "result": "NAK"},
+    {"name": "NET_PARSE_ALT", "value": "0x80", "result": "NAK"},
+    {"name": "NET_GET_ERROR", "value": "0x45", "result": "NAK"},
+    {"name": "NET_HSIO_INDEX", "value": "0x3F", "result": "NAK"},
+    {"name": "any other byte", "value": "-", "result": "NAK (header-only reply, rs232.cpp:60-64)"},
+    {"name": "no channel open", "value": "-", "result": "STATUS ACK 00 00 00 CF; CLOSE ACK; READ/WRITE/PARSE/QUERY/SET_PARAMETER/SEEK NAK; TELL ACK with 4 garbage bytes; SET_PARSER ACK (leaves a dangerous null-protocol parser); TRANSLATION/SET_EOL/SET_INT_RATE/USERNAME/PASSWORD/CHDIR/GETCWD ACK (unit settings); fs commands work normally; ACCEPT/CLOSE_CLIENT/SET_HTTP_MODE/GET_REMOTE/SET_DESTINATION NAK (protocol type check)"}
+  ],
+
+  "open_questions": [
+    "Does mgHttpClient/fnHttpClient read() block for the full length when the body is still arriving? Decides whether an HTTP READ larger than STATUS avail NAKs or waits (HTTP.cpp:508-514) - not traced into the client code",
+    "UDP STATUS under-report (avail 0 for a single pending datagram) is derived from code (Protocol.cpp:169-175, NDevice.cpp:317-319, UDP.h:72); confirm on hardware/fujinet-pc before documenting as fact",
+    "Initial fnUDP remote_ip/remote_port before any datagram (what GET_REMOTE returns then) - constructor not read",
+    "How PeoplesUrlParser treats the NUL bytes left by the '*' and >0x7F substitutions (truncation assumed; parser internals not traced)",
+    "Exact HTML/XML selector behaviour when the RS232 QUERY payload carries NUL + trailing bytes (fnhtml resolve/fnxml_resolve_query internals not read)",
+    "Whether WebDAV servers accept the path-only Destination header HTTP RENAME sends (HTTP.cpp:894)",
+    "Translation handling inside TELNET, SSH, WS, CPM adapters was not surveyed (they override read/write)",
+    "ESP32 fnTcpClient connect with timeout -1: actual connect timeout value not traced (fnTcpClient.h:27)",
+    "Does fujinet-pc for H89 normally run over BoIP (no data-ready line) or a serial port - deployment detail, affects only NET_SET_INT_RATE usefulness"
+  ]
+}

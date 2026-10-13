@@ -1,0 +1,208 @@
+# FujiNet Programmer's Manual for the Heathkit H89
+
+*How to write programs for the H89 FujiNet card: the card's ports and the FujiBus protocol, Z80 assembly for HDOS and CP/M from one source, 8080 assembly on the H89 itself, C with z88dk and fujinet-lib, every command of every device, the 28 network protocols, and whole programs — NETCAT, NGET and NPUT, an ISS tracker, and three network games.*
+
+<img src="images/h89-prog-cover-board.png" width="640" alt="The H89 FujiNet card, in the brown and gold of a 1979 Heathkit manual cover">
+
+The printed edition — about 250 pages, styled after Heath's 1979 *H88 Operation Manual* — is in the [fujinet-manuals](https://github.com/FujiNetWIFI/fujinet-manuals) repository under `h89/programmers-handbook/`, with every program in it. This page is the short version: what you need to start, and the reference tables.
+
+Everything in the book was built and run on FujiNet Go H89 under HDOS 2.0 and CP/M 2.2.04, with the emulated card connected to fujinet-pc built from the same firmware as the card. The bytes printed with each command were recorded on the bus as the examples ran. Nothing has been run on a real card.
+
+---
+
+## Contents
+
+1. [The Software This Describes](#1-the-software-this-describes)
+2. [The Card, as a Program Sees It](#2-the-card-as-a-program-sees-it)
+3. [The FujiBus Protocol](#3-the-fujibus-protocol)
+4. [Assembly Language](#4-assembly-language)
+5. [C with z88dk](#5-c-with-z88dk)
+6. [Command Quick Reference](#6-command-quick-reference)
+7. [Network Protocols](#7-network-protocols)
+8. [fujinet-lib on the H89](#8-fujinet-lib-on-the-h89)
+9. [The Programs](#9-the-programs)
+10. [Errata](#10-errata)
+
+---
+
+## 1. The Software This Describes
+
+| Program | Version |
+|---|---|
+| Firmware | fujinet-firmware, branch `h89-disk-fixes`, 7ab84ae64 (v1.6) |
+| fujinet-lib | branch `h89-keep-esp32-running`, 9e6d4dd (the H89 is not yet in a release) |
+| z88dk | v2.4-1231 (3bd06cad56) |
+| FujiNet Go H89 | v0.1.0-3 (8dc059d) |
+
+The FujiNet for the H89 is new and its software is still changing. Where the firmware or the library does something it should not, the book says so in a WARNING with what to do instead; the [errata](#10-errata) list every case, cited to its line of source.
+
+---
+
+## 2. The Card, as a Program Sees It
+
+Four ports, a handshake and a clock. No memory, no interrupt, no ROM.
+
+| Port | Octal | Use |
+|---|---|---|
+| D0H | 320Q | Port A of the 82C55A, in mode 2: every byte to and from the FujiNet |
+| D1H | 321Q | Port B: not used |
+| D2H | 322Q | Port C: status (read) and control (written) |
+| D3H | 323Q | The 82C55A's control register |
+
+| Bit of D2H | Name | Meaning |
+|---|---|---|
+| 80H | /OBF | 0 while a byte the H89 wrote waits for the ESP32 |
+| 20H | IBF | 1 while a byte from the ESP32 waits for the H89 |
+| 04H | EN | 1 = the ESP32 is running |
+| 02H | /OE | 0 = the bus transceiver is on |
+| 01H | DIR | 1 = toward the ESP32, 0 = toward the H89 |
+
+- **Starting it.** If EN is 0, write C0H (mode 2) to D3H, raise EN with PC1 high (006 to D2H), pulse EN once more, wait 200 ms, read D0H once, then set /OE = 0 and DIR = 0 with bit set/reset commands (02H, 00H to D3H). Never write the mode word while the FujiNet is running: it resets the ESP32.
+- **Sending.** DIR = 1; for each byte wait for /OBF = 1, then write D0H. After the last, wait for /OBF = 1 and set DIR = 0.
+- **Receiving.** DIR = 0; wait for IBF = 1, read D0H.
+- **Time.** The 2 ms tick word is at 201BH under HDOS, 000BH under Heath CP/M.
+- **Limits.** The firmware waits only **100 ms** between the bytes of a request; a program that pauses longer loses the request. It waits 1 s for each reply byte to be taken. fujinet-lib waits 15 s for a reply byte, and forever to send one.
+- **No interrupts.** A program asks; data arriving on a network channel waits until the program asks STATUS and reads it.
+
+---
+
+## 3. The FujiBus Protocol
+
+A request and a reply, each a SLIP frame: `C0`, the packet, `C0`, with C0H in the packet sent as `DB DC` and DBH as `DB DD`. **Send exactly one C0 before the packet.**
+
+| Byte | Request | Reply |
+|---|---|---|
+| 0 | device | the device answering (00 if it does not exist) |
+| 1 | command | ACK 06H or NAK 15H |
+| 2, 3 | length of the whole packet, low first | the same |
+| 4 | checksum | checksum |
+| 5 | descriptor: which fields follow | 00 |
+| 6 … | fields, then the payload | data (an ACK only) |
+
+- **Checksum.** Add every byte of the packet, the checksum byte counted as 0, with the carry out of each addition added back in (end-around carry). `70 FA 06 00 ?? 00` sums to 71H.
+- **Descriptor.** 0 none; 1–4 that many one-byte fields; 5 one word; 6 two words; 7 one long (low byte first). Bit 7 chains another descriptor. The firmware ignores bits 3–6 (fujinet-lib sends its own flags there, 08H and 10H).
+- **Send every field a command takes.** A missing field does not NAK: the firmware stops (the ESP32 restarts; fujinet-pc exits).
+- **No reply** for a bad checksum or length, a gap of over 100 ms in a request, FUJI_RESET, the printer when it is off, and the modem (its answers are bare bytes).
+
+| Device | Number |
+|---|---|
+| The FujiNet | 70H |
+| Disk drives (slots 0–7) | 31H–38H |
+| Network channels | 71H–78H |
+| Clock | 45H |
+| Printer | 40H |
+| Modem | 50H |
+
+Each command in the book has a card like this one, with a Z80 example, a C example and the bytes recorded on the bus, shaded by their part of the frame:
+
+<img src="images/h89-prog-card.png" width="420" alt="The book's card for FUJI_GET_WIFISTATUS">
+
+---
+
+## 4. Assembly Language
+
+Neither HDOS nor CP/M came with a Z80 assembler (Heath's ASM and DRI's ASM are 8080 only). The book assembles on a modern computer with **z88dk-z80asm**, one source for both systems:
+
+```
+z88dk-z80asm -b -DHDOS -Isrc/asm/inc -oFNHELLO.ABS src/asm/hello/fnhello.asm
+z88dk-z80asm -b -DCPM  -Isrc/asm/inc -oFNHELLO.COM src/asm/hello/fnhello.asm
+```
+
+The book's small library (`src/asm/inc/`) does the rest: `os.inc` (the .ABS header at 2278H for HDOS, or 0100H and a stack for CP/M; console, files, the command line), `card.inc` (`card_on`, `card_present`), `fujibus.inc` (`fn_call`), `con.inc` (printing numbers and bytes). A request is two lines of data:
+
+```
+rq_config:
+        FNREQ   DEV_FUJINET, FUJI_GET_ADAPTERCONFIG, F_NONE, 0,0,0,0
+        FNBUF   0, 0, cfg, 140          ; no payload; 140 bytes back to cfg
+...
+        ld      hl,rq_config
+        call    fn_call                 ; Z = ACK, BC = reply length
+```
+
+The book's Chapter 5 shows the same on the H89 itself with Heath's ASM (HDOS) and DRI's ASM and LOAD (CP/M), in 8080 code.
+
+---
+
+## 5. C with z88dk
+
+Build fujinet-lib from source: `make h89-hdos/r2r h89-cpm/r2r` (use the `/r2r` targets).
+
+**CP/M:**
+
+```
+zcc +cpm -create-app -D__H89__ -I$FNLIB/include \
+    -L$FNLIB/r2r/h89-cpm -lfujinet.h89-cpm.lib -o HELLO hello.c
+```
+
+**HDOS:**
+
+```
+zcc +hdos -startup=3 -Cz--abs -create-app -D__H89__ \
+    -pragma-define:CRT_ORG_CODE=0x2A80 -pragma-define:REGISTER_SP=0x2A80 \
+    -pragma-define:CRT_ENABLE_COMMANDLINE=0 \
+    -pragma-define:CLIB_DISABLE_FGETS_CURSOR=1 \
+    -I$FNLIB/include -L$FNLIB/r2r/h89-hdos -lfujinet.h89-hdos.lib -o HELLO hello.c
+```
+
+- `-D__H89__` is required, even for CP/M.
+- Give the library's name in full, `.lib` and all: the dot in it stops z88dk adding `.lib`.
+- z88dk's HDOS default load address, 4480H, is the split-octal 042.200 read as one octal number; HDOS loads at 2280H. The book loads at 2A80H with the stack just below, as FujiNet CONFIG does.
+- z88dk's HDOS start-up code takes the entry stack pointer back from the wrong stack, so `argv[]` is damaged. Turn its command-line handling off (`CRT_ENABLE_COMMANDLINE=0`) and split the command line yourself (the book's `hdosargs.c`).
+- HDOS maps console output to capitals unless told not to: `.CONSL` (the book's `h89con.c`, `con_init(0)`).
+- HDOS and CP/M both capitalise a typed command line; a program that needs lower case (a URL's path) should ask for it.
+
+---
+
+## 6. Command Quick Reference
+
+Every command the H89's FujiNet answers. Fields: the size of each field, in order (1 byte, 2 word, 4 long). Payload and reply: their length, or ACK for a reply with no data. The book gives each a card with a Z80 example, a C example and the bytes.
+
+{{QUICKREF}}
+
+---
+
+## 7. Network Protocols
+
+A network channel opens whatever its devicespec names: `N:SCHEME://host/path`. All 28 schemes are in the H89's firmware and in fujinet-pc.
+
+{{SCHEMES}}
+
+---
+
+## 8. fujinet-lib on the H89
+
+Most functions send one command and return `true` (ACK) or an `FN_ERR`. These need care on the H89:
+
+{{LIBWARN}}
+
+These are declared but not built for the H89, and do not link: {{UNLINKABLE}}.
+
+---
+
+## 9. The Programs
+
+All in the repository, each in Z80 assembly and in C, each for HDOS and CP/M:
+
+| Program | Does |
+|---|---|
+| FNHELLO / HELLO | Prints the FujiNet's network, name, address and firmware |
+| NETCAT | A terminal for bulletin boards and TCP services; puts the H19 in ANSI mode |
+| NGET, NPUT | Copy a file from, or to, any channel a FujiNet can open |
+| ISS | Plots the space station on a map of the world, from JSON |
+| EXFUJI, EXNET, EXDISK, EXCLOCK, EXPRINT, EXMODEM | Send every command, as the book's examples |
+
+And the three network games, listed in full in the book: **Texas Hold'em**, **Battleship** and **Fujitzee**, by Eric Carr, ported to the H89.
+
+<img src="images/h89-prog-netcat.png" width="640" alt="NETCAT talking to a test board">
+
+<img src="images/h89-prog-iss.png" width="640" alt="The ISS tracker's map of the world">
+
+<img src="images/h89-prog-texas.png" width="640" alt="Texas Hold'em on the H89, at the flop">
+
+---
+
+## 10. Errata
+
+The book found {{ERRATA_COUNT}} things in the H89's FujiNet software that behave other than a programmer would expect; `errata.md` beside the book's source lists them all, each cited to its line of source. The ones that matter most:
+
+{{ERRATA_TOP}}

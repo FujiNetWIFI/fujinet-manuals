@@ -1,0 +1,23 @@
+---- screen ----
+
+  H: Boot
+
+
+62K HEATH/ZENITH CP/M 2.2.04  09/15/82
+FOR H17 DISKS WITH OPTION(S) I
+
+A>ASM B:C1
+CP/M ASSEMBLER - VER 2.0
+U010A 3E00              MVI     A,HIGH HERE
+U010C 3E00              MVI     A,LOW HERE
+V010E 3EFF              MVI     A,NOT 0
+E011D 00                DB      "DQ"
+S                       LD      A,B
+L                       DJNZ    $
+V0121 3EFF              MVI     A,1FFH
+0129
+000H USE FACTOR
+END OF ASSEMBLY
+
+A>
+----------------

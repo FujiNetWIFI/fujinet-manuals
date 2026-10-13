@@ -1,0 +1,284 @@
+{
+ "items": [
+  {
+   "id": "Z1",
+   "area": "z88dk (HDOS)",
+   "subject": "load address",
+   "text": "The HDOS target's default CRT_ORG_CODE is 4480H: the split-octal address 042.200 (2280H) read as the plain octal number 042200. Programs work but waste 8.6K. Proposed fix: CRT_ORG_CODE = $2280 with a REGISTER_SP that is not inside the program.",
+   "cite": "z88dk/lib/target/hdos/classic/hdos_crt0.asm (TAR__register_sp $447F, CRT_ORG_CODE $4480)"
+  },
+  {
+   "id": "Z2",
+   "area": "z88dk (HDOS)",
+   "subject": "command line",
+   "text": "With startup=3 the start-up code pushes the entry SP, moves the stack (crt_init_sp, crt_init_atexit), then pops from the NEW stack, so the command line is split with a wrong length and argv[] is damaged. Proposed fix: replace the push/pop with ld hl,(__restore_sp_onexit+1). The book builds with CRT_ENABLE_COMMANDLINE=0 and hdos_args().",
+   "cite": "z88dk/lib/target/hdos/classic/hdos_crt0.asm (start: push hl ... pop hl)"
+  },
+  {
+   "id": "Z3",
+   "area": "z88dk (HDOS)",
+   "subject": "hdos.def",
+   "text": "The HDOS system values (S_SYSM, S_USRM, S_DATE ...) are given 2000H too high, e.g. S_SYSM $40D0 for 20D0H: the same split-octal misreading.",
+   "cite": "z88dk/lib/target/hdos/def/hdos.def:47-52"
+  },
+  {
+   "id": "Z4",
+   "area": "z88dk",
+   "subject": "-l with a dotted library name",
+   "text": "zcc -lfujinet.h89-hdos does not find fujinet.h89-hdos.lib (the dot stops .lib being added); give the name in full: -lfujinet.h89-hdos.lib.",
+   "cite": "observed with z88dk v2.4-1231"
+  },
+  {
+   "id": "L1",
+   "area": "fujinet-lib",
+   "subject": "descriptor flags on the wire",
+   "text": "fuji_bus_call puts its FUJI_FIELD_DATA (08H) and FUJI_FIELD_REPLY (10H) flags in the packet's descriptor byte. The firmware ignores bits 3-6, so no harm, but the bytes differ from other FujiBus clients'.",
+   "cite": "fujinet-lib/bus/h89/fuji_bus_call.c:201"
+  },
+  {
+   "id": "L2",
+   "area": "fujinet-lib",
+   "subject": "port_putc",
+   "text": "No timeout: with the FujiNet not running, a C program hangs in its first call.",
+   "cite": "fujinet-lib/bus/h89/portio.c:140-153"
+  },
+  {
+   "id": "L3",
+   "area": "fujinet-lib",
+   "subject": "FUJI_DIR_ENTRY_IS_DIR / _IS_TRUNC",
+   "text": "Use is_dir/is_trunc, which the H89's FujiDirEntry does not have (it has flags): code using them does not compile. Test flags & 1 and flags & 2.",
+   "cite": "fujinet-lib/include/fujinet-fuji.h (FUJI_DIR_ENTRY_IS_*; FujiDirEntry for FUJI_PLATFORM_H89)"
+  },
+  {
+   "id": "L4",
+   "area": "fujinet-lib",
+   "subject": "fixed 256-byte payloads",
+   "text": "fuji_open_directory, fuji_set_host_prefix, fuji_set_device_filename and fuji_copy_file always send 256 bytes from the caller's string, so whatever follows its NUL is sent too (and the firmware may read it as a pattern or part of a path). Clear a 256-byte buffer first.",
+   "cite": "fujinet-lib/include/fujinet-fuji.h (MAX_FILENAME_LEN in the FUJICALL_..._D macros)"
+  },
+  {
+   "id": "L5",
+   "area": "fujinet-lib",
+   "subject": "network_json_query",
+   "text": "Always sends 256 bytes of query and reads the answer into the caller's buffer with no limit.",
+   "cite": "fujinet-lib/common/network_json_query.c:12-30"
+  },
+  {
+   "id": "L6",
+   "area": "fujinet-lib",
+   "subject": "network_bus_read",
+   "text": "Returns the length asked for on any ACK, even when fewer bytes came.",
+   "cite": "fujinet-lib/bus/h89/network.c:6-9"
+  },
+  {
+   "id": "L7",
+   "area": "fujinet-lib",
+   "subject": "fuji_get_wifi_enabled",
+   "text": "Ignores whether the call succeeded and returns the last value it got.",
+   "cite": "fujinet-lib/common/fuji_get_wifi_enabled.c"
+  },
+  {
+   "id": "L8",
+   "area": "fujinet-lib",
+   "subject": "clock_get_time",
+   "text": "Writes a NUL one byte past the reply: the buffer must be one byte longer than the format's reply.",
+   "cite": "fujinet-lib/common/fuji_clock.c:51"
+  },
+  {
+   "id": "L9",
+   "area": "fujinet-lib",
+   "subject": "network_udp_set_destination",
+   "text": "Sends the devicespec without a NUL and with the unit prefix (N7:), which the firmware reads wrongly; the datagram does not arrive. Use fuji_bus_call with 'N:host:port' and a NUL.",
+   "cite": "fujinet-lib/common/network_udp_set_destination.c"
+  },
+  {
+   "id": "L10",
+   "area": "fujinet-lib",
+   "subject": "network_read_nb",
+   "text": "Busy-loops forever while STATUS says nothing waiting and no error, e.g. on UDP (whose STATUS under-reports) or an idle server.",
+   "cite": "fujinet-lib/common/network_read_nb.c"
+  },
+  {
+   "id": "L11",
+   "area": "fujinet-lib",
+   "subject": "fuji_get_time, fuji_enable_device, fuji_disable_device",
+   "text": "Send commands the H89's FujiNet does not have: always false.",
+   "cite": "fujinet-lib/include/fujinet-fuji.h:268-269, 649"
+  },
+  {
+   "id": "L12",
+   "area": "fujinet-lib",
+   "subject": "unlinkable",
+   "text": "fn_error, network_proceed, network_has_proceed, network_get_dstats, fuji_enable_udpstream, fuji_get_device_enabled_status and _fuji_status are declared but not built for the H89.",
+   "cite": "fujinet-lib/include/fujinet-network.h:49, 341-343; fujinet-fuji.h:239, 272, 300"
+  },
+  {
+   "id": "L13",
+   "area": "fujinet-lib",
+   "subject": "fuji_get_host_slots / fuji_get_device_slots",
+   "text": "The count must be 8: the reply is always all eight slots, and a smaller buffer makes the call fail.",
+   "cite": "fujinet-lib/bus/h89/port_slip.c:87-90"
+  },
+  {
+   "id": "P1",
+   "area": "fujinet-pc (the book's stand-in for the card)",
+   "subject": "directory details",
+   "text": "READ_DIR_ENTRY with 80H returns blank details (size 0, 1969-12-31, in the host's time zone) for files below the top of the SD directory, and network directory listings show size 0: dir_open looks files up in the wrong place. The card is not affected.",
+   "cite": "fn-h89/lib/filesystem/fnFsSD.cpp:306 (PC build)"
+  },
+  {
+   "id": "P2",
+   "area": "fujinet-pc (the book's stand-in for the card)",
+   "subject": "WiFi",
+   "text": "A stand-in: always connected to 'Dummy Cafe'; a scan finds 'Dummy Cafe 0'-'15'; SET_SSID always succeeds.",
+   "cite": "fn-h89/lib/hardware/fnWiFi (PC)"
+  },
+  {
+   "id": "L14",
+   "area": "fujinet-lib",
+   "subject": "network_unit",
+   "text": "No range check: \"N0:\" addresses the FujiNet device (70H), so a network command arrives there as some other command (NET_SET_PARAMETER, FBH, as SET_SSID); \"N9:\" goes to 79H, \"N10:\" to unit 1.",
+   "cite": "fujinet-lib/common/network_unit.c:3-12"
+  },
+  {
+   "id": "L15",
+   "area": "fujinet-lib",
+   "subject": "network_unit_status",
+   "text": "Returns 0 on success (the macro is !fuji_bus_call).",
+   "cite": "fujinet-lib/include/fujinet-network.h:492"
+  },
+  {
+   "id": "L16",
+   "area": "fujinet-lib",
+   "subject": "fuji_open_directory_filter",
+   "text": "With a NULL pattern (which the header allows) it reads address 0 and sends what it finds as the pattern; with an empty one it sends the caller's memory after the path.",
+   "cite": "fujinet-lib/common/fuji_open_directory_filter.c:16-19"
+  },
+  {
+   "id": "L17",
+   "area": "fujinet-lib",
+   "subject": "fuji_hash_data / fuji_hash_calculate",
+   "text": "Hex output has no NUL: the buffer needs fuji_hash_size() + 1.",
+   "cite": "fujinet-lib/common/fuji_hash.c:28"
+  },
+  {
+   "id": "L18",
+   "area": "fujinet-lib",
+   "subject": "network_json_strip_newlines",
+   "text": "Writes buffer[buflen], one past the data.",
+   "cite": "fujinet-lib/common/network_json.c:17"
+  },
+  {
+   "id": "L19",
+   "area": "fujinet-lib",
+   "subject": "qrcode_create",
+   "text": "Returns negative NETWORK_ERROR codes (-162, -215), not FN_ERR values.",
+   "cite": "fujinet-lib/common/qrcode_create.c:12-27"
+  },
+  {
+   "id": "N90",
+   "area": "Network channels (71H-78H)",
+   "subject": "NET_QUERY (ASCII flag)",
+   "text": "With query flag 10H (ASCII output) a JSON string's LF line ending is turned into a space, which network_json_query() does not strip: \"FujiNet \" comes back for \"FujiNet\". Numbers are not affected.",
+   "cite": "fn-h89/lib/fnjson/fnjson.cpp:228, fn-h89/lib/fntext/fn_sanitize.cpp:658-660"
+  },
+  {
+   "id": "N91",
+   "area": "Network channels (71H-78H)",
+   "subject": "NET_READ on HTTP (correction)",
+   "text": "A READ larger than what is buffered returns what is there (FS.cpp caps the request to available()); it NAKs only when nothing is available.",
+   "cite": "fn-h89/lib/network-protocol/FS.cpp:294-297"
+  },
+  {
+   "id": "N92",
+   "area": "Network channels (71H-78H)",
+   "subject": "NET_GET_REMOTE",
+   "text": "Overwrites a buffered datagram (the next READ returned '127.'); before any datagram it answers 255.255.255.255:0.",
+   "cite": "observed on fujinet-pc; fn-h89/lib/device/NDevice/NDevice.cpp:834-835"
+  },
+  {
+   "id": "L20",
+   "area": "fujinet-lib",
+   "subject": "port_getbuf_slip_dual",
+   "text": "Does not read the closing END of a reply that fills its buffer exactly, which includes every bare ACK and NAK; the next read starts with a stray C0H. Harmless for fujinet-lib's own calls (they resynchronise on END), but a program mixing in raw reads (the modem) must drop it first.",
+   "cite": "fujinet-lib/bus/h89/port_slip.c"
+  },
+  {
+   "id": "M90",
+   "area": "Modem (50H)",
+   "subject": "ATDT / ATA",
+   "text": "After ATDT the far end's first data reaches the H89 before CONNECT (about a second ahead); after ATA a bare CR LF comes first, then the caller's data, then CONNECT.",
+   "cite": "observed on fujinet-pc; fn-h89/lib/device/rs232/modem.cpp:1039-1040"
+  },
+  {
+   "id": "M91",
+   "area": "Modem (50H)",
+   "subject": "bare AT commands",
+   "text": "AT commands sent as bytes outside a frame are acted on about 500 ms after the last byte (the BoIP channel's read timeout on fujinet-pc).",
+   "cite": "observed on fujinet-pc"
+  },
+  {
+   "id": "R90",
+   "area": "Printer (40H)",
+   "subject": "output",
+   "text": "fujinet-pc writes the printer's output to the file paper in its SD directory.",
+   "cite": "fn-h89/lib/printer-emulator/printer_emulator.cpp:7, 83-89"
+  },
+  {
+   "id": "Z5",
+   "area": "z88dk (HDOS)",
+   "subject": "unsigned long %",
+   "text": "In ISS.C, t % 60UL (and % 60, (t / 60UL) % 60UL, (t / 3600UL) % 24UL) gave wrong results for t = 1760270400: the seconds came out 36, which is the remainder of t's low 16 bits. Division of the same long was right. The book subtracts whole days and works in 16 bits instead. Seen under HDOS with sccz80's default options; not narrowed down further.",
+   "cite": "observed: build/runs/iss-c-hdos (before the fix); src/c/iss/iss.c print_stamp()"
+  },
+  {
+   "id": "F90",
+   "area": "FujiNet device (70H)",
+   "subject": "FUJI_SET_DEVICE_FULLPATH (emptying a slot)",
+   "text": "An empty path sets the slot's host slot to FFH but leaves the old path, which FUJI_GET_DEVICE_FULLPATH still returns: the slot is not emptied. And a request that itself gives host slot FFH (what FUJI_READ_DEVICE_SLOTS reports for an empty slot) is refused with NAK, even with an empty path. Only FUJI_UNMOUNT_IMAGE empties a slot.",
+   "cite": "fn-h89/lib/device/fujiDevice/fujiDevice.cpp:1311-1324, fn-h89/lib/fuji/fujiDisk.cpp:3-12; observed: build/runs/libtest-fujidev-cpm, libtestfix-fujidev-hdos"
+  },
+  {
+   "id": "F91",
+   "area": "FujiNet device (70H)",
+   "subject": "FUJI_COPY_FILE (time)",
+   "text": "The ACK comes only when the copy is finished. A 161,280-byte image from tnfs.fujinet.online took from 14.4 to 18.2 s in six runs, four of them more than the 15 s that fujinet-lib and the book's library wait for a reply (see L21).",
+   "cite": "observed: build/runs/libtest{,fix,slow}-disk-{hdos,cpm}/tap.jsonl"
+  },
+  {
+   "id": "L21",
+   "area": "fujinet-lib",
+   "subject": "reply timeout",
+   "text": "fuji_bus_call() waits a fixed 15 s (TIMEOUT_SLOW) for a reply and has no way to drop a reply that arrives later. When FUJI_COPY_FILE took longer, fuji_copy_file() returned false and the late ACK was taken as the reply to the next request (a STATUS), after which every reply was one behind and the test program reported the FujiNet BROKEN. With TIMEOUT_SLOW at 60 s the copy test passed. Proposed: a longer timeout for slow commands, and a drain before each request.",
+   "cite": "fujinet-lib/bus/h89/fuji_bus_call.c:14; observed: build/runs/libtest-disk-hdos/tap.jsonl"
+  },
+  {
+   "id": "T1",
+   "area": "fujinet-lib's test programs",
+   "subject": "network: line ending",
+   "text": "BASIC_LINE_ENDING is \"\\n\" for the H89, but the FujiNet's line ending on this bus is CR LF. The echo test opens with OPEN_TRANS_LF, so its LF comes back as CR LF, and the test, reading only as many bytes as it sent, compares CR with LF and stops: only 5 of the network program's 82 tests run. Fix: give the H89 \"\\r\\n\", as __WATCOMC__ has; then all 82 pass under both systems.",
+   "cite": "fujinet-lib/testing/tests/network.c:16-25, 485"
+  },
+  {
+   "id": "T2",
+   "area": "fujinet-lib's test programs",
+   "subject": "disk: directory entry offset",
+   "text": "DIRENTRY_FILENAME_OFFSET is 13 for the H89, but on this bus a FUJI_READ_DIR_ENTRY header is 12 bytes (as for MS-DOS), so the name is compared from its second letter and the copied lobby.dsk is never found. Fixed (the H89 given 12, as MS-DOS has) and with TIMEOUT_SLOW raised (L21), the disk test passes under both systems.",
+   "cite": "fujinet-lib/testing/tests/constants.h:60-66; fdsk.c:197"
+  },
+  {
+   "id": "T3",
+   "area": "fujinet-lib's test programs",
+   "subject": "fujidev: restoring a slot",
+   "text": "The test puts back an empty drive slot with FUJI_SET_DEVICE_FULLPATH, an empty path and the host slot FFH it read. The firmware refuses FFH, and even with 0 it leaves the test's name in the slot (F90), so the read-back fails and drive slot 0 is left named /test_filename. Fix: put back an empty slot with fuji_unmount_disk_image(). Fixed so, all 88 of the fujidev program's tests pass under both systems.",
+   "cite": "fujinet-lib/testing/tests/fuji.c:250"
+  },
+  {
+   "id": "P3",
+   "area": "fujinet-pc (the book's stand-in for the card)",
+   "subject": "shutdown with a TCP channel open",
+   "text": "fujinet-pc crashed (segmentation fault) while shutting down, in NetworkProtocolTCP's destructor, each time it was stopped with a TCP channel still open: a connection, after fujinet-lib's network test had stopped early, and a listening channel, after the corrected test had finished. Only at shutdown; the card never shuts down this way.",
+   "cite": "observed: build/runs/libtest-network-{hdos,cpm}/fujinet.log, libtestfix-network-hdos/fujinet.log"
+  }
+ ]
+}

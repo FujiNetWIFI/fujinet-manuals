@@ -1,0 +1,70 @@
+{
+ "tests": [
+  {
+   "name": "FUJIDEV",
+   "hdos": "23 of 24",
+   "cpm": "23 of 24",
+   "note": "The FujiNet device: adapter, host and drive slots, prefixes, directories, WiFi (fujinet-pc's stand-in, P2), GUIDs, base64, hashes. Stops at T3. Corrected: all 88 under both."
+  },
+  {
+   "name": "DEVLIST",
+   "hdos": "all 12",
+   "cpm": "all 12",
+   "note": "Which devices answer."
+  },
+  {
+   "name": "APPKEY",
+   "hdos": "all 18",
+   "cpm": "all 18",
+   "note": "Application keys."
+  },
+  {
+   "name": "CLOCK",
+   "hdos": "all 48",
+   "cpm": "all 48",
+   "note": "Every time format, and time zones."
+  },
+  {
+   "name": "DISK",
+   "hdos": "6 of 7",
+   "cpm": "8 of 9",
+   "note": "FUJI_COPY_FILE, TNFS to SD. HDOS: the copy outlasted the timeout (L21). CP/M: stops at T2. Corrected, with a 60-second timeout: all 10 under both."
+  },
+  {
+   "name": "NETWORK",
+   "hdos": "4 of 5",
+   "cpm": "4 of 5",
+   "note": "HTTP methods, headers, JSON, TCP echo, several channels. Stops at T1. Corrected: all 82 under both."
+  },
+  {
+   "name": "NETFILE",
+   "hdos": "all 62",
+   "cpm": "all 62",
+   "note": "File system commands, TNFS and FTP."
+  },
+  {
+   "name": "NET5PLUS",
+   "hdos": "all 49",
+   "cpm": "all 49",
+   "note": "ACCEPT, SEEK and TELL, translation, log-in, UDP, channel modes."
+  },
+  {
+   "name": "HTML",
+   "hdos": "all 14",
+   "cpm": "all 14",
+   "note": "The HTML parser."
+  },
+  {
+   "name": "PARSERR",
+   "hdos": "all 57",
+   "cpm": "all 57",
+   "note": "The parsers' error codes."
+  },
+  {
+   "name": "QRCODE",
+   "hdos": "all 20",
+   "cpm": "all 20",
+   "note": "QR codes."
+  }
+ ]
+}

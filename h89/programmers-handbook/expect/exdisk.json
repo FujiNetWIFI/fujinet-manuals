@@ -1,0 +1,23 @@
+{
+ "disk.setup.mount_host": {"reply": "ACK", "len": 0, "note": "FUJI_MOUNT_HOST host slot 0 (SD): set-up, not a drive command"},
+ "disk.setup.set_path": {"reply": "ACK", "len": 0, "note": "FUJI_SET_DEVICE_FULLPATH slot 0, host 0, mode 2, \"/test/disk.img\". asm sends the 14-byte path; C's fuji_set_device_filename() sends a 256-byte zero-padded buffer (MAX_FILENAME_LEN)"},
+ "disk.setup.mount": {"reply": "ACK", "len": 0, "note": "FUJI_MOUNT_IMAGE slot 0, mode 2: drive 31H now holds the image (IMG type, by extension)"},
+ "disk.read": {"reply": "ACK", "len": 512, "note": "sector 3 (0-based, diskTypeImg.cpp:17-20) = 512 x 03H. Sector field sent as a u32 (F_C1234), as fujinet-lib's DEVCALL_C1234_RV would"},
+ "disk.write": {"reply": "ACK", "len": 0, "note": "512 x E5H to sector 5; host check: build/runs/<run>/SD/test/disk.img sector 5 is all E5H"},
+ "disk.read.back": {"reply": "ACK", "len": 512, "note": "sector 5 read back: 512 x E5H"},
+ "disk.put": {"reply": "ACK", "len": 0, "trap": "PUT = WRITE; the verify flag is ignored by every media type (disk.cpp:392; diskTypeImg.cpp:63-105)", "note": "host check: sector 6 is all E5H"},
+ "disk.write.past_end": {"reply": "NAK", "tag": "NAK", "note": "sector 16 of a 16-sector image: NAK (diskTypeImg.cpp:69-73, fixed in 7ab84ae64); host check: disk.img still 8192 bytes"},
+ "disk.read.past_end": {"reply": "NAK", "tag": "NAK", "note": "sector >= size/512 (diskTypeImg.cpp:31-35)"},
+ "disk.status": {"reply": "ACK", "len": 4, "note": "00 FF E0 00", "trap": "IMG never reports double density: _disk_sector_size stays 128 (diskType.h:57; diskTypeImg.cpp:157-166)"},
+ "disk.format": {"reply": "ACK", "len": 128, "note": "FF FF + 126 x 00", "trap": "FORMAT does not format: IMG just ACKs, the file is not touched (diskTypeImg.cpp:130-142); reply length is _disk_sector_size = 128, not 512 (diskTypeImg.cpp:139)"},
+ "disk.read.after_format": {"reply": "ACK", "len": 512, "note": "sector 3 still 512 x 03H after FORMAT"},
+ "disk.format_medium": {"reply": "ACK", "len": 128, "trap": "alias of DISK_FORMAT (disk.cpp:398-401)"},
+ "disk.percom_read": {"reply": "ACK", "len": 12, "note": "all 00", "trap": "IMG: derive_percom_block is empty (diskType.cpp:39-42)"},
+ "disk.percom_write": {"reply": "ACK", "len": 0, "note": "50 01 00 09 01 04 02 00 FF 00 00 00 (80 tracks, step 1, 9 spt BE, DS, MFM, 512 BE, present); only the in-RAM block changes"},
+ "disk.percom_read.back": {"reply": "ACK", "len": 12, "note": "the block just written comes back unchanged"},
+ "disk.status.percom": {"reply": "ACK", "len": 4, "note": "40 FF E0 00: the PERCOM block's num_sides=1 sets 40H (diskTypeImg.cpp:114-118)"},
+ "disk.read.empty": {"reply": "NAK", "tag": "NAK", "note": "drive 32H, never mounted: device_active false (disk.cpp:125-130)"},
+ "disk.setup.unmount": {"reply": "ACK", "len": 0, "note": "FUJI_UNMOUNT_IMAGE slot 0"},
+ "disk.read.unmounted": {"reply": "NAK", "tag": "NAK", "note": "drive 31H after unmount (disk.cpp:125-130)"},
+ "disk.status.unmounted": {"reply": "ACK", "len": 4, "note": "40 FF E0 00", "trap": "after unmount the stale media object still answers STATUS, PERCOM bits and all (disk.cpp:206-217, 355-365)"}
+}

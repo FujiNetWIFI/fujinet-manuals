@@ -1,0 +1,28 @@
+{
+ "order": [
+  "fujidev",
+  "devlist",
+  "appkey",
+  "clock",
+  "disk",
+  "network",
+  "netfile",
+  "net5plus",
+  "html",
+  "parserr",
+  "qrcode"
+ ],
+ "notes": {
+  "fujidev": "The FujiNet device: adapter, host and drive slots, prefixes, directories, WiFi (fujinet-pc's stand-in, P2), GUIDs, base64, hashes. Stops at T3. Corrected: {fix}.",
+  "devlist": "Which devices answer.",
+  "appkey": "Application keys.",
+  "clock": "Every time format, and time zones.",
+  "disk": "FUJI_COPY_FILE, TNFS to SD. HDOS: the copy outlasted the timeout (L21). CP/M: stops at T2. Corrected, with a 60-second timeout: {slow}.",
+  "network": "HTTP methods, headers, JSON, TCP echo, several channels. Stops at T1. Corrected: {fix}.",
+  "netfile": "File system commands, TNFS and FTP.",
+  "net5plus": "ACCEPT, SEEK and TELL, translation, log-in, UDP, channel modes.",
+  "html": "The HTML parser.",
+  "parserr": "The parsers' error codes.",
+  "qrcode": "QR codes."
+ }
+}

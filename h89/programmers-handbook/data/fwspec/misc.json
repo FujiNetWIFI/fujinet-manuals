@@ -1,0 +1,550 @@
+{
+  "meta": {
+    "firmware": "fn-h89 branch h89-disk-fixes HEAD 7ab84ae64 (BUILD_RS232, -DPINMAP_H89)",
+    "fujinet_lib": "fujinet-lib branch h89-keep-esp32-running 9e6d4dd",
+    "command_names": "fncmd.inc (h89/programmers-handbook/src/asm/inc/fncmd.inc)",
+    "scope": "bus level + disk, clock, printer, modem, cpm devices. Fuji (0x70) and network (0x71-0x78) command sets are out of scope here."
+  },
+  "bus": {
+    "framing": [
+      "SLIP constants: SLIP_END=0xC0, SLIP_ESCAPE=0xDB, SLIP_ESC_END=0xDC, SLIP_ESC_ESC=0xDD (fn-h89/lib/bus/rs232/FujiBusPacket.h:16-21)",
+      "Encoder (firmware replies): exactly one 0xC0, then the packet with 0xC0 -> DB DC and 0xDB -> DB DD, then one 0xC0 (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:97-124)",
+      "Receive: the service loop reads bytes until it sees 0xC0 or a read timeout; every non-0xC0 byte read before that is handed to the modem as raw data (rs232Modem::tx), even when the modem is disabled in config (fn-h89/lib/bus/rs232/rs232.cpp:99-109)",
+      "On 0xC0 the bus collects bytes until a second 0xC0 has been read; that span is the frame (fn-h89/lib/bus/rs232/rs232.cpp:337-366). A frame must therefore be exactly C0 <body> C0: a doubled leading C0 (C0 C0 <body> C0) produces an empty 2-byte frame that is rejected silently, the body bytes are then read as raw modem data, and the trailing C0 opens a bogus frame (derived from rs232.cpp:99-116 + 337-359 and FujiBusPacket.cpp:150-151)",
+      "Decoder starts at the first 0xC0 in the buffer, stops at the next 0xC0; a malformed escape (DB followed by anything but DC/DD) drops both bytes; a truncated escape ends decoding (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:55-95)",
+      "Header (6 bytes, little-endian length on both ESP32 and x86): device u8, command u8, length u16 = total unescaped packet length incl. header, checksum u8, first descriptor u8 (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:17-26)",
+      "Frame rejected if: encoded span < 8 bytes or does not start and end with 0xC0 (FujiBusPacket.cpp:150-153); decoded < 6 bytes (157-158); header length != decoded length (164-165); checksum mismatch (170-176); descriptor chain or fields run past the end (193-194, 212-213)",
+      "No maximum frame size on the firmware side (ByteBuffer grows); the u16 length field caps a valid packet at 65535 bytes (FujiBusPacket.cpp:164, 283)",
+      "Bytes after the fields are the payload (data); a frame with no trailing bytes has no payload at all (data() is empty optional) (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:221-226)"
+    ],
+    "checksum": {
+      "code": "std::uint8_t FujiBusPacket::calcChecksum(const ByteBuffer& buf) const\n{\n    std::uint16_t chk = 0;\n\n    for (std::size_t i = 0; i < buf.size(); ++i)\n    {\n        chk += buf[i];\n        chk = (chk >> 8) + (chk & 0xFF); // fold carry\n    }\n\n    return static_cast<std::uint8_t>(chk);\n}",
+      "cite": "fn-h89/lib/bus/rs232/FujiBusPacket.cpp:126-137",
+      "coverage": "Computed over the whole unescaped packet (header + descriptors + fields + payload) with the checksum byte set to 0 (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:166-176 receive, 284-287 send). An identical end-around-carry helper rs232_checksum exists at fn-h89/lib/bus/rs232/rs232.cpp:36-44. fujinet-lib computes the same sum in two passes with a seed (fujinet-lib/bus/h89/fuji_bus_call.c:56-65, 88-91)."
+    },
+    "descriptors": [
+      "Low 3 bits of a descriptor index two tables: fieldSize {0,1,1,1,1,2,2,4} and numFields {0,1,2,3,4,1,2,1}; i.e. 0=no fields, 1..4 = that many u8 fields, 5 = one u16, 6 = two u16, 7 = one u32 (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:28-35)",
+      "Bit 7 (0x80) = another descriptor byte follows. The first descriptor is header byte 5; extra descriptor bytes come immediately after the header, before any field bytes (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:186-198)",
+      "Fields for all descriptors follow in order, each little-endian (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:200-219, read_le 46-52)",
+      "Bits 3-6 of a descriptor are ignored by the parser (mask 0x07) (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:203). fujinet-lib's H89 fuji_bus_call puts its raw 'fields' argument in the header, so FUJI_FIELD_DATA (0x08) and FUJI_FIELD_REPLY (0x10) appear on the wire in bits 3/4 and are ignored (fujinet-lib/bus/h89/fuji_bus_call.c:201; fujinet-lib/include/fujinet-bus-ezcall.h:7-18)",
+      "Serializer (firmware->host packets) groups consecutive same-size params, at most 4 bytes per descriptor (fn-h89/lib/bus/rs232/FujiBusPacket.cpp:243-279). Firmware replies never carry params, so reply descriptor is always 0 (rs232.cpp:396)"
+    ],
+    "params": [
+      "param(n) returns _params.at(n).value as uint32 regardless of the field's wire size (fn-h89/lib/bus/rs232/FujiBusPacket.h:75-77); devices never check the field width, so a u8, u16 or u32 field all work where a number is expected",
+      "paramCount() counts fields across all descriptors (fn-h89/lib/bus/rs232/FujiBusPacket.h:79-81)",
+      "A missing field makes .at() throw std::out_of_range. ESP32 H89 build has C++ exceptions off (fn-h89/sdkconfig.fujinet-heathkit-h89:422) so it aborts (reboot); fujinet-pc terminates on the uncaught exception. Guarded: disk R/P/W (disk.cpp:385-388), disk STATUS (395-396), clock alt flag (rs232Clock.h:14-17), printer STATUS (printer.cpp:241). Unguarded: modem SET_DUMP, LISTEN, BAUDRATELOCK (2 fields), AUTOANSWER, STATUS (modem.cpp:1632, 1635, 1641, 1644, 1648)",
+      "transaction_get copies min(requested, payload remaining); it fails only if the frame has no payload at all, and succeeds without looking when 0 bytes are requested (fn-h89/lib/bus/rs232/rs232.cpp:66-82). A short payload is therefore accepted (device buffer keeps its prior/zeroed contents), extra payload bytes are ignored"
+    ],
+    "replies": [
+      "Reply = one packet from the addressed device: header device = the replying device's ID, command = FUJI_ACK 0x06 or FUJI_NAK 0x15, descriptor 0, then data (fn-h89/lib/bus/rs232/rs232.cpp:379-399)",
+      "Data is attached only when ack is true; a NAK never carries data, even when the handler supplied some (rs232.cpp:390-394)",
+      "transaction_success -> ACK, no data; transaction_error -> NAK; transaction_send(data,len,is_error) -> ACK+data or bare NAK (fn-h89/lib/bus/rs232/rs232.cpp:53-64, 84-89)",
+      "EXCEPTION: anything 'sent' by the modem device (0x50) bypasses framing: data is written raw to the port and ACK/NAK with no data writes nothing at all (fn-h89/lib/bus/rs232/rs232.cpp:381-386)",
+      "Exactly one reply per accepted frame except: bad frame (silence), printer disabled (silence, printer.cpp:226-229), modem disabled (silence, modem.cpp:1612-1615), modem ACK/NAK (no bytes), and ROM mount pushes (extra unsolicited frames to device 0xFF before the Fuji reply, disk.cpp:28-110)",
+      "transaction_success asserts the state is NO_GET/DID_GET (rs232.cpp:55); assertions are enabled on the ESP32 H89 build (sdkconfig.fujinet-heathkit-h89:414), so a success after an error aborts (see modem LISTEN 0)"
+    ],
+    "errors": [
+      "Bad checksum, bad length, short/garbled frame: readBusPacket returns nullptr, 'packet fail' is logged and NOTHING is sent (fn-h89/lib/bus/rs232/rs232.cpp:111-116)",
+      "Read timeout inside a frame (gap longer than the channel read timeout): frame is incomplete, parse fails, silence (rs232.cpp:355-359, 365). The bytes that arrive after the gap are then read as raw modem data until the next C0 (rs232.cpp:99-107)",
+      "Unregistered device ID: _activeDev is nullptr, transaction_error() -> sendReplyPacket(_activeDev->id(), false) -> fujiIDForDevice(nullptr) -> value_or(0), so the NAK header carries device 0x00 (fn-h89/lib/bus/rs232/rs232.cpp:126-133, 60-64, 401-404; fn-h89/lib/bus/bus.h:50-52). Calls a member on nullptr (works because id() is non-virtual)",
+      "The bus does not consult device_active / enable state before dispatch (rs232.cpp:126-128); each device decides",
+      "No RESEND/retry command or retransmission exists anywhere in lib/bus/rs232 or PPIChannel (grep: none)",
+      "fujinet-lib accepts a reply only if rlen >= 6, rlen == header.length, checksum matches, device == request device and command == 0x06; any NAK, device-00 NAK or timeout returns false (fujinet-lib/bus/h89/fuji_bus_call.c:108-164)"
+    ],
+    "timeouts": [
+      "ESP32 H89 (PPIChannel): inter-byte receive timeout = IOCHANNEL_DEFAULT_TIMEOUT 100 ms; PPIChannel::begin() never changes read_timeout_ms (fn-h89/lib/hardware/IOChannel.h:4, 40; fn-h89/lib/hardware/PPIChannel.cpp:32-66). The timer restarts on every byte received (fn-h89/lib/hardware/IOChannel.cpp:24-38)",
+      "ESP32 H89 transmit: per byte, waits for IBF low with DIR=ESP32->H89 and /OE low; gives up after 1 s (PPI_TX_TIMEOUT_US 1000000) and returns the count sent so far; busy-polls 2 ms then yields with vTaskDelay(1) (fn-h89/lib/hardware/PPIChannel.cpp:14-15, 157-176). Also aborts immediately if /OBF goes low (host started sending) - 'reply cut short' (162-166). /STB held until IBF rises or 100 us (16, 179-188)",
+      "fujinet-pc: TTYChannel opened with readTimeout(200) ms (fn-h89/lib/bus/rs232/rs232.cpp:229-241; UARTChannel=TTYChannel on Unix fn-h89/lib/hardware/UARTChannel.h:8-9); BoIP channel keeps its 500 ms default (fn-h89/lib/hardware/BoIPChannel.h:8, 27; rs232.cpp:216-224)",
+      "fujinet-lib H89: reply wait TIMEOUT_SLOW = 15*PORT_TICKS_PER_SECOND = 7500 ticks of 2 ms = 15 s, applied per byte (resets on each byte) (fujinet-lib/bus/h89/fuji_bus_call.c:14, 106-107; fujinet-lib/bus/h89/portio.h:4; fujinet-lib/bus/h89/portio.c:122-138). Tick counter TIKCNT 0x000B under CP/M, 0x201B under HDOS (portio.c:52-57)",
+      "fujinet-lib H89 port_putc has NO timeout: two unbounded busy-waits on /OBF (fujinet-lib/bus/h89/portio.c:140-153). If the ESP32 is not taking bytes the H89 hangs"
+    ],
+    "ppi_channel": [
+      "Selected when ESP_PLATFORM && PIN_PPI_OBF: FUJINET_OVER_PPI, _serial is a PPIChannel (fn-h89/lib/bus/rs232/rs232.h:23-25, 134-135); PINMAP_H89 defines the pins (fn-h89/include/pinmap/heathkit_h89.h:29-43). fujinet-pc never builds PPIChannel (pinmap only included under ESP_PLATFORM, fn-h89/lib/hardware/PPIChannel.h:4-8) and uses TTY or BoIP",
+      "Hardware: 82C55 in Mode 2 at H89 port 0xD0, port A through a 74LVC245 to ESP32 D0-D7 = GPIO 32,33,25,26,27,14,12,13; ESP32 outputs /STB (GPIO4 -> PC4) and /ACK (GPIO15 -> PC6); inputs IBF (GPIO34 <- PC5), /OBF (GPIO35 <- PC7), 245 DIR (GPIO2 <- PC0, 1 = H89->ESP32), 245 /OE (GPIO0 <- PC1) (fn-h89/include/pinmap/heathkit_h89.h:4-7, 29-43)",
+      "H89->ESP32: while /OBF is low the ESP32 checks DIR=1 and /OE=0 (else warns and leaves the byte latched), then in a critical section pulls /ACK low, waits 1 us, samples D0-D7, raises /ACK, and appends the byte to the FIFO (fn-h89/lib/hardware/PPIChannel.cpp:124-146)",
+      "ESP32->H89: per byte wait for IBF=0, DIR=0, /OE=0; drive D0-D7, pulse /STB low until IBF rises (max 100 us), release the data lines (fn-h89/lib/hardware/PPIChannel.cpp:148-194). Data pins are only driven during a strobe (76-80, 82-96)",
+      "No baud rate (getBaudrate 0, setBaudrate no-op) and no modem-control lines: getDTR/getRTS true, setRI/setDSR/setCTS/setDCD no-ops (fn-h89/lib/hardware/PPIChannel.h:38-49). So the network 'data pending' interrupt that rs232.cpp drives with setRI (rs232.cpp:186-187) never reaches the H89",
+      "Input flush at bus setup is skipped for the PPI (the 8255 holds a request sent during boot) (fn-h89/lib/bus/rs232/rs232.cpp:266-271)",
+      "H89 side (fujinet-lib): port C bit map PC0 DIR, PC1 /OE, PC2 ESP32 EN, PC3 INTR, PC4 /STB, PC5 IBF, PC6 /ACK, PC7 /OBF (fujinet-lib/bus/h89/portio.c:15-22). port_init sets Mode 2 (0xC0) and pulses EN to reset the ESP32, then waits 200 ms, but only if EN is not already high (portio.c:91-107). port_putc sets DIR=1, waits /OBF high, OUTs port A, waits /OBF high again, sets DIR=0 (140-153). port_getc reads port A when IBF is set (109-120)"
+    ],
+    "registered_devices": [
+      {"id": "0x70", "name": "DEV_FUJINET", "class": "rs232Fuji (theFuji)", "cite": "fn-h89/src/main.cpp:349"},
+      {"id": "0x31-0x38", "name": "DEV_DISK .. DEV_DISK+7", "class": "rs232Disk (_fnDisks[i].disk_dev), MAX_DISK_DEVICES = MAX_MOUNT_SLOTS = 8", "cite": "fn-h89/lib/device/rs232/rs232Fuji.cpp:55-57; fn-h89/lib/device/fujiDevice/fujiDevice.h:20; fn-h89/lib/config/fnConfig.h:14"},
+      {"id": "0x71-0x78", "name": "DEV_NETWORK .. DEV_NETWORK_LAST", "class": "rs232Network rs232NetDevs[8]", "cite": "fn-h89/lib/device/rs232/rs232Fuji.cpp:59-61; fn-h89/lib/device/fujiDevice/fujiDevice.h:21"},
+      {"id": "0x45", "name": "DEV_CLOCK", "class": "rs232Clock platformClock", "cite": "fn-h89/src/main.cpp:350"},
+      {"id": "0x40", "name": "DEV_PRINTER", "class": "rs232Printer (new, type from config, default PRINTER_FILE_TRIM)", "cite": "fn-h89/src/main.cpp:353-362"},
+      {"id": "0x50", "name": "DEV_SERIAL", "class": "rs232Modem (new)", "cite": "fn-h89/src/main.cpp:364-365"},
+      {"id": "0x5A", "name": "DEV_CPM", "class": "NOT registered: rs232CPM sioZ is instantiated (fn-h89/lib/device/device.h:49) but never passed to addDevice in the BUILD_RS232 block", "cite": "fn-h89/src/main.cpp:346-366"},
+      {"id": "all others (0x39-0x3F, 0x41-0x44, 0x46-0x4F, 0x51-0x59, 0x5B-0x6F, 0x79+, 0x99 MIDI, 0x6F PCLINK, 0xFF)", "name": "-", "class": "unregistered -> NAK with device 0x00", "cite": "fn-h89/lib/bus/rs232/rs232.cpp:126-133"}
+    ],
+    "boot_disk": "With PINMAP_H89 defined (ESP32 and fujinet-pc builds alike) the MS-DOS autorun boot image is NOT inserted into drive 0x31 (fn-h89/lib/device/rs232/rs232Fuji.cpp:38-43)",
+    "service_loop": "Each pass: if CP/M active hand the port to it; else if input is available process one frame; else (modem enabled in config, default true fn-h89/lib/config/fnConfig.h:534) run the modem, which may write raw bytes; then poll network interrupts (fn-h89/lib/bus/rs232/rs232.cpp:145-203)"
+  },
+  "devices": [
+    {
+      "device": "disk",
+      "dev_ids": ["0x31", "0x32", "0x33", "0x34", "0x35", "0x36", "0x37", "0x38"],
+      "dispatch": ["fn-h89/lib/device/rs232/disk.cpp:376-413"],
+      "commands": [
+        {
+          "name": "DISK_READ", "value": "0x52", "handler": "fn-h89/lib/device/rs232/disk.cpp:119-138",
+          "fields": [{"index": 0, "size": "1, 2 or 4 (any; read as uint32)", "name": "sector", "meaning": "0-based sector number; byte offset = sector*512 on IMG (fn-h89/lib/media/rs232/diskTypeImg.cpp:17-20), IMD LBA = sector (fn-h89/lib/media/rs232/diskTypeIMD.cpp:12-18)", "if_missing": "NAK (paramCount check, disk.cpp:385-388)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "IMG: 512; IMD: that sector's native size (128..512); ROM: never succeeds",
+            "layout": ["sector data"],
+            "naks_when": ["no image ever mounted or unmounted (device_active false) (disk.cpp:125-130)", "IMG: sector >= image_size/512 or file handle closed (diskTypeImg.cpp:31-35)", "IMG: seek/short read error (diskTypeImg.cpp:41-59)", "IMD: sector >= LBA count or record unreadable (diskTypeIMD.cpp:153-171)", "ROM media: always (fn-h89/lib/media/rs232/diskTypeROM.cpp:31-35)"]},
+          "side_effects": "IMD: sets controller status bits (CRC error 0x08, deleted 0x20, missing 0x10) visible in the next DISK_STATUS byte 1 (diskTypeIMD.cpp:176-183)",
+          "traps": ["Sector numbers are 0-based although diskTypeImg.cpp:16 says '1-based' (diskTypeImg.cpp:17-20)", "A trailing partial 512-byte block of an IMG is unreachable: sector count = size/512 truncated (diskTypeImg.cpp:162)", "An IMD sector with a data error or deleted mark is still returned with ACK; only DISK_STATUS shows it (diskTypeIMD.cpp:173-183)"],
+          "fujinet_lib": [{"symbol": "none (no disk API); use DEVCALL_C1234_RV(0x31+n, DISKCMD_READ, sector, buf, 512)", "where": "fujinet-lib/include/fujinet-bus-ezfixed.h:81-83; fujinet-lib/include/fujinet-commands.h:96", "sends": "descriptor 0x17 (7|REPLY) + u32 LE sector, no payload", "mismatch": "fuji_bus_call returns only true/false: an IMD reply shorter than the buffer still succeeds and the caller cannot learn the length (fujinet-lib/bus/h89/fuji_bus_call.c:108)"}],
+          "pc_vs_esp32": "same code", "notes": ""
+        },
+        {
+          "name": "DISK_WRITE", "value": "0x57", "handler": "fn-h89/lib/device/rs232/disk.cpp:141-164",
+          "fields": [{"index": 0, "size": "any", "name": "sector", "meaning": "0-based sector", "if_missing": "NAK (disk.cpp:385-388)"}],
+          "payload": {"required": true, "len": "IMG: 512; IMD: sector_size(sector)", "format": "sector data; shorter payload is zero-padded (buffer memset to 0 first, disk.cpp:151-153), longer is truncated"},
+          "reply": {"kind": "ack", "len": "0", "layout": [],
+            "naks_when": ["no payload at all (rs232.cpp:74-76)", "no image / unmounted (disk.cpp:147, 163)", "IMG: sector >= size/512 (diskTypeImg.cpp:69-73) - fixed in 7ab84ae64, previously grew the file", "IMG mounted read-only (file opened \"rb\", fwrite short) (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:596-598; diskTypeImg.cpp:92-97)", "IMD mounted read-only, out of range, unavailable sector, or record cannot take the data (diskTypeIMD.cpp:196-227)", "ROM media: always (diskTypeROM.cpp:37-41)"]},
+          "side_effects": "IMG writes 512 bytes at sector*512 and fflush()es (diskTypeImg.cpp:82-104); IMD writes in place and flushes (diskTypeIMD.cpp:220-230)",
+          "traps": ["verify flag (WRITE vs PUT) is ignored by every media type (diskTypeImg.cpp:63-105; diskTypeIMD.cpp:193)", "IMD out-of-range sector: sector_size()=0 -> zero-length get succeeds -> write() NAKs (diskTypeIMD.cpp:245-250; rs232.cpp:71-72)"],
+          "fujinet_lib": [{"symbol": "none; DEVCALL_C1234_D(0x31+n, DISKCMD_WRITE, sector, buf, 512)", "where": "fujinet-lib/include/fujinet-bus-ezfixed.h:77-79; fujinet-lib/include/fujinet-commands.h:94", "sends": "descriptor 0x0F (7|DATA) + u32 LE sector + 512-byte payload", "mismatch": null}],
+          "pc_vs_esp32": "same code", "notes": ""
+        },
+        {
+          "name": "DISK_PUT", "value": "0x50", "handler": "fn-h89/lib/device/rs232/disk.cpp:141-164 (verify=false)",
+          "fields": [{"index": 0, "size": "any", "name": "sector", "meaning": "0-based sector", "if_missing": "NAK"}],
+          "payload": {"required": true, "len": "as DISK_WRITE", "format": "as DISK_WRITE"},
+          "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["as DISK_WRITE"]},
+          "side_effects": "identical to DISK_WRITE", "traps": ["Identical to DISK_WRITE; the only difference (verify=false, disk.cpp:392) is ignored downstream"],
+          "fujinet_lib": [{"symbol": "none; DEVCALL_C1234_D(dev, DISKCMD_PUT, ...)", "where": "fujinet-lib/include/fujinet-commands.h:97", "sends": "as DISK_WRITE", "mismatch": null}],
+          "pc_vs_esp32": "same code", "notes": ""
+        },
+        {
+          "name": "DISK_STATUS", "value": "0x53", "handler": "fn-h89/lib/device/rs232/disk.cpp:167-218",
+          "fields": [{"index": 0, "size": "any", "name": "reqType", "meaning": "ignored (cast to FujiStatusReq, never used)", "if_missing": "fine (defaults to CONNERR, disk.cpp:395-396)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "4",
+            "layout": ["byte0 drive status: 0x80 'enhanced' if PERCOM spt==26 (IMG) / _spt==26 (IMD); 0x40 double-sided if PERCOM num_sides==1 (IMG) / heads>1 (IMD); 0x20 double density if sector size >128 (IMG: never, see traps) / MFM (IMD); 0x08 write-protect (IMD read-only only)", "byte1 = ~controller status (0xFF = clear; IMD clears bits 0x40 WP, 0x20 deleted, 0x10 missing, 0x08 CRC, 0x04 data lost after an error)", "byte2 = 0xE0 (format timeout, constant)", "byte3 = 0x00"],
+            "naks_when": ["never (always ACK)"]},
+          "side_effects": "none",
+          "traps": ["Answers even with nothing mounted: 00 FF E0 00 (disk.cpp:206-217)", "IMG never reports double density: _disk_sector_size stays at its 128 default (diskType.h:57) because MediaTypeImg::mount never sets it (diskTypeImg.cpp:157-166, 111-112). Normal IMG reply: 00 FF E0 00", "ROM media: 00 00 00 00 (diskTypeROM.cpp:48-51)", "After unmount the stale media object still answers (disk.cpp:212-213)", "Was mapped onto WRITE before 7ab84ae64 (commit message); fixed at HEAD (disk.cpp:394-397)"],
+          "fujinet_lib": [{"symbol": "none; DEVCALL_RV(0x31+n, DISKCMD_STATUS, buf, 4)", "where": "fujinet-lib/include/fujinet-bus-ezfixed.h:10-11; fujinet-lib/include/fujinet-commands.h:95", "sends": "descriptor 0x10 (REPLY), no fields", "mismatch": null}],
+          "pc_vs_esp32": "same code", "notes": "Atari 810/XF551 status layout documented in comments disk.cpp:172-200"
+        },
+        {
+          "name": "DISK_FORMAT", "value": "0x21", "handler": "fn-h89/lib/device/rs232/disk.cpp:221-237",
+          "fields": [],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "IMG: 128", "layout": ["IMG: FF FF then 126 x 00 (an empty Atari bad-sector list)"],
+            "naks_when": ["no image ever mounted (_disk == nullptr) (disk.cpp:226-230)", "IMD: always, 'not supported' (diskTypeIMD.cpp:234-243)", "ROM: always (diskTypeROM.cpp:43-46)"]},
+          "side_effects": "NONE on IMG - the image file is not touched (diskTypeImg.cpp:130-142)",
+          "traps": ["FORMAT does not format: IMG just ACKs (diskTypeImg.cpp:130-142)", "Reply length is _disk_sector_size = 128, not 512 (diskTypeImg.cpp:139; diskType.h:57)", "No device_active check: after unmount an IMG drive still ACKs (disk.cpp:226)"],
+          "fujinet_lib": [{"symbol": "none; DEVCALL_RV(dev, DISKCMD_FORMAT, buf, 128)", "where": "fujinet-lib/include/fujinet-commands.h:102", "sends": "no fields", "mismatch": null}],
+          "pc_vs_esp32": "same code", "notes": ""
+        },
+        {
+          "name": "DISK_FORMAT_MEDIUM", "value": "0x22", "handler": "fn-h89/lib/device/rs232/disk.cpp:221-237 (same as DISK_FORMAT, disk.cpp:398-401)",
+          "fields": [], "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "IMG: 128", "layout": ["as DISK_FORMAT"], "naks_when": ["as DISK_FORMAT"]},
+          "side_effects": "none", "traps": ["Alias of DISK_FORMAT"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:101", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same code", "notes": ""
+        },
+        {
+          "name": "DISK_PERCOM_READ", "value": "0x4E", "handler": "fn-h89/lib/device/rs232/disk.cpp:240-255",
+          "fields": [], "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "12",
+            "layout": ["0 num_tracks u8", "1 step_rate u8", "2-3 sectors_per_track u16 BIG-endian", "4 num_sides u8 (0=SS,1=DS)", "5 density u8 (0 FM, 4 MFM)", "6-7 sector_size u16 BIG-endian", "8 drive_present u8", "9-11 reserved"],
+            "naks_when": ["no image ever mounted (disk.cpp:245-249)"]},
+          "side_effects": "none",
+          "traps": ["IMG: all zeros, derive_percom_block is empty (fn-h89/lib/media/rs232/diskType.cpp:39-42) - unless a DISK_PERCOM_WRITE stored something", "IMD: filled at mount: tracks=max cyl+1, step 1, spt=max, sides=heads-1, density, sector_size=largest sector, drive_present 0xFF (diskTypeIMD.cpp:66-77)", "Layout from fn-h89/lib/media/rs232/diskType.h:62-75"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:99", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same code", "notes": ""
+        },
+        {
+          "name": "DISK_PERCOM_WRITE", "value": "0x4F", "handler": "fn-h89/lib/device/rs232/disk.cpp:258-274",
+          "fields": [], "payload": {"required": false, "len": "up to 12 (extra ignored, shorter overwrites only the first bytes)", "format": "PERCOM block as DISK_PERCOM_READ"},
+          "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["no image ever mounted (disk.cpp:263-267)"]},
+          "side_effects": "Overwrites the in-RAM PERCOM block only; geometry and sector size do not change. On IMG it can flip STATUS bits 0x40/0x80 (diskTypeImg.cpp:114-118)",
+          "traps": ["ACKs even with no payload: transaction_get result is ignored (disk.cpp:269-273)"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:98", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same code", "notes": ""
+        }
+      ],
+      "not_dispatched": [
+        "DISK_HSIO_WRITE 0xD7, DISK_HSIO_STATUS 0xD3, DISK_HSIO_READ 0xD2, DISK_HSIO_PUT 0xD0, DISK_HSIO_FORMAT_MEDIUM 0xA2, DISK_HSIO_FORMAT 0xA1, DISK_HSIO_INDEX 0x3F -> default -> NAK (fn-h89/lib/device/rs232/disk.cpp:408-412)",
+        "Any other command byte -> NAK (disk.cpp:408-412)",
+        "Device IDs 0x39-0x3F (DEV_DISK_LAST range) are not registered -> NAK with device 0x00 (rs232.cpp:126-133)"
+      ],
+      "extra": {
+        "image_types": [
+          "Type is chosen by filename extension only (fn-h89/lib/device/rs232/disk.cpp:299-300; fn-h89/lib/media/rs232/diskType.cpp:59-96)",
+          ".IMD (case-insensitive) -> MediaTypeIMD: native geometry, per-sector sizes 128..512, read-only unless the slot is mounted for write; images with sectors > 512 bytes or no sectors are refused (fn-h89/lib/media/IMDImage.cpp:151-157; fn-h89/lib/media/rs232/diskTypeIMD.cpp:79-134; disk.cpp:317-327)",
+          ".ROM .BIN .INT .ITV .CHF .NES .SMS .A78 .A52 .ST2 -> MediaTypeROM: whole file pushed at mount time to DBC device 0xFF as NET_OPEN/NET_WRITE/NET_CLOSE frames sent by the firmware, each awaiting an ACK; R/W/FORMAT always NAK (diskType.cpp:86-93; disk.cpp:28-110, 305-316; diskTypeROM.cpp:31-46)",
+          ".XEX and every other extension (or none) -> MediaTypeImg: flat file of 512-byte sectors, sector n at byte n*512, count = size/512 (diskType.cpp:69-72, 95; disk.cpp:328-334; diskTypeImg.cpp:17-20, 157-166)"
+        ],
+        "sector_size": "Fixed 512 for IMG and the MediaType default (diskType.cpp:19-22); IMD = that sector's real size (diskTypeIMD.cpp:247-250). Sector buffer is 512 bytes (diskType.h:12)",
+        "rom_mount_trap": "On the H89 the ROM push frames (device 0xFF, NET_OPEN 0x4F with 5-byte payload id+u32 size) are written to the H89 while it waits for the MOUNT_IMAGE reply; nothing answers them, readBusPacket gets nothing within the read timeout, the push fails, mount returns MEDIATYPE_UNKNOWN and MOUNT_IMAGE NAKs (disk.cpp:44-51; rs232.h:178-186; rs232.cpp:337-366; fn-h89/lib/device/fujiDevice/fujiDevice.cpp:631). fujinet-lib sees the 0xFF frame first and fails on device mismatch (fujinet-lib/bus/h89/fuji_bus_call.c:149-156); the later NAK frame is left for the next call. Any H89 file named *.BIN is caught by this",
+        "mount_failure": "mount() returning MEDIATYPE_UNKNOWN makes MOUNT_IMAGE NAK (fn-h89/lib/device/fujiDevice/fujiDevice.cpp:625-632)",
+        "unmount": "unmount() closes the file and clears device_active but keeps the media object; READ/WRITE check device_active, STATUS/FORMAT/PERCOM do not (disk.cpp:125-130, 147, 355-365)"
+      }
+    },
+    {
+      "device": "clock",
+      "dev_ids": ["0x45"],
+      "dispatch": ["fn-h89/lib/device/rs232/rs232Clock.h:20 -> fn-h89/lib/device/fujiClock/fujiClock.cpp:240-244, 435-449 (flat bus: read table first, then write table, 406-409)"],
+      "commands": [
+        {
+          "name": "APETIME_GETTIME", "value": "0x93", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:347-349 -> 270-273, 117-130",
+          "fields": [{"index": 0, "size": "any", "name": "alt", "meaning": "== 1 selects the alternate TZ; any other value or absent = system TZ", "if_missing": "system TZ (rs232Clock.h:14-17)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "6", "layout": ["0 day 1-31", "1 month 1-12", "2 year-2000 (tm_year-100)", "3 hour 0-23", "4 minute", "5 second"], "naks_when": []},
+          "side_effects": "none", "traps": ["Year byte is tm_year-100, i.e. two-digit year from 2000 (fujiClock.cpp:124)"],
+          "fujinet_lib": [{"symbol": "clock_get_time(buf, APETIME_BINARY)", "where": "fujinet-lib/common/fuji_clock.c:42-53; fujinet-lib/include/fujinet-clock.h:38, 57-60", "sends": "CLKCALL_A1_RV(0x93, alt?1:0, buf, 6)", "mismatch": "library writes buf[6]=0, so the buffer must be 7 bytes (fuji_clock.c:51)"}],
+          "pc_vs_esp32": "same code; time from std::chrono::system_clock", "notes": ""
+        },
+        {
+          "name": "APETIME_GETTZTIME", "value": "0x9A", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:344-346",
+          "fields": [{"index": 0, "size": "any", "name": "alt", "meaning": "ignored - always uses the alternate TZ", "if_missing": "fine"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "6", "layout": ["as APETIME_GETTIME"], "naks_when": []},
+          "side_effects": "none", "traps": ["With no alternate TZ set it falls back to the system TZ (fujiClock.h:30-33)"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:157", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_SETTZ_ALT2", "value": "0x54", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:350-352 -> 275-278, 73-92",
+          "fields": [{"index": 0, "size": "any", "name": "alt", "meaning": "== 1 alternate TZ", "if_missing": "system TZ"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "7", "layout": ["0 century (tm_year/100+19, i.e. 20)", "1 year mod 100", "2 month 1-12", "3 day", "4 hour", "5 minute", "6 second"], "naks_when": []},
+          "side_effects": "none",
+          "traps": ["Despite the name this is the SIMPLE time GETTER on RS232: the read table claims 0x54 before the write table (fujiClock.cpp:350-352, 385-390, 406-409)"],
+          "fujinet_lib": [{"symbol": "clock_get_time(buf, SIMPLE_BINARY)", "where": "fujinet-lib/include/fujinet-clock.h:33; fujinet-lib/common/fuji_clock.c:42-53", "sends": "CLKCALL_A1_RV(0x54, alt?1:0, buf, 7)", "mismatch": "buffer must be 8 bytes (buf[7]=0, fuji_clock.c:51)"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_GET_SIMPLE_HUNDREDTHS", "value": "0x4D", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:353-355 -> 132-140",
+          "fields": [{"index": 0, "size": "any", "name": "alt", "meaning": "== 1 alternate TZ", "if_missing": "system TZ"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "8", "layout": ["0-6 as SETTZ_ALT2 simple", "7 hundredths 0-99 (ms%1000/10)"], "naks_when": []},
+          "side_effects": "none", "traps": [],
+          "fujinet_lib": [{"symbol": "clock_get_time(buf, SIMPLE_BINARY_WITH_HUNDREDTHS)", "where": "fujinet-lib/include/fujinet-clock.h:43; fuji_clock.c:22", "sends": "CLKCALL_A1_RV(0x4D, alt, buf, 8)", "mismatch": "buffer must be 9 bytes"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_GET_PRODOS", "value": "0x50", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:356-358 -> 94-115",
+          "fields": [{"index": 0, "size": "any", "name": "alt", "meaning": "== 1 alternate TZ", "if_missing": "system TZ"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "4", "layout": ["0 = (month<<5 | day) & 0xFF", "1 = (yy<<1) | (month>>3)  (bytes 0-1 = ProDOS date word, little-endian: yyyyyyym mmmddddd)", "2 minute", "3 hour"], "naks_when": []},
+          "side_effects": "none", "traps": [],
+          "fujinet_lib": [{"symbol": "clock_get_time(buf, PRODOS_BINARY)", "where": "fujinet-lib/include/fujinet-clock.h:34", "sends": "CLKCALL_A1_RV(0x50, alt, buf, 4)", "mismatch": "buffer must be 5 bytes"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_GET_SOS", "value": "0x53", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:359-361 -> 290-293, 142-150",
+          "fields": [{"index": 0, "size": "any", "name": "alt", "meaning": "== 1 alternate TZ", "if_missing": "system TZ"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "19", "layout": ["ASCII \"YYYYMMDD0HHMMSS000\" (18 chars) + NUL"], "naks_when": []},
+          "side_effects": "none", "traps": ["NUL included because rs232Clock does not override string_needs_null() (fujiClock.h:76; fujiClock.cpp:264-268)"],
+          "fujinet_lib": [{"symbol": "clock_get_time(buf, APPLE3_SOS_BINARY)", "where": "fujinet-lib/include/fujinet-clock.h:42", "sends": "CLKCALL_A1_RV(0x53, alt, buf, 19)", "mismatch": "buffer must be 20 bytes"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_GET_ISO_LOCAL", "value": "0x49", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:362-364 -> 295-298, 50-59",
+          "fields": [{"index": 0, "size": "any", "name": "alt", "meaning": "== 1 alternate TZ", "if_missing": "system TZ"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "25", "layout": ["ASCII strftime \"%FT%T%z\" = \"YYYY-MM-DDTHH:MM:SS+HHMM\" (24 chars) + NUL"], "naks_when": []},
+          "side_effects": "none", "traps": [],
+          "fujinet_lib": [{"symbol": "clock_get_time(buf, TZ_ISO_STRING)", "where": "fujinet-lib/include/fujinet-clock.h:40", "sends": "CLKCALL_A1_RV(0x49, alt, buf, 25)", "mismatch": "buffer must be 26 bytes"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_GET_ISO_UTC", "value": "0x5A", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:365-367 -> 300-303",
+          "fields": [{"index": 0, "size": "any", "name": "alt", "meaning": "accepted but ignored (always TZ \"UTC+0\")", "if_missing": "fine"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "25", "layout": ["\"YYYY-MM-DDTHH:MM:SS+0000\" + NUL"], "naks_when": []},
+          "side_effects": "none", "traps": [],
+          "fujinet_lib": [{"symbol": "clock_get_time(buf, UTC_ISO_STRING)", "where": "fujinet-lib/include/fujinet-clock.h:41", "sends": "CLKCALL_A1_RV(0x5A, alt, buf, 25)", "mismatch": "buffer must be 26 bytes"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_GET_GENERAL", "value": "0x47", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:368-370 -> 305-308",
+          "fields": [], "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "strlen(system TZ)+1", "layout": ["system TZ string + NUL; \"UTC\" if the stored TZ is empty or non-printable (fujiClock.cpp:164-168)"], "naks_when": []},
+          "side_effects": "none", "traps": [],
+          "fujinet_lib": [{"symbol": "clock_get_tz(tz)", "where": "fujinet-lib/common/fuji_clock.c:34-40", "sends": "CLKCALL_RV(0x4C,&len,1) then CLKCALL_RV(0x47, tz, len)", "mismatch": "Library adds no NUL itself, but len includes the NUL and the firmware sends it, so tz IS terminated; caller buffer must hold len bytes (unbounded by the API)"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_GETTZ_LEN", "value": "0x4C", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:371-373 -> 310-313",
+          "fields": [], "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "1", "layout": ["strlen(system TZ)+1 (counts the NUL)"], "naks_when": []},
+          "side_effects": "none", "traps": [],
+          "fujinet_lib": [{"symbol": "inside clock_get_tz (platform_clk_get_tz_len)", "where": "fujinet-lib/common/fuji_clock.c:9-10, 38", "sends": "CLKCALL_RV(0x4C, &len, 1)", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_SETTZ", "value": "0x99", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:391-394 -> 197-214, 328-338",
+          "fields": [{"index": "any", "size": "any", "name": "-", "meaning": "ignored", "if_missing": "fine"}],
+          "payload": {"required": true, "len": "1..n", "format": "TZ string; cut at the first NUL (fujiClock.cpp:191-195, 209-210)"},
+          "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["no payload / empty payload (fujiClock.cpp:201-207)"]},
+          "side_effects": "Sets the ALTERNATE timezone in RAM only (not saved) if valid: non-empty and all bytes 0x20-0x7E (fujiClock.cpp:152-162, 328-338)",
+          "traps": ["ACK is sent BEFORE validation (fujiClock.cpp:212); an invalid TZ (e.g. payload starting with NUL, or a control char) is silently ignored but still ACKed", "Any printable string is stored; POSIX validity is not checked"],
+          "fujinet_lib": [{"symbol": "clock_get_time_tz(buf, tz, fmt) (first step)", "where": "fujinet-lib/common/fuji_clock.c:55-63; fujinet-lib/include/fujinet-clock.h:55, 59", "sends": "CLKCALL_B12_D(0x99, strlen(tz), tz, strlen(tz)) = two u8 fields (len lo/hi, ignored) + TZ without NUL", "mismatch": "alternate TZ persists in firmware RAM after the call and affects later alt=1 requests"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "APETIME_SETTZ_ALT", "value": "0x74", "handler": "fn-h89/lib/device/fujiClock/fujiClock.cpp:395-398 -> 197-214, 315-326",
+          "fields": [{"index": "any", "size": "any", "name": "-", "meaning": "ignored", "if_missing": "fine"}],
+          "payload": {"required": true, "len": "1..n", "format": "TZ string, cut at first NUL"},
+          "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["no/empty payload (fujiClock.cpp:201-207)"]},
+          "side_effects": "Sets the SYSTEM timezone and saves the config (Config.store_general_timezone + Config.save()) if valid (fujiClock.cpp:315-326)",
+          "traps": ["ACK before validation, invalid TZ silently dropped (fujiClock.cpp:212, 317-321)", "Persists across reboots (writes config)"],
+          "fujinet_lib": [{"symbol": "clock_set_tz(tz)", "where": "fujinet-lib/common/fuji_clock.c:29-32; fujinet-lib/include/fujinet-clock.h:56, 59", "sends": "CLKCALL_B12_D(0x74, strlen(tz), tz, strlen(tz))", "mismatch": null}],
+          "pc_vs_esp32": "config saved to flash (ESP32) or the fujinet-pc config file", "notes": ""
+        }
+      ],
+      "not_dispatched": [
+        "APETIME_GET_ATARI 0x41 ('A') -> NAK (not in run_read_command; fujiClock.cpp:340-379, reject 180-183)",
+        "APETIME_GET_ISO_UTC_ALT 0x7A, APETIME_GET_SOS_ALT 0x73, APETIME_GET_PRODOS_ALT 0x70, APETIME_GET_ISO_LOCAL_ALT 0x69, APETIME_GET_ATARI_ALT 0x61 -> NAK; rs232Clock does not override fujidev_canonical_command, so lower-case aliases are not mapped (rs232Clock.h:9-21; fujiClock.cpp:429-433)",
+        "APETIME_SETTZ_ALT2 0x54 as a SET is unreachable on RS232 (write-table entry fujiClock.cpp:387-390 shadowed by the read table)",
+        "Any other byte -> NAK (fujiClock.cpp:240-244)"
+      ],
+      "extra": {
+        "alt_tz": "Alt flag honoured only for GETTZTIME (forced), GETTIME, SETTZ_ALT2(simple), HUNDREDTHS, PRODOS, SOS, ISO_LOCAL, ISO_UTC (ignored) (fujiClock.cpp:411-427) and only when paramCount>0 && param(0)==1 compared as uint32 (rs232Clock.h:14-17). Alternate TZ empty -> system TZ (fujiClock.h:30-33)",
+        "tz_source": "System TZ from config general.timezone; invalid/empty -> \"UTC\" (fujiClock.cpp:164-168). Time zone applied with setenv(\"TZ\")+tzset per call (fujiClock.cpp:18-44)",
+        "command_count": "12 handled (10 getters + 2 setters)"
+      }
+    },
+    {
+      "device": "printer",
+      "dev_ids": ["0x40"],
+      "dispatch": ["fn-h89/lib/device/rs232/printer.cpp:224-256"],
+      "commands": [
+        {
+          "name": "PRINTER_WRITE", "value": "0x57", "handler": "fn-h89/lib/device/rs232/printer.cpp:235-239 -> 37-52",
+          "fields": [{"index": "any", "size": "any", "name": "-", "meaning": "ignored", "if_missing": "fine"}],
+          "payload": {"required": true, "len": "1..255 safe; see traps", "format": "raw bytes to the printer emulator"},
+          "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["no or empty payload (printer.cpp:39-43)", "emulator could not open/append the output file (printer.cpp:48-51; fn-h89/lib/printer-emulator/printer_emulator.cpp:70-80)"]},
+          "side_effects": "Bytes go through the selected emulator into file \"/paper\" on the SD card if mounted, else flash (fn-h89/lib/printer-emulator/printer_emulator.cpp:7, 83-89; fn-h89/src/main.cpp:353). Retrieved via the web UI GET /print, which closes the output (fn-h89/lib/http/httpService.cpp:2207 ESP32; fn-h89/lib/http/mgHttpService.cpp:1715 fujinet-pc). The first print after that truncates and restarts the file (printer_emulator.cpp:74-80, 133-146)",
+          "traps": [
+            "Buffer overrun: memcpy(provideBuffer(), data, len) with no bound into uint8_t buffer[320] - payloads > 320 bytes overwrite the emulator object (printer.cpp:46; fn-h89/lib/printer-emulator/printer_emulator.h:41, 72)",
+            "Length truncated to 8 bits: process(uint8_t linelen, ...) gets len mod 256, so 256 bytes print nothing (still ACK) and 300 bytes print the first 44 (printer.cpp:48; printer_emulator.h:68)",
+            "Default type FILE_TRIM writes up to and including the first 0x9B (ATASCII EOL) and drops the rest of the record (fn-h89/lib/printer-emulator/file_printer.cpp:20-27; fn-h89/include/atascii.h:12). setEOL('\\r') does not affect the file printer",
+            "FILE_ASCII drops CR and LF (keeps only 32..122 except 96, after &0x7F) so lines run together on the H89 (file_printer.cpp:28-58)",
+            "Printer disabled in config -> no reply at all (silence), not a NAK (printer.cpp:226-229); default enabled (fn-h89/lib/config/fnConfig.h:487)"
+          ],
+          "fujinet_lib": [{"symbol": "none; DEVCALL_D(0x40, PRINTERCMD_WRITE, data, len)", "where": "fujinet-lib/include/fujinet-bus-ezfixed.h:7-8; fujinet-lib/include/fujinet-commands.h:182", "sends": "descriptor 0x08, payload", "mismatch": null}],
+          "pc_vs_esp32": "ESP32: SD or SPIFFS flash; fujinet-pc: the SD directory (default \"SD\", fn-h89/lib/config/fnConfig.h:30)", "notes": ""
+        },
+        {
+          "name": "PRINTER_PUT", "value": "0x50", "handler": "fn-h89/lib/device/rs232/printer.cpp:234-239 (same as WRITE)",
+          "fields": [], "payload": {"required": true, "len": "as WRITE", "format": "as WRITE"},
+          "reply": {"kind": "ack", "len": "0", "layout": [], "naks_when": ["as WRITE"]},
+          "side_effects": "as WRITE", "traps": ["Alias of PRINTER_WRITE"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:184", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "PRINTER_STATUS", "value": "0x53", "handler": "fn-h89/lib/device/rs232/printer.cpp:240-251 -> 65-101",
+          "fields": [{"index": 0, "size": "any", "name": "reqType", "meaning": "value ignored but the field MUST be present", "if_missing": "NAK (printer.cpp:241-244)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "ack-data", "len": "4", "layout": ["0 = 0x00", "1 = _lastaux1 (never assigned - indeterminate heap byte)", "2 = 0x05 (timeout)", "3 = 0x00"], "naks_when": ["no field"]},
+          "side_effects": "updates last-print time (printer.cpp:247)",
+          "traps": ["Byte 1 is an uninitialized member (printer.h:27; printer.cpp:96; object created with new at main.cpp:360)"],
+          "fujinet_lib": [{"symbol": "none; DEVCALL_A1_RV(0x40, PRINTERCMD_STATUS, 0, buf, 4)", "where": "fujinet-lib/include/fujinet-bus-ezfixed.h:19-20; fujinet-lib/include/fujinet-commands.h:183", "sends": "descriptor 0x11 + one u8", "mismatch": "DEVCALL_RV (no field) would be NAKed"}],
+          "pc_vs_esp32": "same", "notes": ""
+        }
+      ],
+      "not_dispatched": ["Any other command -> NAK (printer.cpp:252-253); disabled printer -> silence for every command (printer.cpp:226-229)"],
+      "extra": {
+        "printer_types": "Selected from config printer slot 0, PRINTER_INVALID -> PRINTER_FILE_TRIM (fn-h89/src/main.cpp:354-356). Types: 0 file RAW, 1 file TRIM, 2 file ASCII, 3 Atari 820, 4 822, 5 825, 6 1020, 7 1025, 8 1027, 9 1029, 10 XMM801, 11 XDM121, 12 Epson 80, 13 Epson PrintShop, 14 Okimate 10, 15 GRANTIC (PNG), 16 HTML, 17 HTML ATASCII (fn-h89/lib/device/rs232/printer.h:32-76; printer.cpp:103-177)",
+        "emulator_setup": "Every type gets setEOL('\\r') and setTranslate850(true) (printer.cpp:174-175)",
+        "raw_mode": "PRINTER_FILE_RAW writes all n bytes unmodified (file_printer.cpp:15-18) - the only mode that is byte-transparent for H89 text"
+      }
+    },
+    {
+      "device": "modem",
+      "dev_ids": ["0x50"],
+      "dispatch": ["fn-h89/lib/device/rs232/modem.cpp:1610-1663"],
+      "commands": [
+        {
+          "name": "MODEM_CONTROL", "value": "0x41", "handler": "fn-h89/lib/device/rs232/modem.cpp:1622-1625 -> 167-218",
+          "fields": [{"index": "any", "size": "any", "name": "-", "meaning": "ignored (DTR/RTS/XMT code is under #ifdef OBSOLETE, modem.cpp:183-215)", "if_missing": "fine"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "none", "len": "0", "layout": ["nothing is written (modem ACK is raw with no data, rs232.cpp:381-386)"], "naks_when": []},
+          "side_effects": "none", "traps": ["No reply bytes at all"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:151", "sends": "-", "mismatch": "any fuji_bus_call to 0x50 waits for a frame that never comes: false after the 15 s timeout (fuji_bus_call.c:106-116)"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_CONFIGURE", "value": "0x42", "handler": "fn-h89/lib/device/rs232/modem.cpp:1626-1629 -> 221-293",
+          "fields": [{"index": "any", "size": "any", "name": "-", "meaning": "ignored; baud code hard-wired to SIO_BAUD_9600 (modem.cpp:250-256)", "if_missing": "fine"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "none", "len": "0", "layout": [], "naks_when": []},
+          "side_effects": "modemBaud = 9600 unless baud-locked (modem.cpp:258-292); affects CONNECT text and the next MODEM_STREAM",
+          "traps": ["Always 9600 regardless of the request"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:150", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_SET_DUMP", "value": "0x44", "handler": "fn-h89/lib/device/rs232/modem.cpp:1630-1633 -> 296-300",
+          "fields": [{"index": 0, "size": "any", "name": "enable", "meaning": "nonzero enables the modem sniffer (traffic capture file)", "if_missing": "CRASH: param(0) .at() throws (modem.cpp:1632)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "none", "len": "0", "layout": [], "naks_when": []},
+          "side_effects": "modemSniffer->setEnable(enable)", "traps": ["Missing field aborts the firmware"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:149", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_LISTEN", "value": "0x4C", "handler": "fn-h89/lib/device/rs232/modem.cpp:1634-1636 -> 363-381",
+          "fields": [{"index": 0, "size": "u16 (any)", "name": "port", "meaning": "TCP listen port (truncated to unsigned short)", "if_missing": "CRASH (modem.cpp:1635)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "none", "len": "0", "layout": [], "naks_when": []},
+          "side_effects": "Stops client and server, then tcpServer.begin(port) with max 1 client; incoming calls then produce RING (or auto-answer) (modem.cpp:365-380, 1327-1345)",
+          "traps": ["port 0: transaction_error() then transaction_success() -> assert(state) fails -> abort on the ESP32 (assertions on) (modem.cpp:372-380; rs232.cpp:55; sdkconfig.fujinet-heathkit-h89:414)"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:148", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_UNLISTEN", "value": "0x4D", "handler": "fn-h89/lib/device/rs232/modem.cpp:1637-1639 -> 386-392",
+          "fields": [], "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "none", "len": "0", "layout": [], "naks_when": []},
+          "side_effects": "tcpClient.stop(); tcpServer.stop() - also drops an active call", "traps": [],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:147", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_BAUDRATELOCK", "value": "0x4E", "handler": "fn-h89/lib/device/rs232/modem.cpp:1640-1642 -> 397-406",
+          "fields": [{"index": 0, "size": "any", "name": "enable", "meaning": "baud lock on/off", "if_missing": "CRASH"}, {"index": 1, "size": "any", "name": "baud", "meaning": "new modemBaud (any number, unchecked)", "if_missing": "CRASH (modem.cpp:1641)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "none", "len": "0", "layout": [], "naks_when": []},
+          "side_effects": "baudLock=enable; modemBaud=baud (modem.cpp:400-401)", "traps": ["Two fields required"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:146", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_AUTOANSWER", "value": "0x4F", "handler": "fn-h89/lib/device/rs232/modem.cpp:1643-1645 -> 411-419",
+          "fields": [{"index": 0, "size": "any", "name": "enable", "meaning": "auto-answer incoming calls", "if_missing": "CRASH (modem.cpp:1644)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "none", "len": "0", "layout": [], "naks_when": []},
+          "side_effects": "autoAnswer=enable (same as ATS0=0/1)", "traps": [],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:145", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_STATUS", "value": "0x53", "handler": "fn-h89/lib/device/rs232/modem.cpp:1646-1649 -> 123-164",
+          "fields": [{"index": 0, "size": "any", "name": "reqType", "meaning": "ignored, but must be present", "if_missing": "CRASH (modem.cpp:1648)"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "raw", "len": "2", "layout": ["0 = 0x00 (error bits, always 0)", "1 = 0xC0 if connected or a caller is waiting, + 0x0C same condition, + 0x01 if TCP data available or caller waiting: so 0x00, 0xCC or 0xCD"], "naks_when": []},
+          "side_effects": "If auto-answer is on and a caller waits: modemActive=true, answerTimer started (modem.cpp:154-159)",
+          "traps": ["Reply is 2 raw bytes, NOT a SLIP frame (rs232.cpp:381-386)"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:143", "sends": "-", "mismatch": "fuji_bus_call discards bytes until 0xC0, so it skips these 2 bytes and times out (port_slip.c:56-61)"}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_WRITE", "value": "0x57", "handler": "fn-h89/lib/device/rs232/modem.cpp:1650-1654 -> 96-120",
+          "fields": [{"index": "any", "size": "any", "name": "-", "meaning": "ignored", "if_missing": "fine"}],
+          "payload": {"required": false, "len": "any", "format": "command mode: one AT command line (whole payload); online: raw bytes for the TCP peer"},
+          "reply": {"kind": "none", "len": "0", "layout": ["no ACK bytes; any AT result text is raw and mostly suppressed (see traps)"], "naks_when": []},
+          "side_effects": "Command mode: payload becomes cmd and modemCommand() runs (exact \"ATA\\r\" instead sets answerHack, answered on the next service pass) (modem.cpp:103-114, 1317-1324). Online: tcpClient.write(payload) with no telnet escaping and no sniffer (modem.cpp:115-119)",
+          "traps": [
+            "cmdOutput is forced false for the whole command (modem.cpp:105, 113) and every at_cmd_println() returns early when it is false (modem.cpp:468, 484, 504, 525): OK/ERROR/help/IP/echo text is never sent for commands given this way",
+            "Numeric results (ATV0) still emit CR LF but the digits go to an unsent _packetData buffer (modem.cpp:456-461, 1665-1683)",
+            "No payload -> returns without action (modem.cpp:100-101)"
+          ],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:142", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same", "notes": ""
+        },
+        {
+          "name": "MODEM_STREAM", "value": "0x58", "handler": "fn-h89/lib/device/rs232/modem.cpp:1655-1658 -> 303-358",
+          "fields": [{"index": "any", "size": "any", "name": "-", "meaning": "ignored", "if_missing": "fine"}],
+          "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "raw", "len": "9", "layout": ["Atari POKEY AUDF/AUDC values for modemBaud: default 28 A0 00 A0 28 A0 00 A0 78 (19200 / unknown baud); bytes 0,4 and 2,6 vary per baud (modem.cpp:315-351)"], "naks_when": []},
+          "side_effects": "SYSTEM_BUS.setBaudrate(modemBaud); modemActive=true (modem.cpp:355-356)",
+          "traps": ["fujinet-pc on a TTY: the HOST LINK baud changes to modemBaud (e.g. 9600 after MODEM_CONFIGURE) (rs232.cpp:323-335); PPI: setBaudrate is a no-op (PPIChannel.h:39); BoIP: skipped (rs232.cpp:333)", "Raw 9-byte reply, not a frame"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:141", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "see traps", "notes": "Atari 850 concurrent-mode relic"
+        }
+      ],
+      "not_dispatched": [
+        "MODEM_READ 0x52, MODEM_TYPE3_POLL 0x40, MODEM_TYPE1_POLL 0x3F, MODEM_LOAD_HANDLER 0x26, MODEM_LOAD_RELOCATOR 0x21 and anything else -> transaction_error -> modem raw path with no data -> NOTHING sent (modem.cpp:1659-1660; rs232.cpp:381-386)",
+        "Modem disabled in config -> silence for every command (modem.cpp:1612-1615); default enabled (fnConfig.h:534)"
+      ],
+      "extra": {
+        "data_flow_h89_to_modem": [
+          "Raw bytes sent outside any frame (anything before a 0xC0) go to rs232Modem::tx -> rs232_write, exactly like a MODEM_WRITE payload (rs232.cpp:99-109; modem.cpp:1574-1577). Chunks end at the channel read timeout (100 ms PPI / 200 ms TTY / 500 ms BoIP) or at a 0xC0, so a slowly typed AT command arrives as several separate 'commands' (derived)",
+          "This path runs even when the modem is disabled in config (rs232.cpp:106-107)"
+        ],
+        "data_flow_modem_to_h89": [
+          "All modem output is unframed raw bytes via rx() -> sendReplyPacket(0x50) -> _port->write (modem.cpp:1579-1598; rs232.cpp:381-386)",
+          "Emitted only in service passes with no host input pending (rs232.cpp:162-170): TCP data (modem.cpp:1498-1516, telnet-decoded if ATNET1), RING every 3 s (1327-1345, RING_INTERVAL modem.h:63), 'CONNECT <baud>' ~1 s after a dial/answer (1427-1440, ANSWER_TIMER_MS modem.h:67), 'NO CARRIER' on disconnect (1536-1571)",
+          "The H89 must poll the 8255 and separate these bytes from frames itself; fujinet-lib has no modem API (port_getc_timeout is exported, fujinet-lib/bus/h89/portio.h:9). fujinet-lib's frame reader discards non-C0 bytes before a reply (port_slip.c:56-61), so stray modem bytes before a reply are lost, and a 0xC0 inside modem data would desynchronise it",
+          "PPI: each rx() call blocks the single firmware service loop up to 1 s per byte while the H89 is not reading, then drops the rest (PPIChannel.cpp:157-176); at_cmd_println emits CR and LF as separate rx() calls (modem.cpp:477-480)"
+        ],
+        "at_commands": [
+          "Matched by prefix, in table order, against an upper-cased, whitespace-trimmed copy; 0x9B is turned into CR; plain 'AT' must match exactly (modem.cpp:1031-1064). Table (modem.cpp:983-1029):",
+          "AT -> OK (1069-1074)",
+          "ATNET0 / ATNET1 -> telnet processing off/on for received data (1120-1133); default off (modem.h:174)",
+          "ATA -> answer a waiting caller (1134-1136, 793-808)",
+          "ATIP -> prints IP or 'WiFi is not connected.' (1138-1147)",
+          "AT? -> help text (1148-1150, 693-741)",
+          "ATH, +++ATH, ATH2 (AT_OFFHOOK) -> hang up: NO CARRIER if connected else OK (1075-1106)",
+          "ATDT<host>[:port], ATDP, ATDI -> TCP connect, port default 23; all-digit host looked up in the phonebook; host 5551234 fakes a CONNECT for BobTerm (1108-1112, 810-881)",
+          "ATWIFILIST -> scan and list (1113-1115, 743-791)",
+          "ATWIFICONNECT<ssid>,<key> -> join WiFi, blocks up to 20 s (1116-1118, 543-596)",
+          "ATGET<url> -> TCP connect + HTTP/1.1 GET, then online (1151-1153, 627-691)",
+          "ATPORT<n> -> set listen port and start server (1154-1156, 598-625)",
+          "ATV0 / ATV1 -> numeric / verbose results (1157-1164)",
+          "ATS0=0 / ATS0=1 -> auto-answer off/on (1165-1178)",
+          "ATE0 / ATE1 -> echo off/on (1179-1192)",
+          "Ignored, answer OK: AT&F, ATS2=43, ATS5=8, ATS6=2, ATS7=30, ATS12=20, ATM0, ATM1, ATX1, AT&C1, AT&D2, AT&W, +++ATZ, 'ATS2=128 X1 M0' (1193-1211)",
+          "AT+SNIFF / AT-SNIFF -> modem sniffer on/off (1212-1225)",
+          "AT+TERM=VT52, AT+TERM=VT100, AT+TERM=ANSI, AT+TERM=DUMB -> telnet TTYPE (1226-1253)",
+          "ATCPM -> CRASH: SYSTEM_BUS.getCPM() is nullptr on this build (1254-1258; rs232.h:159)",
+          "ATPBLIST / ATPBCLEAR / ATPB<num>=<host>[:port] (ATPB<num> deletes) -> phonebook (1259-1271, 884-972)",
+          "ATO -> back online if still connected (1272-1297)",
+          "anything else -> ERROR (1298-1303)"
+        ],
+        "at_traps": [
+          "Help text names commands that do not exist: ATPHONEBOOKLIST, ATPHONEBOOKCLR, AT[UN]SNIFF, ATTERMVT52/VT100/DUMB/ANSI (modem.h:29-36) - real spellings are ATPBLIST, ATPBCLEAR, AT+SNIFF/AT-SNIFF, AT+TERM=...",
+          "AT+TERM=ANSI sets DUMB and AT+TERM=DUMB sets ANSI: table strings (modem.cpp:1023-1024) are in a different order from the enum (modem.h:130-131)",
+          "+++ escape is dead: plusCount is only incremented inside #ifdef OBSOLETE (modem.cpp:1442-1491), so the check at 1521-1533 never fires. Online, MODEM_WRITE and raw bytes go straight to TCP (modem.cpp:115-119), so the H89 cannot send ATH; the call ends only when the peer disconnects or the H89 sends MODEM_UNLISTEN (modem.cpp:386-392, 1536-1571)",
+          "ATWIFICONNECT parsing is off: with a comma the SSID keeps the comma (substr(13, keyIndex-13+1)); without one it starts at offset 6 ('CONNECT...') (modem.cpp:549, 556)",
+          "ATGET host includes the ':' or '/' that ends it (substr(12, portIndex-12+1)), so only a bare 'ATGEThttp://host' works (modem.cpp:650)",
+          "Non-numeric port in ATDT/ATPORT/ATGET -> std::stoi throws -> abort (modem.cpp:601, 647, 861)",
+          "at_cmd_println(std::string) appends to _packetData which is never sent, so string output (e.g. ATIP address, ATPBLIST entries, dial echo of host) is lost even when output is enabled (modem.cpp:523-541, 1679-1683)",
+          "Result text of AT commands is suppressed in both input paths (cmdOutput=false in rs232_write, modem.cpp:103-114); only asynchronous RING/CONNECT/NO CARRIER and TCP data reach the H89"
+        ],
+        "listen_port_feature": "MODEM_LISTEN(port) or ATPORT<n> starts a 1-client TCP server; with auto-answer off the modem prints RING every 3 s in command mode until ATA ('ATA\\r' as a MODEM_WRITE payload is special-cased); with auto-answer on it answers itself; a second caller while online is sent a busy message and dropped (modem.cpp:363-381, 598-625, 1327-1345, 1419-1424)",
+        "baud": "modemBaud starts at SYSTEM_BUS.getBaudrate() = 115200 (modem.cpp:75; rs232.h:19, 128) and is only reported in CONNECT text / STREAM reply"
+      }
+    },
+    {
+      "device": "cpm",
+      "dev_ids": ["0x5A"],
+      "dispatch": ["fn-h89/lib/device/rs232/rs232cpm.cpp:77-92 (unreachable: device not registered)"],
+      "commands": [
+        {
+          "name": "CPM_INIT", "value": "0x47", "handler": "fn-h89/lib/device/rs232/rs232cpm.cpp:81-87",
+          "fields": [], "payload": {"required": false, "len": "ignored", "format": "-"},
+          "reply": {"kind": "nak", "len": "0", "layout": ["On this build: NAK with device 0x00 (unregistered)"], "naks_when": ["always on the H89 build (rs232.cpp:126-133; main.cpp:346-366)"]},
+          "side_effects": "Would: ACK, wait 5 s, malloc 64 KB, set cpmActive; the service loop then gives the whole port to RunCPM's internal CCP until BIOS 0 (rs232cpm.cpp:27-75, 81-87; rs232.cpp:156-160)",
+          "traps": ["Not registered, and ATCPM dereferences the null CPM pointer (modem.cpp:1256-1257)"],
+          "fujinet_lib": [{"symbol": "none", "where": "fujinet-lib/include/fujinet-commands.h:179", "sends": "-", "mismatch": null}],
+          "pc_vs_esp32": "same (not registered on either)", "notes": ""
+        }
+      ],
+      "not_dispatched": ["CPM_WRITE 0x57, CPM_STATUS 0x53, CPM_READ 0x52, CPM_BOOT 0x42 -> would NAK (rs232cpm.cpp:88-90); on this build every 0x5A frame gets NAK device 0x00"],
+      "extra": {"registered": false, "instance": "rs232CPM sioZ exists (fn-h89/lib/device/device.h:49) but is never added to the bus"}
+    }
+  ],
+  "open_questions": [
+    "fujinet-pc build type for the H89 target: whether NDEBUG is set (assert in transaction_success, rs232.cpp:55) - decides whether MODEM_LISTEN 0 aborts on PC too",
+    "Which transport the H89 emulator uses to reach fujinet-pc (TTY pty at Config baud vs BoIP) - sets the inter-byte timeout to 200 ms or 500 ms",
+    "The ROM-mount desync (unsolicited 0xFF frames, late NAK) is derived from code, not observed on hardware or emulator",
+    "Modem output suppression (cmdOutput=false during every AT command) looks like an RS232 port regression; confirm on hardware that 'AT' produces no 'OK'",
+    "Printer STATUS byte 1 value in practice (uninitialized member)",
+    "Whether real H89 programs ever send a frame with gaps > 100 ms (e.g. from interpreted BASIC); if so the remainder becomes raw modem input",
+    "fujinet-lib bus/h89/fuji_bus_call.c:52 defines a static fuji_field_numbytes_table while fujinet-bus.h:54 declares it extern; harmless if it builds, but worth a look"
+  ]
+}
