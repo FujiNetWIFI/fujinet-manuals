@@ -1,0 +1,105 @@
+{
+"rows": [
+{
+"text": "  G: slot 4  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  H: slot 5  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  I: slot 6  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  J: slot 7  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  K: slot 8  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>DIR D:                                                                        ",
+"rev": "                                                                                "
+},
+{
+"text": "D: HI       COM : HELLO    TXT                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "A>TYPE D:HELLO.TXT                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "Hello from a FujiNet drive on the H89.                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "The second line.                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>D:HI                                                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "Hello from a FujiNet drive on the H89!                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>PIP D:=B:FNDISK.COM                                                           ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>DIR D:                                                                        ",
+"rev": "                                                                                "
+},
+{
+"text": "D: HI       COM : HELLO    TXT : FNDISK   COM                                   ",
+"rev": "                                                                                "
+},
+{
+"text": "A>STAT D:                                                                       ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "Bytes Remaining On D: 85k                                                       ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+}
+],
+"cursor": null
+}

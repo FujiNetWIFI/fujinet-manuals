@@ -1,0 +1,408 @@
+{
+ "name": "flashmode",
+ "org": "040.100",
+ "length": 18,
+ "rows": [
+  {
+   "line": 1,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "FLASHMODE - PUT THE H89 FUJINET'S ESP32 IN DOWNLOAD MODE",
+   "full": ";\tFLASHMODE - PUT THE H89 FUJINET'S ESP32 IN DOWNLOAD MODE"
+  },
+  {
+   "line": 2,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 3,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "KEYED INTO THE MONITOR AT 040.100 AND RUN WITH G040100, FOR",
+   "full": ";\tKEYED INTO THE MONITOR AT 040.100 AND RUN WITH G040100, FOR"
+  },
+  {
+   "line": 4,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "MONITORS WITHOUT AN OUT COMMAND (MTR-88, MTR-89).  RESTARTS",
+   "full": ";\tMONITORS WITHOUT AN OUT COMMAND (MTR-88, MTR-89).  RESTARTS"
+  },
+  {
+   "line": 5,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "THE ESP32 WITH IO0 LOW, SO IT WAITS FOR THE FUJINET FLASHER.",
+   "full": ";\tTHE ESP32 WITH IO0 LOW, SO IT WAITS FOR THE FUJINET FLASHER."
+  },
+  {
+   "line": 6,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "PUSH SHIFT AND RESET WHEN THE FLASHER IS DONE.",
+   "full": ";\tPUSH SHIFT AND RESET WHEN THE FLASHER IS DONE."
+  },
+  {
+   "line": 7,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 8,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "Copyright (C) 2026 Thomas Cherryhomes",
+   "full": ";\tCopyright (C) 2026 Thomas Cherryhomes"
+  },
+  {
+   "line": 9,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "SPDX-License-Identifier: GPL-3.0-or-later",
+   "full": ";\tSPDX-License-Identifier: GPL-3.0-or-later"
+  },
+  {
+   "line": 10,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 11,
+   "addr": "",
+   "bytes": [],
+   "label": "PSTAT",
+   "op": "EQU",
+   "arg": "322Q",
+   "comment": "82C55 PORT C",
+   "full": ""
+  },
+  {
+   "line": 12,
+   "addr": "",
+   "bytes": [],
+   "label": "PCTRL",
+   "op": "EQU",
+   "arg": "323Q",
+   "comment": "82C55 CONTROL WORD",
+   "full": ""
+  },
+  {
+   "line": 13,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 14,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "ORG",
+   "arg": "040100A",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 15,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 16,
+   "addr": "040.100",
+   "bytes": [
+    "076",
+    "300"
+   ],
+   "label": "START",
+   "op": "MVI",
+   "arg": "A,300Q",
+   "comment": "MODE 2: EN=0 AND IO0=0",
+   "full": ""
+  },
+  {
+   "line": 17,
+   "addr": "040.102",
+   "bytes": [
+    "323",
+    "323"
+   ],
+   "label": "",
+   "op": "OUT",
+   "arg": "PCTRL",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 18,
+   "addr": "040.104",
+   "bytes": [
+    "041",
+    "000",
+    "000"
+   ],
+   "label": "",
+   "op": "LXI",
+   "arg": "H,0",
+   "comment": "HOLD THE ESP32 IN RESET A WHILE",
+   "full": ""
+  },
+  {
+   "line": 19,
+   "addr": "040.107",
+   "bytes": [
+    "053"
+   ],
+   "label": "DELAY",
+   "op": "DCX",
+   "arg": "H",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 20,
+   "addr": "040.110",
+   "bytes": [
+    "174"
+   ],
+   "label": "",
+   "op": "MOV",
+   "arg": "A,H",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 21,
+   "addr": "040.111",
+   "bytes": [
+    "265"
+   ],
+   "label": "",
+   "op": "ORA",
+   "arg": "L",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 22,
+   "addr": "040.112",
+   "bytes": [
+    "302",
+    "107",
+    "040"
+   ],
+   "label": "",
+   "op": "JNZ",
+   "arg": "DELAY",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 23,
+   "addr": "040.115",
+   "bytes": [
+    "076",
+    "004"
+   ],
+   "label": "",
+   "op": "MVI",
+   "arg": "A,004Q",
+   "comment": "EN=1 WITH IO0=0: DOWNLOAD MODE",
+   "full": ""
+  },
+  {
+   "line": 24,
+   "addr": "040.117",
+   "bytes": [
+    "323",
+    "322"
+   ],
+   "label": "",
+   "op": "OUT",
+   "arg": "PSTAT",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 25,
+   "addr": "040.121",
+   "bytes": [
+    "166"
+   ],
+   "label": "",
+   "op": "HLT",
+   "arg": "",
+   "comment": "BACK TO THE MONITOR",
+   "full": ""
+  },
+  {
+   "line": 26,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 27,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "END",
+   "arg": "START",
+   "comment": "",
+   "full": ""
+  }
+ ],
+ "flat": [
+  {
+   "addr": "040.100",
+   "byte": "076"
+  },
+  {
+   "addr": "040.101",
+   "byte": "300"
+  },
+  {
+   "addr": "040.102",
+   "byte": "323"
+  },
+  {
+   "addr": "040.103",
+   "byte": "323"
+  },
+  {
+   "addr": "040.104",
+   "byte": "041"
+  },
+  {
+   "addr": "040.105",
+   "byte": "000"
+  },
+  {
+   "addr": "040.106",
+   "byte": "000"
+  },
+  {
+   "addr": "040.107",
+   "byte": "053"
+  },
+  {
+   "addr": "040.110",
+   "byte": "174"
+  },
+  {
+   "addr": "040.111",
+   "byte": "265"
+  },
+  {
+   "addr": "040.112",
+   "byte": "302"
+  },
+  {
+   "addr": "040.113",
+   "byte": "107"
+  },
+  {
+   "addr": "040.114",
+   "byte": "040"
+  },
+  {
+   "addr": "040.115",
+   "byte": "076"
+  },
+  {
+   "addr": "040.116",
+   "byte": "004"
+  },
+  {
+   "addr": "040.117",
+   "byte": "323"
+  },
+  {
+   "addr": "040.120",
+   "byte": "322"
+  },
+  {
+   "addr": "040.121",
+   "byte": "166"
+  }
+ ],
+ "printed": [
+  "                     ;       FLASHMODE - PUT THE H89 FUJINET'S ESP32 IN DOWNLOAD MODE",
+  "                     ;",
+  "                     ;       KEYED INTO THE MONITOR AT 040.100 AND RUN WITH G040100, FOR",
+  "                     ;       MONITORS WITHOUT AN OUT COMMAND (MTR-88, MTR-89).  RESTARTS",
+  "                     ;       THE ESP32 WITH IO0 LOW, SO IT WAITS FOR THE FUJINET FLASHER.",
+  "                     ;       PUSH SHIFT AND RESET WHEN THE FLASHER IS DONE.",
+  "                     ;",
+  "                     ;       Copyright (C) 2026 Thomas Cherryhomes",
+  "                     ;       SPDX-License-Identifier: GPL-3.0-or-later",
+  "                     ;",
+  "                     PSTAT   EQU     322Q            ;82C55 PORT C",
+  "                     PCTRL   EQU     323Q            ;82C55 CONTROL WORD",
+  "                     ;",
+  "                             ORG     040100A",
+  "                     ;",
+  "040100  076 300      START:  MVI     A,300Q          ;MODE 2: EN=0 AND IO0=0",
+  "040102  323 323              OUT     PCTRL",
+  "040104  041 000 000          LXI     H,0             ;HOLD THE ESP32 IN RESET A WHILE",
+  "040107  053          DELAY:  DCX     H",
+  "040110  174                  MOV     A,H",
+  "040111  265                  ORA     L",
+  "040112  302 107 040          JNZ     DELAY",
+  "040115  076 004              MVI     A,004Q          ;EN=1 WITH IO0=0: DOWNLOAD MODE",
+  "040117  323 322              OUT     PSTAT",
+  "040121  166                  HLT                     ;BACK TO THE MONITOR",
+  "                     ;",
+  "                             END     START"
+ ]
+}

@@ -1,0 +1,1683 @@
+{
+ "name": "acctest",
+ "org": "040.100",
+ "length": 129,
+ "rows": [
+  {
+   "line": 1,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "ACCTEST - H89 FUJINET ACCEPTANCE TEST",
+   "full": ";\tACCTEST - H89 FUJINET ACCEPTANCE TEST"
+  },
+  {
+   "line": 2,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 3,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "KEYED INTO THE MONITOR AT 040.100 AND RUN WITH G040100.",
+   "full": ";\tKEYED INTO THE MONITOR AT 040.100 AND RUN WITH G040100."
+  },
+  {
+   "line": 4,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "STARTS THE CARD, ASKS IT FOR ITS ADAPTER CONFIGURATION AND",
+   "full": ";\tSTARTS THE CARD, ASKS IT FOR ITS ADAPTER CONFIGURATION AND"
+  },
+  {
+   "line": 5,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "PRINTS THE ANSWER.  PRINTS 1 WHEN THE 82C55 ANSWERS, 2 WHEN",
+   "full": ";\tPRINTS THE ANSWER.  PRINTS 1 WHEN THE 82C55 ANSWERS, 2 WHEN"
+  },
+  {
+   "line": 6,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "THE ESP32 HAS TAKEN THE REQUEST, THEN THE REPLY'S TEXT.  ENDS",
+   "full": ";\tTHE ESP32 HAS TAKEN THE REQUEST, THEN THE REPLY'S TEXT.  ENDS"
+  },
+  {
+   "line": 7,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "WITH A HALT, WHICH THE MONITOR TURNS INTO A BEEP, AN H AND",
+   "full": ";\tWITH A HALT, WHICH THE MONITOR TURNS INTO A BEEP, AN H AND"
+  },
+  {
+   "line": 8,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "THE H: PROMPT.",
+   "full": ";\tTHE H: PROMPT."
+  },
+  {
+   "line": 9,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 10,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "NUMBERS ARE OCTAL (Q) OR SPLIT OCTAL (A), AS IN HEATH LISTINGS.",
+   "full": ";\tNUMBERS ARE OCTAL (Q) OR SPLIT OCTAL (A), AS IN HEATH LISTINGS."
+  },
+  {
+   "line": 11,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 12,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "Copyright (C) 2026 Thomas Cherryhomes",
+   "full": ";\tCopyright (C) 2026 Thomas Cherryhomes"
+  },
+  {
+   "line": 13,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "SPDX-License-Identifier: GPL-3.0-or-later",
+   "full": ";\tSPDX-License-Identifier: GPL-3.0-or-later"
+  },
+  {
+   "line": 14,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 15,
+   "addr": "",
+   "bytes": [],
+   "label": "PDATA",
+   "op": "EQU",
+   "arg": "320Q",
+   "comment": "82C55 PORT A, THE BYTE PIPE",
+   "full": ""
+  },
+  {
+   "line": 16,
+   "addr": "",
+   "bytes": [],
+   "label": "PSTAT",
+   "op": "EQU",
+   "arg": "322Q",
+   "comment": "82C55 PORT C: STATUS IN, CONTROL OUT",
+   "full": ""
+  },
+  {
+   "line": 17,
+   "addr": "",
+   "bytes": [],
+   "label": "PCTRL",
+   "op": "EQU",
+   "arg": "323Q",
+   "comment": "82C55 CONTROL WORD",
+   "full": ""
+  },
+  {
+   "line": 18,
+   "addr": "",
+   "bytes": [],
+   "label": "WCC",
+   "op": "EQU",
+   "arg": "003302A",
+   "comment": "MONITOR: WRITE CONSOLE CHARACTER",
+   "full": ""
+  },
+  {
+   "line": 19,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 20,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "ORG",
+   "arg": "040100A",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 21,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 22,
+   "addr": "040.100",
+   "bytes": [
+    "076",
+    "300"
+   ],
+   "label": "START",
+   "op": "MVI",
+   "arg": "A,300Q",
+   "comment": "PORT A MODE 2, PC0-PC2 OUT:",
+   "full": ""
+  },
+  {
+   "line": 23,
+   "addr": "040.102",
+   "bytes": [
+    "323",
+    "323"
+   ],
+   "label": "",
+   "op": "OUT",
+   "arg": "PCTRL",
+   "comment": "EN=0 HOLDS THE ESP32 IN RESET",
+   "full": ""
+  },
+  {
+   "line": 24,
+   "addr": "040.104",
+   "bytes": [
+    "076",
+    "006"
+   ],
+   "label": "",
+   "op": "MVI",
+   "arg": "A,006Q",
+   "comment": "EN=1 WITH IO0=1: BOOT FROM FLASH",
+   "full": ""
+  },
+  {
+   "line": 25,
+   "addr": "040.106",
+   "bytes": [
+    "323",
+    "322"
+   ],
+   "label": "",
+   "op": "OUT",
+   "arg": "PSTAT",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 26,
+   "addr": "040.110",
+   "bytes": [
+    "041",
+    "000",
+    "000"
+   ],
+   "label": "",
+   "op": "LXI",
+   "arg": "H,0",
+   "comment": "WAIT ABOUT 3/4 SECOND SO THE",
+   "full": ""
+  },
+  {
+   "line": 27,
+   "addr": "040.113",
+   "bytes": [
+    "053"
+   ],
+   "label": "DELAY",
+   "op": "DCX",
+   "arg": "H",
+   "comment": "ESP32 LATCHES IO0 BEFORE THE",
+   "full": ""
+  },
+  {
+   "line": 28,
+   "addr": "040.114",
+   "bytes": [
+    "174"
+   ],
+   "label": "",
+   "op": "MOV",
+   "arg": "A,H",
+   "comment": "245 IS TURNED ON",
+   "full": ""
+  },
+  {
+   "line": 29,
+   "addr": "040.115",
+   "bytes": [
+    "265"
+   ],
+   "label": "",
+   "op": "ORA",
+   "arg": "L",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 30,
+   "addr": "040.116",
+   "bytes": [
+    "302",
+    "113",
+    "040"
+   ],
+   "label": "",
+   "op": "JNZ",
+   "arg": "DELAY",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 31,
+   "addr": "040.121",
+   "bytes": [
+    "076",
+    "005"
+   ],
+   "label": "",
+   "op": "MVI",
+   "arg": "A,005Q",
+   "comment": "245 ON (/OE=0), DIR TOWARD ESP32",
+   "full": ""
+  },
+  {
+   "line": 32,
+   "addr": "040.123",
+   "bytes": [
+    "323",
+    "322"
+   ],
+   "label": "",
+   "op": "OUT",
+   "arg": "PSTAT",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 33,
+   "addr": "040.125",
+   "bytes": [
+    "333",
+    "322"
+   ],
+   "label": "",
+   "op": "IN",
+   "arg": "PSTAT",
+   "comment": "IS THE 82C55 THERE?",
+   "full": ""
+  },
+  {
+   "line": 34,
+   "addr": "040.127",
+   "bytes": [
+    "346",
+    "007"
+   ],
+   "label": "",
+   "op": "ANI",
+   "arg": "007Q",
+   "comment": "PC2-PC0 MUST READ BACK 101",
+   "full": ""
+  },
+  {
+   "line": 35,
+   "addr": "040.131",
+   "bytes": [
+    "376",
+    "005"
+   ],
+   "label": "",
+   "op": "CPI",
+   "arg": "005Q",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 36,
+   "addr": "040.133",
+   "bytes": [
+    "302",
+    "270",
+    "040"
+   ],
+   "label": "",
+   "op": "JNZ",
+   "arg": "DONE",
+   "comment": "NO: HALT NOW",
+   "full": ""
+  },
+  {
+   "line": 37,
+   "addr": "040.136",
+   "bytes": [
+    "076",
+    "061"
+   ],
+   "label": "",
+   "op": "MVI",
+   "arg": "A,'1'",
+   "comment": "CHECKPOINT 1",
+   "full": ""
+  },
+  {
+   "line": 38,
+   "addr": "040.140",
+   "bytes": [
+    "315",
+    "302",
+    "003"
+   ],
+   "label": "",
+   "op": "CALL",
+   "arg": "WCC",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 39,
+   "addr": "040.143",
+   "bytes": [
+    "041",
+    "271",
+    "040"
+   ],
+   "label": "",
+   "op": "LXI",
+   "arg": "H,REQ",
+   "comment": "SEND THE REQUEST",
+   "full": ""
+  },
+  {
+   "line": 40,
+   "addr": "040.146",
+   "bytes": [
+    "006",
+    "010"
+   ],
+   "label": "",
+   "op": "MVI",
+   "arg": "B,8",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 41,
+   "addr": "040.150",
+   "bytes": [
+    "176"
+   ],
+   "label": "SEND",
+   "op": "MOV",
+   "arg": "A,M",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 42,
+   "addr": "040.151",
+   "bytes": [
+    "323",
+    "320"
+   ],
+   "label": "",
+   "op": "OUT",
+   "arg": "PDATA",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 43,
+   "addr": "040.153",
+   "bytes": [
+    "333",
+    "322"
+   ],
+   "label": "WOBF",
+   "op": "IN",
+   "arg": "PSTAT",
+   "comment": "WAIT UNTIL THE ESP32 HAS IT",
+   "full": ""
+  },
+  {
+   "line": 44,
+   "addr": "040.155",
+   "bytes": [
+    "346",
+    "200"
+   ],
+   "label": "",
+   "op": "ANI",
+   "arg": "200Q",
+   "comment": "(/OBF HIGH AGAIN)",
+   "full": ""
+  },
+  {
+   "line": 45,
+   "addr": "040.157",
+   "bytes": [
+    "312",
+    "153",
+    "040"
+   ],
+   "label": "",
+   "op": "JZ",
+   "arg": "WOBF",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 46,
+   "addr": "040.162",
+   "bytes": [
+    "043"
+   ],
+   "label": "",
+   "op": "INX",
+   "arg": "H",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 47,
+   "addr": "040.163",
+   "bytes": [
+    "005"
+   ],
+   "label": "",
+   "op": "DCR",
+   "arg": "B",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 48,
+   "addr": "040.164",
+   "bytes": [
+    "302",
+    "150",
+    "040"
+   ],
+   "label": "",
+   "op": "JNZ",
+   "arg": "SEND",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 49,
+   "addr": "040.167",
+   "bytes": [
+    "076",
+    "004"
+   ],
+   "label": "",
+   "op": "MVI",
+   "arg": "A,004Q",
+   "comment": "DIR TOWARD THE H89",
+   "full": ""
+  },
+  {
+   "line": 50,
+   "addr": "040.171",
+   "bytes": [
+    "323",
+    "322"
+   ],
+   "label": "",
+   "op": "OUT",
+   "arg": "PSTAT",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 51,
+   "addr": "040.173",
+   "bytes": [
+    "076",
+    "062"
+   ],
+   "label": "",
+   "op": "MVI",
+   "arg": "A,'2'",
+   "comment": "CHECKPOINT 2",
+   "full": ""
+  },
+  {
+   "line": 52,
+   "addr": "040.175",
+   "bytes": [
+    "315",
+    "302",
+    "003"
+   ],
+   "label": "",
+   "op": "CALL",
+   "arg": "WCC",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 53,
+   "addr": "040.200",
+   "bytes": [
+    "001",
+    "000",
+    "005"
+   ],
+   "label": "SYNC",
+   "op": "LXI",
+   "arg": "B,002400Q",
+   "comment": "B=5 HEADER BYTES TO SKIP, C=0",
+   "full": ""
+  },
+  {
+   "line": 54,
+   "addr": "040.203",
+   "bytes": [
+    "315",
+    "256",
+    "040"
+   ],
+   "label": "HEAD",
+   "op": "CALL",
+   "arg": "GETB",
+   "comment": "FIND THE FRAME, SKIP THE HEADER",
+   "full": ""
+  },
+  {
+   "line": 55,
+   "addr": "040.206",
+   "bytes": [
+    "376",
+    "300"
+   ],
+   "label": "",
+   "op": "CPI",
+   "arg": "300Q",
+   "comment": "(START OVER ON EVERY C0)",
+   "full": ""
+  },
+  {
+   "line": 56,
+   "addr": "040.210",
+   "bytes": [
+    "312",
+    "200",
+    "040"
+   ],
+   "label": "",
+   "op": "JZ",
+   "arg": "SYNC",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 57,
+   "addr": "040.213",
+   "bytes": [
+    "005"
+   ],
+   "label": "",
+   "op": "DCR",
+   "arg": "B",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 58,
+   "addr": "040.214",
+   "bytes": [
+    "302",
+    "203",
+    "040"
+   ],
+   "label": "",
+   "op": "JNZ",
+   "arg": "HEAD",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 59,
+   "addr": "040.217",
+   "bytes": [
+    "315",
+    "256",
+    "040"
+   ],
+   "label": "SHOW",
+   "op": "CALL",
+   "arg": "GETB",
+   "comment": "PRINT THE REPLY UP TO THE END C0",
+   "full": ""
+  },
+  {
+   "line": 60,
+   "addr": "040.222",
+   "bytes": [
+    "376",
+    "300"
+   ],
+   "label": "",
+   "op": "CPI",
+   "arg": "300Q",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 61,
+   "addr": "040.224",
+   "bytes": [
+    "312",
+    "270",
+    "040"
+   ],
+   "label": "",
+   "op": "JZ",
+   "arg": "DONE",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 62,
+   "addr": "040.227",
+   "bytes": [
+    "376",
+    "041"
+   ],
+   "label": "",
+   "op": "CPI",
+   "arg": "041Q",
+   "comment": "PRINTABLE?",
+   "full": ""
+  },
+  {
+   "line": 63,
+   "addr": "040.231",
+   "bytes": [
+    "332",
+    "241",
+    "040"
+   ],
+   "label": "",
+   "op": "JC",
+   "arg": "GAP",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 64,
+   "addr": "040.234",
+   "bytes": [
+    "376",
+    "177"
+   ],
+   "label": "",
+   "op": "CPI",
+   "arg": "177Q",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 65,
+   "addr": "040.236",
+   "bytes": [
+    "332",
+    "247",
+    "040"
+   ],
+   "label": "",
+   "op": "JC",
+   "arg": "PUT",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 66,
+   "addr": "040.241",
+   "bytes": [
+    "076",
+    "040"
+   ],
+   "label": "GAP",
+   "op": "MVI",
+   "arg": "A,040Q",
+   "comment": "ANYTHING ELSE IS A SPACE,",
+   "full": ""
+  },
+  {
+   "line": 67,
+   "addr": "040.243",
+   "bytes": [
+    "271"
+   ],
+   "label": "",
+   "op": "CMP",
+   "arg": "C",
+   "comment": "BUT ONLY ONE IN A ROW",
+   "full": ""
+  },
+  {
+   "line": 68,
+   "addr": "040.244",
+   "bytes": [
+    "312",
+    "217",
+    "040"
+   ],
+   "label": "",
+   "op": "JZ",
+   "arg": "SHOW",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 69,
+   "addr": "040.247",
+   "bytes": [
+    "117"
+   ],
+   "label": "PUT",
+   "op": "MOV",
+   "arg": "C,A",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 70,
+   "addr": "040.250",
+   "bytes": [
+    "315",
+    "302",
+    "003"
+   ],
+   "label": "",
+   "op": "CALL",
+   "arg": "WCC",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 71,
+   "addr": "040.253",
+   "bytes": [
+    "303",
+    "217",
+    "040"
+   ],
+   "label": "",
+   "op": "JMP",
+   "arg": "SHOW",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 72,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 73,
+   "addr": "040.256",
+   "bytes": [
+    "333",
+    "322"
+   ],
+   "label": "GETB",
+   "op": "IN",
+   "arg": "PSTAT",
+   "comment": "WAIT FOR A BYTE FROM THE ESP32",
+   "full": ""
+  },
+  {
+   "line": 74,
+   "addr": "040.260",
+   "bytes": [
+    "346",
+    "040"
+   ],
+   "label": "",
+   "op": "ANI",
+   "arg": "040Q",
+   "comment": "(IBF HIGH)",
+   "full": ""
+  },
+  {
+   "line": 75,
+   "addr": "040.262",
+   "bytes": [
+    "312",
+    "256",
+    "040"
+   ],
+   "label": "",
+   "op": "JZ",
+   "arg": "GETB",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 76,
+   "addr": "040.265",
+   "bytes": [
+    "333",
+    "320"
+   ],
+   "label": "",
+   "op": "IN",
+   "arg": "PDATA",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 77,
+   "addr": "040.267",
+   "bytes": [
+    "311"
+   ],
+   "label": "",
+   "op": "RET",
+   "arg": "",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 78,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 79,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "THE HALT COMES LAST: THE MONITOR'S CLOCK SEES A HALT WHEN THE",
+   "full": ";\tTHE HALT COMES LAST: THE MONITOR'S CLOCK SEES A HALT WHEN THE"
+  },
+  {
+   "line": 80,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "BYTE BEFORE THE INTERRUPTED ADDRESS IS 166Q, SO NO CODE MAY",
+   "full": ";\tBYTE BEFORE THE INTERRUPTED ADDRESS IS 166Q, SO NO CODE MAY"
+  },
+  {
+   "line": 81,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "FOLLOW ONE.",
+   "full": ";\tFOLLOW ONE."
+  },
+  {
+   "line": 82,
+   "addr": "040.270",
+   "bytes": [
+    "166"
+   ],
+   "label": "DONE",
+   "op": "HLT",
+   "arg": "",
+   "comment": "BACK TO THE MONITOR",
+   "full": ""
+  },
+  {
+   "line": 83,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 84,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "GET ADAPTER CONFIG (350Q) FOR THE FUJINET DEVICE (160Q),",
+   "full": ";\tGET ADAPTER CONFIG (350Q) FOR THE FUJINET DEVICE (160Q),"
+  },
+  {
+   "line": 85,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "A SIX-BYTE FUJIBUS HEADER BETWEEN SLIP END BYTES (300Q).",
+   "full": ";\tA SIX-BYTE FUJIBUS HEADER BETWEEN SLIP END BYTES (300Q)."
+  },
+  {
+   "line": 86,
+   "addr": "040.271",
+   "bytes": [
+    "300",
+    "160",
+    "350",
+    "006",
+    "000",
+    "137",
+    "000",
+    "300"
+   ],
+   "label": "REQ",
+   "op": "DB",
+   "arg": "300Q,160Q,350Q,006Q,000Q,137Q,000Q,300Q",
+   "comment": "",
+   "full": ""
+  },
+  {
+   "line": 87,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "",
+   "arg": "",
+   "comment": "",
+   "full": ";"
+  },
+  {
+   "line": 88,
+   "addr": "",
+   "bytes": [],
+   "label": "",
+   "op": "END",
+   "arg": "START",
+   "comment": "",
+   "full": ""
+  }
+ ],
+ "flat": [
+  {
+   "addr": "040.100",
+   "byte": "076"
+  },
+  {
+   "addr": "040.101",
+   "byte": "300"
+  },
+  {
+   "addr": "040.102",
+   "byte": "323"
+  },
+  {
+   "addr": "040.103",
+   "byte": "323"
+  },
+  {
+   "addr": "040.104",
+   "byte": "076"
+  },
+  {
+   "addr": "040.105",
+   "byte": "006"
+  },
+  {
+   "addr": "040.106",
+   "byte": "323"
+  },
+  {
+   "addr": "040.107",
+   "byte": "322"
+  },
+  {
+   "addr": "040.110",
+   "byte": "041"
+  },
+  {
+   "addr": "040.111",
+   "byte": "000"
+  },
+  {
+   "addr": "040.112",
+   "byte": "000"
+  },
+  {
+   "addr": "040.113",
+   "byte": "053"
+  },
+  {
+   "addr": "040.114",
+   "byte": "174"
+  },
+  {
+   "addr": "040.115",
+   "byte": "265"
+  },
+  {
+   "addr": "040.116",
+   "byte": "302"
+  },
+  {
+   "addr": "040.117",
+   "byte": "113"
+  },
+  {
+   "addr": "040.120",
+   "byte": "040"
+  },
+  {
+   "addr": "040.121",
+   "byte": "076"
+  },
+  {
+   "addr": "040.122",
+   "byte": "005"
+  },
+  {
+   "addr": "040.123",
+   "byte": "323"
+  },
+  {
+   "addr": "040.124",
+   "byte": "322"
+  },
+  {
+   "addr": "040.125",
+   "byte": "333"
+  },
+  {
+   "addr": "040.126",
+   "byte": "322"
+  },
+  {
+   "addr": "040.127",
+   "byte": "346"
+  },
+  {
+   "addr": "040.130",
+   "byte": "007"
+  },
+  {
+   "addr": "040.131",
+   "byte": "376"
+  },
+  {
+   "addr": "040.132",
+   "byte": "005"
+  },
+  {
+   "addr": "040.133",
+   "byte": "302"
+  },
+  {
+   "addr": "040.134",
+   "byte": "270"
+  },
+  {
+   "addr": "040.135",
+   "byte": "040"
+  },
+  {
+   "addr": "040.136",
+   "byte": "076"
+  },
+  {
+   "addr": "040.137",
+   "byte": "061"
+  },
+  {
+   "addr": "040.140",
+   "byte": "315"
+  },
+  {
+   "addr": "040.141",
+   "byte": "302"
+  },
+  {
+   "addr": "040.142",
+   "byte": "003"
+  },
+  {
+   "addr": "040.143",
+   "byte": "041"
+  },
+  {
+   "addr": "040.144",
+   "byte": "271"
+  },
+  {
+   "addr": "040.145",
+   "byte": "040"
+  },
+  {
+   "addr": "040.146",
+   "byte": "006"
+  },
+  {
+   "addr": "040.147",
+   "byte": "010"
+  },
+  {
+   "addr": "040.150",
+   "byte": "176"
+  },
+  {
+   "addr": "040.151",
+   "byte": "323"
+  },
+  {
+   "addr": "040.152",
+   "byte": "320"
+  },
+  {
+   "addr": "040.153",
+   "byte": "333"
+  },
+  {
+   "addr": "040.154",
+   "byte": "322"
+  },
+  {
+   "addr": "040.155",
+   "byte": "346"
+  },
+  {
+   "addr": "040.156",
+   "byte": "200"
+  },
+  {
+   "addr": "040.157",
+   "byte": "312"
+  },
+  {
+   "addr": "040.160",
+   "byte": "153"
+  },
+  {
+   "addr": "040.161",
+   "byte": "040"
+  },
+  {
+   "addr": "040.162",
+   "byte": "043"
+  },
+  {
+   "addr": "040.163",
+   "byte": "005"
+  },
+  {
+   "addr": "040.164",
+   "byte": "302"
+  },
+  {
+   "addr": "040.165",
+   "byte": "150"
+  },
+  {
+   "addr": "040.166",
+   "byte": "040"
+  },
+  {
+   "addr": "040.167",
+   "byte": "076"
+  },
+  {
+   "addr": "040.170",
+   "byte": "004"
+  },
+  {
+   "addr": "040.171",
+   "byte": "323"
+  },
+  {
+   "addr": "040.172",
+   "byte": "322"
+  },
+  {
+   "addr": "040.173",
+   "byte": "076"
+  },
+  {
+   "addr": "040.174",
+   "byte": "062"
+  },
+  {
+   "addr": "040.175",
+   "byte": "315"
+  },
+  {
+   "addr": "040.176",
+   "byte": "302"
+  },
+  {
+   "addr": "040.177",
+   "byte": "003"
+  },
+  {
+   "addr": "040.200",
+   "byte": "001"
+  },
+  {
+   "addr": "040.201",
+   "byte": "000"
+  },
+  {
+   "addr": "040.202",
+   "byte": "005"
+  },
+  {
+   "addr": "040.203",
+   "byte": "315"
+  },
+  {
+   "addr": "040.204",
+   "byte": "256"
+  },
+  {
+   "addr": "040.205",
+   "byte": "040"
+  },
+  {
+   "addr": "040.206",
+   "byte": "376"
+  },
+  {
+   "addr": "040.207",
+   "byte": "300"
+  },
+  {
+   "addr": "040.210",
+   "byte": "312"
+  },
+  {
+   "addr": "040.211",
+   "byte": "200"
+  },
+  {
+   "addr": "040.212",
+   "byte": "040"
+  },
+  {
+   "addr": "040.213",
+   "byte": "005"
+  },
+  {
+   "addr": "040.214",
+   "byte": "302"
+  },
+  {
+   "addr": "040.215",
+   "byte": "203"
+  },
+  {
+   "addr": "040.216",
+   "byte": "040"
+  },
+  {
+   "addr": "040.217",
+   "byte": "315"
+  },
+  {
+   "addr": "040.220",
+   "byte": "256"
+  },
+  {
+   "addr": "040.221",
+   "byte": "040"
+  },
+  {
+   "addr": "040.222",
+   "byte": "376"
+  },
+  {
+   "addr": "040.223",
+   "byte": "300"
+  },
+  {
+   "addr": "040.224",
+   "byte": "312"
+  },
+  {
+   "addr": "040.225",
+   "byte": "270"
+  },
+  {
+   "addr": "040.226",
+   "byte": "040"
+  },
+  {
+   "addr": "040.227",
+   "byte": "376"
+  },
+  {
+   "addr": "040.230",
+   "byte": "041"
+  },
+  {
+   "addr": "040.231",
+   "byte": "332"
+  },
+  {
+   "addr": "040.232",
+   "byte": "241"
+  },
+  {
+   "addr": "040.233",
+   "byte": "040"
+  },
+  {
+   "addr": "040.234",
+   "byte": "376"
+  },
+  {
+   "addr": "040.235",
+   "byte": "177"
+  },
+  {
+   "addr": "040.236",
+   "byte": "332"
+  },
+  {
+   "addr": "040.237",
+   "byte": "247"
+  },
+  {
+   "addr": "040.240",
+   "byte": "040"
+  },
+  {
+   "addr": "040.241",
+   "byte": "076"
+  },
+  {
+   "addr": "040.242",
+   "byte": "040"
+  },
+  {
+   "addr": "040.243",
+   "byte": "271"
+  },
+  {
+   "addr": "040.244",
+   "byte": "312"
+  },
+  {
+   "addr": "040.245",
+   "byte": "217"
+  },
+  {
+   "addr": "040.246",
+   "byte": "040"
+  },
+  {
+   "addr": "040.247",
+   "byte": "117"
+  },
+  {
+   "addr": "040.250",
+   "byte": "315"
+  },
+  {
+   "addr": "040.251",
+   "byte": "302"
+  },
+  {
+   "addr": "040.252",
+   "byte": "003"
+  },
+  {
+   "addr": "040.253",
+   "byte": "303"
+  },
+  {
+   "addr": "040.254",
+   "byte": "217"
+  },
+  {
+   "addr": "040.255",
+   "byte": "040"
+  },
+  {
+   "addr": "040.256",
+   "byte": "333"
+  },
+  {
+   "addr": "040.257",
+   "byte": "322"
+  },
+  {
+   "addr": "040.260",
+   "byte": "346"
+  },
+  {
+   "addr": "040.261",
+   "byte": "040"
+  },
+  {
+   "addr": "040.262",
+   "byte": "312"
+  },
+  {
+   "addr": "040.263",
+   "byte": "256"
+  },
+  {
+   "addr": "040.264",
+   "byte": "040"
+  },
+  {
+   "addr": "040.265",
+   "byte": "333"
+  },
+  {
+   "addr": "040.266",
+   "byte": "320"
+  },
+  {
+   "addr": "040.267",
+   "byte": "311"
+  },
+  {
+   "addr": "040.270",
+   "byte": "166"
+  },
+  {
+   "addr": "040.271",
+   "byte": "300"
+  },
+  {
+   "addr": "040.272",
+   "byte": "160"
+  },
+  {
+   "addr": "040.273",
+   "byte": "350"
+  },
+  {
+   "addr": "040.274",
+   "byte": "006"
+  },
+  {
+   "addr": "040.275",
+   "byte": "000"
+  },
+  {
+   "addr": "040.276",
+   "byte": "137"
+  },
+  {
+   "addr": "040.277",
+   "byte": "000"
+  },
+  {
+   "addr": "040.300",
+   "byte": "300"
+  }
+ ],
+ "printed": [
+  "                     ;       ACCTEST - H89 FUJINET ACCEPTANCE TEST",
+  "                     ;",
+  "                     ;       KEYED INTO THE MONITOR AT 040.100 AND RUN WITH G040100.",
+  "                     ;       STARTS THE CARD, ASKS IT FOR ITS ADAPTER CONFIGURATION AND",
+  "                     ;       PRINTS THE ANSWER.  PRINTS 1 WHEN THE 82C55 ANSWERS, 2 WHEN",
+  "                     ;       THE ESP32 HAS TAKEN THE REQUEST, THEN THE REPLY'S TEXT.  ENDS",
+  "                     ;       WITH A HALT, WHICH THE MONITOR TURNS INTO A BEEP, AN H AND",
+  "                     ;       THE H: PROMPT.",
+  "                     ;",
+  "                     ;       NUMBERS ARE OCTAL (Q) OR SPLIT OCTAL (A), AS IN HEATH LISTINGS.",
+  "                     ;",
+  "                     ;       Copyright (C) 2026 Thomas Cherryhomes",
+  "                     ;       SPDX-License-Identifier: GPL-3.0-or-later",
+  "                     ;",
+  "                     PDATA   EQU     320Q            ;82C55 PORT A, THE BYTE PIPE",
+  "                     PSTAT   EQU     322Q            ;82C55 PORT C: STATUS IN, CONTROL OUT",
+  "                     PCTRL   EQU     323Q            ;82C55 CONTROL WORD",
+  "                     WCC     EQU     003302A         ;MONITOR: WRITE CONSOLE CHARACTER",
+  "                     ;",
+  "                             ORG     040100A",
+  "                     ;",
+  "040100  076 300      START:  MVI     A,300Q          ;PORT A MODE 2, PC0-PC2 OUT:",
+  "040102  323 323              OUT     PCTRL           ; EN=0 HOLDS THE ESP32 IN RESET",
+  "040104  076 006              MVI     A,006Q          ;EN=1 WITH IO0=1: BOOT FROM FLASH",
+  "040106  323 322              OUT     PSTAT",
+  "040110  041 000 000          LXI     H,0             ;WAIT ABOUT 3/4 SECOND SO THE",
+  "040113  053          DELAY:  DCX     H               ; ESP32 LATCHES IO0 BEFORE THE",
+  "040114  174                  MOV     A,H             ; 245 IS TURNED ON",
+  "040115  265                  ORA     L",
+  "040116  302 113 040          JNZ     DELAY",
+  "040121  076 005              MVI     A,005Q          ;245 ON (/OE=0), DIR TOWARD ESP32",
+  "040123  323 322              OUT     PSTAT",
+  "040125  333 322              IN      PSTAT           ;IS THE 82C55 THERE?",
+  "040127  346 007              ANI     007Q            ; PC2-PC0 MUST READ BACK 101",
+  "040131  376 005              CPI     005Q",
+  "040133  302 270 040          JNZ     DONE            ;NO: HALT NOW",
+  "040136  076 061              MVI     A,'1'           ;CHECKPOINT 1",
+  "040140  315 302 003          CALL    WCC",
+  "040143  041 271 040          LXI     H,REQ           ;SEND THE REQUEST",
+  "040146  006 010              MVI     B,8",
+  "040150  176          SEND:   MOV     A,M",
+  "040151  323 320              OUT     PDATA",
+  "040153  333 322      WOBF:   IN      PSTAT           ;WAIT UNTIL THE ESP32 HAS IT",
+  "040155  346 200              ANI     200Q            ; (/OBF HIGH AGAIN)",
+  "040157  312 153 040          JZ      WOBF",
+  "040162  043                  INX     H",
+  "040163  005                  DCR     B",
+  "040164  302 150 040          JNZ     SEND",
+  "040167  076 004              MVI     A,004Q          ;DIR TOWARD THE H89",
+  "040171  323 322              OUT     PSTAT",
+  "040173  076 062              MVI     A,'2'           ;CHECKPOINT 2",
+  "040175  315 302 003          CALL    WCC",
+  "040200  001 000 005  SYNC:   LXI     B,002400Q       ;B=5 HEADER BYTES TO SKIP, C=0",
+  "040203  315 256 040  HEAD:   CALL    GETB            ;FIND THE FRAME, SKIP THE HEADER",
+  "040206  376 300              CPI     300Q            ; (START OVER ON EVERY C0)",
+  "040210  312 200 040          JZ      SYNC",
+  "040213  005                  DCR     B",
+  "040214  302 203 040          JNZ     HEAD",
+  "040217  315 256 040  SHOW:   CALL    GETB            ;PRINT THE REPLY UP TO THE END C0",
+  "040222  376 300              CPI     300Q",
+  "040224  312 270 040          JZ      DONE",
+  "040227  376 041              CPI     041Q            ;PRINTABLE?",
+  "040231  332 241 040          JC      GAP",
+  "040234  376 177              CPI     177Q",
+  "040236  332 247 040          JC      PUT",
+  "040241  076 040      GAP:    MVI     A,040Q          ;ANYTHING ELSE IS A SPACE,",
+  "040243  271                  CMP     C               ; BUT ONLY ONE IN A ROW",
+  "040244  312 217 040          JZ      SHOW",
+  "040247  117          PUT:    MOV     C,A",
+  "040250  315 302 003          CALL    WCC",
+  "040253  303 217 040          JMP     SHOW",
+  "                     ;",
+  "040256  333 322      GETB:   IN      PSTAT           ;WAIT FOR A BYTE FROM THE ESP32",
+  "040260  346 040              ANI     040Q            ; (IBF HIGH)",
+  "040262  312 256 040          JZ      GETB",
+  "040265  333 320              IN      PDATA",
+  "040267  311                  RET",
+  "                     ;",
+  "                     ;       THE HALT COMES LAST: THE MONITOR'S CLOCK SEES A HALT WHEN THE",
+  "                     ;       BYTE BEFORE THE INTERRUPTED ADDRESS IS 166Q, SO NO CODE MAY",
+  "                     ;       FOLLOW ONE.",
+  "040270  166          DONE:   HLT                     ;BACK TO THE MONITOR",
+  "                     ;",
+  "                     ;       GET ADAPTER CONFIG (350Q) FOR THE FUJINET DEVICE (160Q),",
+  "                     ;       A SIX-BYTE FUJIBUS HEADER BETWEEN SLIP END BYTES (300Q).",
+  "040271  300 160 350  REQ:    DB      300Q,160Q,350Q,006Q,000Q,137Q,000Q,300Q",
+  "        006 000 137",
+  "        000 300    ",
+  "                     ;",
+  "                             END     START"
+ ]
+}

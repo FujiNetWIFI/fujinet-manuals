@@ -1,0 +1,105 @@
+{
+"rows": [
+{
+"text": "NAME    .EXT    SIZE      DATE          FLAGS   12-OCT-80                       ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "HELLO   .TXT    1       11-OCT-80                                               ",
+"rev": "                                                                                "
+},
+{
+"text": "PIP     .ABS    19      12-OCT-80                                               ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "   2 FILES, USING 20 SECTORS (346 FREE)                                         ",
+"rev": "                                                                                "
+},
+{
+"text": ">DISMOUNT FN0:                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "VOLUME 000, DISMOUNTED FROM FN0:                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "LABEL: FUJINET DEMO DISK                                                        ",
+"rev": "                                                                                "
+},
+{
+"text": ">MOUNT FN1:                                                                     ",
+"rev": "                                                                                "
+},
+{
+"text": "?02 UNIT NOT AVAILABLE                                                          ",
+"rev": "                                                                                "
+},
+{
+"text": ">MOUNT FN2:                                                                     ",
+"rev": "                                                                                "
+},
+{
+"text": "?02 UNABLE TO READ THIS DISK, IT PROBABLY HAS NOT BEEN PROPERLY INITIALIZED     ",
+"rev": "                                                                                "
+},
+{
+"text": ">MOUNT FN3:                                                                     ",
+"rev": "                                                                                "
+},
+{
+"text": "VOLUME 000, MOUNTED ON FN3:                                                     ",
+"rev": "                                                                                "
+},
+{
+"text": "LABEL: FUJINET DEMO DISK                                                        ",
+"rev": "                                                                                "
+},
+{
+"text": ">COPY FN3:PIP.ABS=SY0:PIP.ABS                                                   ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "ERROR ON FILE FN3:PIP.ABS - ?02 DEVICE IS INCAPABLE OF WRITE OPERATIONS (OR IS W",
+"rev": "                                                                                "
+},
+{
+"text": "RITE LOCKED)                                                                    ",
+"rev": "                                                                                "
+},
+{
+"text": ">DISMOUNT FN3:                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "VOLUME 000, DISMOUNTED FROM FN3:                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "LABEL: FUJINET DEMO DISK                                                        ",
+"rev": "                                                                                "
+},
+{
+"text": ">                                                                               ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+}
+],
+"cursor": null
+}
