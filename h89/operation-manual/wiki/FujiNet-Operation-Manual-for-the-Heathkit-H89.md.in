@@ -1,0 +1,422 @@
+# FujiNet Operation Manual for the Heathkit H89
+
+*How to install and use the H89 FujiNet card: setting its jumpers, putting it in the Computer, checking it with a program keyed into the monitor, joining your WiFi with FujiNet CONFIG, and using the FujiNet's eight drives from HDOS (FN0:–FN7:) and CP/M (D:–K:) with the FNDISK drivers.*
+
+<img src="images/h89-operation-cover-board.png" width="640" alt="The H89 FujiNet card, printed in the brown and gold of a 1979 Heathkit manual cover">
+
+The printed edition, styled after Heath's 1979 *H88 Operation Manual*, is in the [fujinet-manuals](https://github.com/FujiNetWIFI/fujinet-manuals) repository under `h89/operation-manual/`.
+
+---
+
+## Contents
+
+1. [Introduction](#1-introduction)
+2. [Specifications](#2-specifications)
+3. [Set-Up and Testing](#3-set-up-and-testing)
+4. [System Configuration](#4-system-configuration)
+5. [FujiNet Software](#5-fujinet-software)
+6. [FujiNet CONFIG](#6-fujinet-config)
+7. [Using FujiNet Drives](#7-using-fujinet-drives)
+8. [More From Your FujiNet](#8-more-from-your-fujinet)
+9. [Firmware Updates](#9-firmware-updates)
+10. [Troubleshooting](#10-troubleshooting)
+11. [Quick Reference](#11-quick-reference)
+12. [Getting Help](#12-getting-help)
+
+### In a Hurry?
+
+1. Set the card's **PORT SEL** jumper to **320Q** and leave **J3** empty.
+2. With the Computer unplugged, put the card on a free pair of accessory sockets: **P504/P510** or **P505/P511** (not P506/P512).
+3. Run the [Communication Test](#communication-test) from the H: prompt. You should see `12`, then the FujiNet's answer.
+4. Write the *FujiNet for HDOS* or *FujiNet for CP/M* disk image to a diskette.
+   - HDOS: copy FN.DVD to your system disk and boot again.
+   - CP/M: make a 62K system (`MOVCPM17 62 *`, then `SYSGEN`).
+5. Run CONFIG (`RUN SY1:CONFIG.ABS` or `B:CONFIG`). Join your WiFi, put disk images in drives, and push **ESC**.
+6. HDOS: `MOUNT FN0:`. CP/M: `B:FNDISK`, then use `D:`.
+
+---
+
+## 1. Introduction
+
+The FujiNet is a network adapter for the Heathkit H89. It is one accessory board on the CPU logic circuit board, and it gives the Computer a wireless connection to the world's computers and the disk images on them. To HDOS and CP/M, it looks like eight more disk drives. You choose a disk image, from the microSD card on the board, a file server on your network, or a public FujiNet server, and put it in a FujiNet drive. Then you use it like the diskette in SY0: or A:.
+
+- **Eight FujiNet drives.** Under HDOS they are FN0: to FN7:. Under CP/M they are D: to K:, or wherever you choose.
+- **Eight host slots.** The microSD card, TNFS servers, and web, FTP, SMB or NFS servers.
+- **WiFi.** 2.4 GHz only; the network's name and password are kept on the FujiNet.
+- **FujiNet CONFIG.** A full-screen program for the H19, in versions for HDOS and CP/M.
+- **FNDISK.** The drivers: FN.DVD for HDOS 2.0, and FNDISK.COM for Heath/Zenith CP/M 2.2.04.
+- **A web page of its own.** It also carries a printer, a modem, eight network channels and a clock, for H89 programs to use.
+
+The H89 still starts HDOS or CP/M from its own floppy drive. The FujiNet drives join the system once it is running.
+
+## 2. Specifications
+
+| | |
+|---|---|
+| Bus | H89/H88 accessory bus. One pair of sockets: P504+P510 or P505+P511 |
+| I/O ports | 320–323 octal (D0–D3 hex), PORT SEL at 320Q. Positions 330Q, 340Q and 170Q are not used by present software |
+| Interface | 82C55A; port A in Mode 2 for data, port C for control. No interrupts (J3 open) |
+| FujiNet | ESP32 on an ESP32-DevKitC-VE module (8 MB flash, 8 MB PSRAM). 802.11 b/g/n, 2.4 GHz. microSD (FAT32) |
+| Disk image | .H8D: 102,400 bytes, 40 tracks × 10 sectors × 256 bytes (the H-17-1 diskette) |
+| Software | HDOS 2.0 (FN.DVD, CONFIG.ABS); Heath/Zenith CP/M 2.2.04, 62K system (FNDISK.COM, CONFIG.COM) |
+| Memory | HDOS 48K (64K to run CONFIG after FN.DVD is loaded); CP/M 64K |
+| Power | From the bus |
+
+## 3. Set-Up and Testing
+
+<img src="images/h89-operation-card.png" width="720" alt="The H89 FujiNet card with its parts labelled">
+
+### Handling
+
+The card's ICs are MOS devices. Touch the Computer's chassis (unplugged) before you pick the card up. Hold it by its edges, and keep your fingers off the connector pins, the ESP32's pins and its antenna.
+
+### Jumpers
+
+<img src="images/h89-operation-jumpers.png" width="480" alt="PORT SEL with its jumper on 320Q; J3 with no jumpers">
+
+| Jumper | To |
+|---|---|
+| PORT SEL | 320Q |
+| J3 (INT LVL) | no jumper |
+| three-pin header | as supplied |
+
+Port 320 is also the second (DCE, "alternate terminal") port of the HA-88-3 serial board. If that port's 8250 is installed, it and the FujiNet would collide.
+
+### microSD card
+
+The card is optional. Format it FAT32 (cards of 32 GB or less come that way), copy your .H8D images onto it, and slide it into the socket. Insert or remove it only with the power off: the FujiNet reads it only when it starts.
+
+### Installing the card
+
+<img src="images/h89-operation-sockets.png" width="640" alt="The three pairs of accessory sockets on the CPU board">
+
+1. Unplug the line cord. Slide both cabinet latches back about 1/2" with a small screwdriver, and tilt the shell back. **Hazardous voltages are present inside whenever the line cord is plugged in.**
+2. Choose a free socket pair: P504/P510 or P505/P511. The floppy disk interface keeps P506/P512.
+3. With the component side facing the same way as the other boards, put the 10-pin connector on the 10-pin socket and the 25-pin connector on the 25-pin socket. Press straight down until seated. Make sure no row is offset by a pin.
+4. Keep cables off the ESP32's antenna. Close the cabinet and plug in.
+
+*Tip:* if you will update the firmware, run a USB cable from the ESP32 module out of the cabinet now.
+
+### Testing
+
+**Initial tests.** Turn on the Computer. It should beep and show `H:`. Push **SHIFT + RESET**: it beeps and shows `H:` again.
+
+**Port test (MTR-90 only).**
+
+```
+  H: Out 323,300
+  H: In 322
+200
+  H: Out 322,006
+  H: In 322
+206
+```
+
+Type `O` then `323,300` RETURN; then `I` then `322` RETURN. Expect `200` (`240` is fine too). Then `O` `322,006` RETURN and `I` `322` RETURN: expect `206` (or `246`). `377` means nothing answered at 320. Never type `O322,004`: that starts the FujiNet's firmware-loading mode. Push SHIFT + RESET when done.
+
+#### Communication Test
+
+A 129-byte program you key in with the monitor's **Substitute** command. It starts the FujiNet, asks it for its adapter configuration, and prints the answer. It works on MTR-88, MTR-89 and MTR-90.
+
+1. Push SHIFT + RESET. Type `S` (the monitor finishes "Substitute"), then `040100` RETURN.
+2. Enter each number below and push SPACE after each. Each line starts at the address shown at its left; check it as you go. After the last number, push RETURN.
+3. Type `G` (the monitor finishes "Go"), then `040100` RETURN.
+
+{{ACCTEST_TABLE}}
+
+`-` backs up one address. Only the last three digits typed count.
+
+The display should be:
+
+```
+  H: Go 040100
+12 Workshop FujiNet v1.6-6b818770 H
+  H:
+```
+
+The text after `12` is the FujiNet's answer: here, the WiFi network it has joined, its own name, and its firmware version. Until it joins a network, only the version shows. A few stray characters can be bytes of its network addresses.
+
+| You see | It means |
+|---|---|
+| `12` and text, `H` | The card works |
+| only `H` (beep) | No 82C55A at 320: PORT SEL, seating, or another board at 320 |
+| `1` only | The FujiNet isn't taking the request: firmware, power, 74LVC245 |
+| `12` only | No answer came back: firmware, or the return path |
+| no beep / no `H` | The program was keyed in wrong |
+
+To run it again: SHIFT + RESET, then `G040100` RETURN (not a bare G).
+
+## 4. System Configuration
+
+<img src="images/h89-operation-portmap.png" width="340" alt="The H89's I/O ports, with the FujiNet's 320-323 marked">
+
+- **Ports.** The card answers at 320–323. Port A (320) carries the data, port C (322) the handshake and the FujiNet's start lines, and 323 is the control register.
+- **Interrupts.** None.
+- **Reset.** The Computer's RESET stops the FujiNet, and the next FujiNet program starts it.
+- **Memory.**
+  - HDOS: CONFIG.ABS runs from 052200 (2A80h), and FN.DVD takes about 4.3K once loaded. On a 48K Computer, CONFIG fits only before FN.DVD is loaded.
+  - CP/M: FNDISK puts about 2K above the BIOS, so it needs a 62K system.
+
+## 5. FujiNet Software
+
+| Disk image | Holds |
+|---|---|
+| FujiNet for HDOS | CONFIG.ABS, FN.DVD |
+| FujiNet for CP/M | CONFIG.COM, FNDISK.COM |
+
+Write the image for your system onto a blank hard-sectored diskette, however you usually bring images to your H89. Once the FujiNet runs, you can copy any image from a FujiNet drive to a diskette.
+
+### Preparing HDOS
+
+Always work on a copy of your system disk. HDOS 2.0 takes no year after 99 at its date prompt.
+
+```
+>MOUNT SY1:
+>COPY SY0:FN.DVD=SY1:FN.DVD
+ERROR ON FILE SY0:FN.DVD - ?02 NO FREE SPACE ON MEDIA
+>DELETE SY0:DK.DVD
+>COPY SY0:FN.DVD=SY1:FN.DVD
+1 FILES COPIED
+```
+
+DK.DVD is the H47 driver; delete it only if you have no H47. Then push SHIFT + RESET and boot again. `STAT` now lists `FN:` under DEVICE STATUS.
+
+### Making a 62K CP/M system
+
+FNDISK needs about 2K above the BIOS, so make a 62K system on a working copy:
+
+```
+A>MOVCPM17 62 *
+CONSTRUCTING 62k CP/M vers 2.2
+READY FOR "SYSGEN" OR
+"SAVE 38 CPM62.COM"
+A>SYSGEN
+SYSGEN VER 2.0.04
+SOURCE DRIVE NAME (OR RETURN TO SKIP):
+DESTINATION DRIVE NAME (OR RETURN TO REBOOT):A
+DESTINATION ON A, THEN TYPE RETURN
+FUNCTION COMPLETE
+DESTINATION DRIVE NAME (OR RETURN TO REBOOT):
+```
+
+At the source prompt push RETURN. At the destination prompt type `A`, then RETURN. At the last prompt push RETURN to reboot. The sign-on then reads `62K HEATH/ZENITH CP/M 2.2.04`.
+
+## 6. FujiNet CONFIG
+
+**HDOS:** `MOUNT SY1:`, then `RUN SY1:CONFIG.ABS`. Dismount any FN: units first. **CP/M:** `B:CONFIG`.
+
+<img src="images/h89-operation-hosts.png" width="720" alt="CONFIG's main screen">
+
+- The top line names the program and the system.
+- The two panes are the host slots and the drive slots.
+- The information line sits under the panes. Below the frame are the keys you can use now.
+- The 25th line shows the network, the FujiNet's address and its firmware version.
+
+| Key | Does |
+|---|---|
+| keypad 8/2 | up / down |
+| keypad 4/6 | previous / next page (file lists) |
+| 1–8 (main keyboard) | pick a slot |
+| RETURN | choose |
+| TAB | host slots / drive slots |
+| ESC | back; on the main screen: mount drives and leave |
+| ERASE | eject all drives; clear a line |
+| BACK SPACE | rub out; up a folder |
+
+### Joining your WiFi network
+
+<img src="images/h89-operation-wifi-scan.png" width="720" alt="The WiFi Networks screen">
+
+1. From the main screen, push `C`, then `S`.
+2. Pick your network and push RETURN, or choose `<Enter a network name>` for a hidden one.
+3. Type the password and push RETURN.
+
+<img src="images/h89-operation-wifi-password.png" width="720" alt="Typing the password">
+
+The information line shows `PLEASE WAIT...(ESC TO ABORT)`, then `CONNECTION SUCCESS!`. If you see `CONNECT FAILED` or `UNABLE TO CONNECT`, check the password. The FujiNet remembers the network.
+
+### Host slots
+
+Slot 1 is `SD`. tnfs.fujinet.online and apps.irata.online come in slots 2 and 3; both are read only. Pick a slot and push `E` to change it.
+
+| You type | For |
+|---|---|
+| `SD` | the microSD card |
+| `tnfs.fujinet.online` | a TNFS server (a plain name means TNFS) |
+| `http://host/path/` | a web server (https too) |
+| `ftp://host/path/` | FTP |
+| `smb://host/share/` | a Windows or Samba share |
+| `nfs://host/export/` | NFS |
+
+### Browsing, mounting, the drive slots
+
+<img src="images/h89-operation-browse-sd.png" width="720" alt="Browsing the microSD card">
+
+**Browsing.**
+- RETURN opens a folder, and BACK SPACE goes up one.
+- `F` filters by name (`*` for any characters); folders always show.
+- `N` makes a new disk image (use `1`, 100K). `C` copies a file to another host.
+
+<img src="images/h89-operation-mount-image.png" width="720" alt="Put it in which drive?">
+
+**Mounting.** On an image, push RETURN, pick a drive slot, then RETURN for read only or `W` for read/write. The drive is put in service when you leave with ESC.
+
+<img src="images/h89-operation-drives.png" width="720" alt="The drive slots with two images">
+
+**Drive slots.** TAB moves to them. `E` ejects, `R` and `W` set read only or read/write, and ERASE ejects all.
+
+### Leaving CONFIG
+
+Push **ESC**. CONFIG marks each drive OK or FAIL, gives the Computer back to the system, and lists the drives:
+
+```
+FUJINET DRIVES:
+  1 R/W SD:FUJIDEMO.H8D
+  2 R/O SD:GAMES.H8D
+```
+
+HDOS prints this in capitals. `Q` leaves without putting drives in service.
+
+**After every reset**, the FujiNet waits for CONFIG before it puts its drives in service. Run CONFIG and push ESC. Or set **Enable CONFIG boot disk** to **No** on the FujiNet's web page, and the FujiNet does it by itself.
+
+## 7. Using FujiNet Drives
+
+The drives read .H8D images only, the H-17-1 diskette format. They refuse anything else.
+
+### HDOS: FN0: to FN7:
+
+Slot 1 is FN0:, up to slot 8, FN7:.
+
+```
+>MOUNT FN0:
+VOLUME 000, MOUNTED ON FN0:
+LABEL: FUJINET DEMO DISK
+>CAT FN0:
+>COPY FN0:PIP.ABS=SY0:PIP.ABS
+1 FILES COPIED
+```
+
+- `DISMOUNT FN0:` before CONFIG changes slot 1, then `MOUNT` it again. Don't use RESET on an FN: unit.
+- `LOAD FN:` loads the driver ahead of time; it uses about 4.3K.
+
+| HDOS says | Means |
+|---|---|
+| ?02 UNKNOWN DEVICE NAME | FN.DVD not on SY0:, or HDOS not restarted since |
+| ?02 UNIT NOT AVAILABLE | Empty slot, drives not in service since reset, or FujiNet not answering |
+| ?02 UNABLE TO READ THIS DISK... | Not an initialized HDOS disk |
+| ?02 DEVICE IS INCAPABLE OF WRITE OPERATIONS... | Slot is read only |
+| ?02 READ FAILURE / WRITE FAILURE | FujiNet or host not answering |
+
+### CP/M: FNDISK
+
+```
+A>B:FNDISK
+FNDISK: FujiNet drives for H89 CP/M
+Installed.
+  D: slot 1  CPMDEMO.H8D (read/write)
+  E: slot 2  WORDSTAR.H8D (read only)
+  F: slot 3  -
+  ...
+  K: slot 8  -
+```
+
+- Run FNDISK once after each cold boot; a warm boot keeps it. Running it again just lists the drives.
+- `B:FNDISK G` starts the drives at G:. The latest starting letter is I:.
+- To change disks: run CONFIG, change them, push ESC. CONFIG's warm boot logs the drives in again.
+- Each drive holds 92K, with 64 directory entries.
+
+| FNDISK / CP/M says | Means |
+|---|---|
+| No room above the BIOS. Make a 62K system… | 64K CP/M: see section 5 |
+| Needs Heath/Zenith CP/M 2.2.04. | Other CP/M versions aren't supported |
+| No FujiNet card (82C55 at 0D0H) found. | Card, jumper, or port conflict |
+| The FujiNet isn't answering. | Push SHIFT + RESET, run CONFIG, retry |
+| No 8 free drive letters there. | The letter is a BIOS drive, or later than I: |
+| Bdos Err On F: Select | Empty slot, not an .H8D, or not in service since reset |
+| Bdos Err On E: Bad Sector (writing) | Read-only slot; push CTRL-C |
+
+### Blank disk images
+
+- **CP/M.** A 102,400-byte file of E5 bytes is an empty disk: `head -c 102400 /dev/zero | tr '\0' '\345' > BLANK.H8D`.
+- **HDOS.** It needs an initialized disk, and FN.DVD can't initialize one. Use `python3 hdosfs.py blank BLANK.H8D --label "MY DISK"` from [fujinet-h89](https://github.com/FujiNetWIFI/fujinet-h89).
+- **.H17DISK files.** `hdosfs.py convert` turns a single-sided, 40-track image into an .H8D.
+
+## 8. More From Your FujiNet
+
+- **microSD:** FAT32; read only at start-up. The FujiNet keeps a copy of its settings in `fnconfig.ini` there.
+- **Web page:** browse to `http://` and the IP from CONFIG's Info screen, or try `http://fujinet.local`. From there you can:
+  - rename the FujiNet;
+  - see the host and drive slots;
+  - set the time zone;
+  - set up the printer and modem, and see what was printed;
+  - choose **Enable CONFIG boot disk**.
+
+  The serial-port settings do nothing on the H89.
+- **File servers:** run your own TNFS server (from fujinet.online), or use SMB, NFS, FTP or web folders. The public servers keep software in per-computer folders.
+- **Other devices:** a printer, a modem, network channels N1–N8 and a clock, for H89 programs to use. Programmers can use [fujinet-lib](https://github.com/FujiNetWIFI/fujinet-lib) with z88dk (targets `h89-hdos`, `h89-cpm`).
+- **FujiNet Go H89:** an H89 + H19 + FujiNet emulator for Windows, macOS and Linux. It needs your own Heath ROMs.
+
+## 9. Firmware Updates
+
+Use the FujiNet-Flasher (fujinet.online/download) and a data USB cable to the ESP32 module. **The Computer must be on.** Route the cable out of the cabinet before you turn it on, and never reach into a running H89.
+
+1. Turn on the Computer and get to `H:`.
+2. Put the FujiNet in loading mode.
+   - MTR-90: `O323,300` RETURN, then `O322,004` RETURN.
+   - MTR-88/89: key this in at 040100 and run it with `G040100`:
+
+{{FLASHMODE_TABLE}}
+
+3. Plug in the USB cable. In the Flasher, pick the port, the platform "Heathkit H89" and a version, then Flash.
+4. Unplug the USB cable and push **SHIFT + RESET**. Until you do, programs say the FujiNet isn't answering.
+5. Check the version on CONFIG's Info screen.
+
+The FujiNet's diagnostic output comes out of the USB port at 460,800 baud.
+
+## 10. Troubleshooting
+
+Run the [Communication Test](#communication-test) first. Remember:
+
+- A reset stops the FujiNet.
+- Drives wait for CONFIG after a reset, unless you set the web option.
+- The microSD card is read only at start-up.
+- The FujiNet hears 2.4 GHz only.
+- The H89 can't boot from a FujiNet drive.
+- Public servers are read only.
+
+| Condition | Possible cause |
+|---|---|
+| No `H:` with the card in | Card not seated or offset; SW501 set to auto-boot or memory test |
+| Port test 377, or test shows only `H` | PORT SEL not at 320Q; card not seated; HA-88-3 port at 320 |
+| Test shows `1` only | Firmware missing, or left in loading mode (SHIFT+RESET); no 3.3 V; U2 |
+| Test shows `12` only | Wrong firmware; return path |
+| CONFIG: "Contacting FujiNet..." for a long time | FujiNet not answering: run the test |
+| NOT ENOUGH RAM FOR THIS PROGRAM (CONFIG.ABS) | 48K with FN.DVD loaded: restart HDOS and run CONFIG first |
+| No networks listed | 5 GHz-only network; router too far; hidden SSID |
+| CONNECT FAILED | Password wrong (case counts); MAC filtering |
+| "A drive could not be mounted." | Image gone, host unreachable, or R/W on a read-only host |
+| CP/M typing drops letters in CONFIG | Type more slowly (no BIOS type-ahead) |
+
+## 11. Quick Reference
+
+| | |
+|---|---|
+| `RUN SY1:CONFIG.ABS` / `B:CONFIG` | CONFIG |
+| `MOUNT FN0:` / `DISMOUNT FN0:` | HDOS drive slot 1 |
+| `B:FNDISK` / `B:FNDISK G` | CP/M drives from D: / from G: |
+| `MOVCPM17 62 *`, `SYSGEN` | make a 62K CP/M |
+| `S040100`, SPACE, `-`, RETURN | Substitute |
+| `G040100` | run the test |
+| `O323,300`, `I322` | MTR-90 port check (200) |
+| `O322,004` | MTR-90: FujiNet loading mode |
+
+## 12. Getting Help
+
+- [fujinet.online](https://fujinet.online): news, downloads, and the list of public servers
+- [FujiNet Discord](https://discord.gg/7MfFTvD)
+- [github.com/FujiNetWIFI](https://github.com/FujiNetWIFI): firmware, CONFIG, drivers
+- [fujinet-manuals](https://github.com/FujiNetWIFI/fujinet-manuals): report a mistake in this manual
+
+When you ask, say which Computer, monitor, operating system and firmware you have, what you did, and exactly what the screen said.
+
+*FujiNet is a community project, not affiliated with Heath Company, Zenith Data Systems, or their successors.*

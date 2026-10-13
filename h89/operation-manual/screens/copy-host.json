@@ -1,0 +1,105 @@
+{
+"rows": [
+{
+"text": " FujiNet CONFIG  H89 HDOS ",
+"rev": "                                                                                "
+},
+{
+"text": " Copy to which host? ",
+"rev": "  rrrrrrrrrrrrrrrrrrrrr                                                         "
+},
+{
+"text": " 1 SD                                                                        ",
+"rev": " rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr "
+},
+{
+"text": "  2 tnfs.fujinet.online                                                       ",
+"rev": "                                                                                "
+},
+{
+"text": "  3 apps.irata.online                                                         ",
+"rev": "                                                                                "
+},
+{
+"text": "  4 TNFS.MYHOUSE.NET                                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "  5 Empty                                                                     ",
+"rev": "                                                                                "
+},
+{
+"text": "  6 Empty                                                                     ",
+"rev": "                                                                                "
+},
+{
+"text": "  7 Empty                                                                     ",
+"rev": "                                                                                "
+},
+{
+"text": "  8 Empty                                                                     ",
+"rev": "                                                                                "
+},
+{
+"text": " Copying ",
+"rev": "                                                                                "
+},
+{
+"text": "    From host: SD                                                             ",
+"rev": "                                                                                "
+},
+{
+"text": "         File: /HDOS/BASIC.H8D                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "",
+"rev": "                                                                                "
+},
+{
+"text": "  RET  Choose   1 - 8  Slot                                                     ",
+"rev": " rrrrr         rrr rrr                                                          "
+},
+{
+"text": "  ESC  Cancel the copy                                                          ",
+"rev": " rrrrr                                                                          "
+},
+{
+"text": " SSID: Workshop  IP: 192.168.1.89  FujiNet v1.6-6b818770                    ",
+"rev": "                                                                                "
+}
+],
+"cursor": null
+}

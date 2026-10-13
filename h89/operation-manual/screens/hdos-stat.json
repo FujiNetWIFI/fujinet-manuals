@@ -1,0 +1,105 @@
+{
+"rows": [
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "MEMORY USAGE                                                                    ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "  PHYSICAL MEMORY LIMIT:        377377                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "  HDOS LOWER BOUND:             355261                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "  MAXIMUM OVERLAY SIZE:         013315                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "OVERLAY STATUS                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "  HDOSOVL0                                                                      ",
+"rev": "                                                                                "
+},
+{
+"text": "  HDOSOVL1                                                                      ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "DEVICE STATUS                                                                   ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "  TT:   IP      RW                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "  SY:   IP      DRW                                                             ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "  FN:           DRW                                                             ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": ">                                                                               ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+}
+],
+"cursor": null
+}
