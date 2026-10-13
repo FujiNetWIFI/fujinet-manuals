@@ -1,0 +1,108 @@
+{
+"rows": [
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "  H: Boot                                                                       ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "64K HEATH/ZENITH CP/M 2.2.04  09/15/82                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "FOR H17 DISKS WITH OPTION(S) I                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>B:FNDISK                                                                      ",
+"rev": "                                                                                "
+},
+{
+"text": "FNDISK: FujiNet drives for H89 CP/M                                             ",
+"rev": "                                                                                "
+},
+{
+"text": "No room above the BIOS. Make a 62K system                                       ",
+"rev": "                                                                                "
+},
+{
+"text": "(MOVCPM17 62 *, then SYSGEN) and boot that.                                     ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+}
+],
+"cursor": [
+2,
+12
+]
+}

@@ -1,0 +1,105 @@
+{
+"rows": [
+{
+"text": "FujiNet drives:                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "  1 R/W SD:CPMDEMO.H8D                                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "  2 R/O SD:WORDSTAR.H8D                                                         ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>B:FNDISK                                                                      ",
+"rev": "                                                                                "
+},
+{
+"text": "FNDISK: FujiNet drives for H89 CP/M                                             ",
+"rev": "                                                                                "
+},
+{
+"text": "Installed.                                                                      ",
+"rev": "                                                                                "
+},
+{
+"text": "  D: slot 1  CPMDEMO.H8D (read/write)                                           ",
+"rev": "                                                                                "
+},
+{
+"text": "  E: slot 2  WORDSTAR.H8D (read only)                                           ",
+"rev": "                                                                                "
+},
+{
+"text": "  F: slot 3  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  G: slot 4  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  H: slot 5  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  I: slot 6  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  J: slot 7  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "  K: slot 8  -                                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+}
+],
+"cursor": null
+}

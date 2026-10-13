@@ -1,0 +1,105 @@
+{
+"rows": [
+{
+"text": " FujiNet CONFIG  H89 HDOS ",
+"rev": "                                                                                "
+},
+{
+"text": " Mount Disk Image ",
+"rev": "  rrrrrrrrrrrrrrrrrr                                                            "
+},
+{
+"text": "         Host: SD                                                             ",
+"rev": "                                                                                "
+},
+{
+"text": "       Folder: /HDOS/                                                         ",
+"rev": "                                                                                "
+},
+{
+"text": "         File: FUJIDEMO.H8D                                                   ",
+"rev": "                                                                                "
+},
+{
+"text": "         Size: 100K                                                           ",
+"rev": "                                                                                "
+},
+{
+"text": "         Date: 2026-10-12 18:55                                               ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                              ",
+"rev": "                                                                                "
+},
+{
+"text": " Drive Slots ",
+"rev": "  rrrrrrrrrrrrr                                                                 "
+},
+{
+"text": " 1     Empty                                                                 ",
+"rev": " rrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrrr "
+},
+{
+"text": "  2     Empty                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "  3     Empty                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "  4     Empty                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "  5     Empty                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "  6     Empty                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "  7     Empty                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "  8     Empty                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "",
+"rev": "                                                                                "
+},
+{
+"text": " Put it in which drive?                                                       ",
+"rev": "                                                                                "
+},
+{
+"text": "",
+"rev": "                                                                                "
+},
+{
+"text": "  RET  Mount read only   W  Mount read/write   E  Eject   1 - 8  Slot           ",
+"rev": " rrrrr                  rrr                   rrr        rrr rrr                "
+},
+{
+"text": "  ESC  Cancel                                                                   ",
+"rev": " rrrrr                                                                          "
+},
+{
+"text": " SSID: Workshop  IP: 192.168.1.89  FujiNet v1.6-6b818770                    ",
+"rev": "                                                                                "
+}
+],
+"cursor": null
+}

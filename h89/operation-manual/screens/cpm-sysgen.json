@@ -1,0 +1,105 @@
+{
+"rows": [
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "  H: Boot                                                                       ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "64K HEATH/ZENITH CP/M 2.2.04  09/15/82                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "FOR H17 DISKS WITH OPTION(S) I                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "A>MOVCPM17 62 *                                                                 ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "MOVCPM17 VERSION 2.2.04                                                         ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "CONSTRUCTING 62k CP/M vers 2.2                                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "READY FOR \"SYSGEN\" OR                                                           ",
+"rev": "                                                                                "
+},
+{
+"text": "\"SAVE 38 CPM62.COM\"                                                             ",
+"rev": "                                                                                "
+},
+{
+"text": "A>SYSGEN                                                                        ",
+"rev": "                                                                                "
+},
+{
+"text": "SYSGEN VER 2.0.04                                                               ",
+"rev": "                                                                                "
+},
+{
+"text": "SOURCE DRIVE NAME (OR RETURN TO SKIP):                                          ",
+"rev": "                                                                                "
+},
+{
+"text": "DESTINATION DRIVE NAME (OR RETURN TO REBOOT):A                                  ",
+"rev": "                                                                                "
+},
+{
+"text": "DESTINATION ON A, THEN TYPE RETURN                                              ",
+"rev": "                                                                                "
+},
+{
+"text": "FUNCTION COMPLETE                                                               ",
+"rev": "                                                                                "
+},
+{
+"text": "DESTINATION DRIVE NAME (OR RETURN TO REBOOT):                                   ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+},
+{
+"text": "                                                                                ",
+"rev": "                                                                                "
+}
+],
+"cursor": null
+}
