@@ -7,8 +7,9 @@ list is the place to check when a newer firmware, fujinet-lib or z88dk
 comes out: each entry cites the line of source it comes from.
 
 Versions: fn-h89 `h89-disk-fixes` 7ab84ae64; fujinet-lib
-`h89-keep-esp32-running` 9e6d4dd; z88dk v2.4-1231 (3bd06cad56);
-fujinet-pc built from the same firmware.
+`h89-setup-after-reset` d08f584 (the entries were found in 9e6d4dd, which
+differs only in port_init: L22); z88dk v2.4-1231 (3bd06cad56); fujinet-pc
+built from the same firmware.
 
 
 ## FujiNet device (70H)
@@ -222,7 +223,7 @@ fujinet-pc built from the same firmware.
 ## fujinet-lib
 
 - **L1 descriptor flags on the wire**: fuji_bus_call puts its FUJI_FIELD_DATA (08H) and FUJI_FIELD_REPLY (10H) flags in the packet's descriptor byte. The firmware ignores bits 3-6, so no harm, but the bytes differ from other FujiBus clients'. (`fujinet-lib/bus/h89/fuji_bus_call.c:201`)
-- **L2 port_putc**: No timeout: with the FujiNet not running, a C program hangs in its first call. (`fujinet-lib/bus/h89/portio.c:140-153`)
+- **L2 port_putc**: No timeout: with the FujiNet not running, a C program hangs in its first call. (`fujinet-lib/bus/h89/portio.c:160-173`)
 - **L3 FUJI_DIR_ENTRY_IS_DIR / _IS_TRUNC**: Use is_dir/is_trunc, which the H89's FujiDirEntry does not have (it has flags): code using them does not compile. Test flags & 1 and flags & 2. (`fujinet-lib/include/fujinet-fuji.h (FUJI_DIR_ENTRY_IS_*; FujiDirEntry for FUJI_PLATFORM_H89)`)
 - **L4 fixed 256-byte payloads**: fuji_open_directory, fuji_set_host_prefix, fuji_set_device_filename and fuji_copy_file always send 256 bytes from the caller's string, so whatever follows its NUL is sent too (and the firmware may read it as a pattern or part of a path). Clear a 256-byte buffer first. (`fujinet-lib/include/fujinet-fuji.h (MAX_FILENAME_LEN in the FUJICALL_..._D macros)`)
 - **L5 network_json_query**: Always sends 256 bytes of query and reads the answer into the caller's buffer with no limit. (`fujinet-lib/common/network_json_query.c:12-30`)
@@ -242,6 +243,7 @@ fujinet-pc built from the same firmware.
 - **L19 qrcode_create**: Returns negative NETWORK_ERROR codes (-162, -215), not FN_ERR values. (`fujinet-lib/common/qrcode_create.c:12-27`)
 - **L20 port_getbuf_slip_dual**: Does not read the closing END of a reply that fills its buffer exactly, which includes every bare ACK and NAK; the next read starts with a stray C0H. Harmless for fujinet-lib's own calls (they resynchronise on END), but a program mixing in raw reads (the modem) must drop it first. (`fujinet-lib/bus/h89/port_slip.c`)
 - **L21 reply timeout**: fuji_bus_call() waits a fixed 15 s (TIMEOUT_SLOW) for a reply and has no way to drop a reply that arrives later. When FUJI_COPY_FILE took longer, fuji_copy_file() returned false and the late ACK was taken as the reply to the next request (a STATUS), after which every reply was one behind and the test program reported the FujiNet BROKEN. With TIMEOUT_SLOW at 60 s the copy test passed. Proposed: a longer timeout for slow commands, and a drain before each request. (`fujinet-lib/bus/h89/fuji_bus_call.c:14; observed: build/runs/libtest-disk-hdos/tap.jsonl`)
+- **L22 port_init (9e6d4dd)**: Took EN (PC2) high to mean the card was set up, and skipped the mode word. After a reset the 82C55A's bus hold can make PC2 read 1 while port A is not in Mode 2, so on a real H89 under HDOS the first call waited forever. CP/M's BIOS writes a mode word at boot, which hid it there, and FujiNet Go H89 before 51f411d read PC2 as 0 after a reset. Fixed in d08f584 with the mark in port B (Chapter 2). fujinet-h89's card_on (FN.DVD, FNDISK) before 4cb0024 and FNON before 51f411d made the same test. (`fujinet-lib/bus/h89/portio.c:91-107 (9e6d4dd)`)
 
 ## fujinet-lib's test programs
 

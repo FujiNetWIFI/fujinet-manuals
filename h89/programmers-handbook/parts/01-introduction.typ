@@ -147,10 +147,14 @@ versions, which are the ones its examples ran against:
 #stable((1.25in, 1fr),
   th[Program], th[Version],
   [Firmware], [fujinet-firmware, branch h89-disk-fixes, 7ab84ae64 (reports itself as v1.6)],
-  [fujinet-lib], [branch h89-keep-esp32-running, 9e6d4dd (the H89 is not yet in a release)],
+  [fujinet-lib], [branch h89-setup-after-reset, d08f584 (the H89 is not yet in a release). The
+    programs of Chapters 13 to 19 and the library's own tests ran with 9e6d4dd, which differs only in
+    how it starts the card (L22).],
   [z88dk], [v2.4-1231 (3bd06cad56)],
-  [FujiNet Go H89], [v0.1.0-3 (8dc059d)],
-  [FNDISK, FNON], [fujinet-h89, branch hdos-fn-driver, dff02cc],
+  [FujiNet Go H89], [51f411d, which resets the card's 82C55A as a real H89 does. The programs of
+    Chapters 13 to 19 and the library's tests ran on v0.1.0-3 (8dc059d).],
+  [FNDISK, FN.DVD], [fujinet-h89, branch card-setup-mark, 4cb0024],
+  [FNON], [FujiNet Go H89, 51f411d],
 )
 
 Where the firmware or the library does something it should not, the entry says so in a WARNING,

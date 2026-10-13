@@ -1300,7 +1300,7 @@
    "area": "fujinet-lib",
    "subject": "port_putc",
    "text": "No timeout: with the FujiNet not running, a C program hangs in its first call.",
-   "cite": "fujinet-lib/bus/h89/portio.c:140-153"
+   "cite": "fujinet-lib/bus/h89/portio.c:160-173"
   },
   {
    "id": "L3",
@@ -1434,6 +1434,13 @@
    "subject": "reply timeout",
    "text": "fuji_bus_call() waits a fixed 15 s (TIMEOUT_SLOW) for a reply and has no way to drop a reply that arrives later. When FUJI_COPY_FILE took longer, fuji_copy_file() returned false and the late ACK was taken as the reply to the next request (a STATUS), after which every reply was one behind and the test program reported the FujiNet BROKEN. With TIMEOUT_SLOW at 60 s the copy test passed. Proposed: a longer timeout for slow commands, and a drain before each request.",
    "cite": "fujinet-lib/bus/h89/fuji_bus_call.c:14; observed: build/runs/libtest-disk-hdos/tap.jsonl"
+  },
+  {
+   "id": "L22",
+   "area": "fujinet-lib",
+   "subject": "port_init (9e6d4dd)",
+   "text": "Took EN (PC2) high to mean the card was set up, and skipped the mode word. After a reset the 82C55A's bus hold can make PC2 read 1 while port A is not in Mode 2, so on a real H89 under HDOS the first call waited forever. CP/M's BIOS writes a mode word at boot, which hid it there, and FujiNet Go H89 before 51f411d read PC2 as 0 after a reset. Fixed in d08f584 with the mark in port B (Chapter 2). fujinet-h89's card_on (FN.DVD, FNDISK) before 4cb0024 and FNON before 51f411d made the same test.",
+   "cite": "fujinet-lib/bus/h89/portio.c:91-107 (9e6d4dd)"
   },
   {
    "id": "T1",

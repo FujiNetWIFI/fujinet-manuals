@@ -87,11 +87,11 @@ These targets regenerate them:
 
 | What | Where | Branch / commit (Oct 12, 2026) |
 |---|---|---|
-| CONFIG for the H89 | `fujinet-config` `src/h89/` | `add-h89` 6f48e0f |
-| FNDISK.COM, FN.DVD, hdosfs.py | `fujinet-h89` | `hdos-fn-driver` dff02cc |
-| H89 bus library | `fujinet-lib` `bus/h89/` | `h89-keep-esp32-running` 9e6d4dd |
+| CONFIG for the H89 | `fujinet-config` `src/h89/` | `add-h89` 6f48e0f; 1823324 builds against fujinet-lib d08f584 |
+| FNDISK.COM, FN.DVD, hdosfs.py | `fujinet-h89` | `hdos-fn-driver` dff02cc; the card's start-up `card-setup-mark` 4cb0024 |
+| H89 bus library | `fujinet-lib` `bus/h89/` | `h89-setup-after-reset` d08f584 (was `h89-keep-esp32-running` 9e6d4dd) |
 | Firmware (RS232 over the 82C55) | `fujinet-firmware` | master 0bc531d3d; disk fixes `h89-disk-fixes` 7ab84ae64 |
-| Emulator, FNON.ASM | `fujinet-go-h89-desktop` | 8dc059d |
+| Emulator, FNON.ASM | `fujinet-go-h89-desktop` | 8dc059d; FNON and the card's reset `card-reset-bus-hold` 51f411d |
 | Hardware | `fujinet-hardware/H89/` | schematic v1.28; Collado's 82C55 note Rev 1.0 |
 
 Where the sources and the book differ, see `errata.md`. The photo shot list and

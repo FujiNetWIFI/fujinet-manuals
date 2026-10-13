@@ -90,8 +90,9 @@ def main():
            "list is the place to check when a newer firmware, fujinet-lib or z88dk",
            "comes out: each entry cites the line of source it comes from.", "",
            "Versions: fn-h89 `h89-disk-fixes` 7ab84ae64; fujinet-lib",
-           "`h89-keep-esp32-running` 9e6d4dd; z88dk v2.4-1231 (3bd06cad56);",
-           "fujinet-pc built from the same firmware.", ""]
+           "`h89-setup-after-reset` d08f584 (the entries were found in 9e6d4dd, which",
+           "differs only in port_init: L22); z88dk v2.4-1231 (3bd06cad56); fujinet-pc",
+           "built from the same firmware.", ""]
     area = None
     for it in items:
         if it["area"] != area:

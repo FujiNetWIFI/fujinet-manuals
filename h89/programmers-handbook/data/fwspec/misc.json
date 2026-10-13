@@ -1,7 +1,7 @@
 {
   "meta": {
     "firmware": "fn-h89 branch h89-disk-fixes HEAD 7ab84ae64 (BUILD_RS232, -DPINMAP_H89)",
-    "fujinet_lib": "fujinet-lib branch h89-keep-esp32-running 9e6d4dd",
+    "fujinet_lib": "fujinet-lib branch h89-setup-after-reset d08f584 (surveyed at 9e6d4dd; only port_init differs)",
     "command_names": "fncmd.inc (h89/programmers-handbook/src/asm/inc/fncmd.inc)",
     "scope": "bus level + disk, clock, printer, modem, cpm devices. Fuji (0x70) and network (0x71-0x78) command sets are out of scope here."
   },
@@ -55,8 +55,8 @@
       "ESP32 H89 (PPIChannel): inter-byte receive timeout = IOCHANNEL_DEFAULT_TIMEOUT 100 ms; PPIChannel::begin() never changes read_timeout_ms (fn-h89/lib/hardware/IOChannel.h:4, 40; fn-h89/lib/hardware/PPIChannel.cpp:32-66). The timer restarts on every byte received (fn-h89/lib/hardware/IOChannel.cpp:24-38)",
       "ESP32 H89 transmit: per byte, waits for IBF low with DIR=ESP32->H89 and /OE low; gives up after 1 s (PPI_TX_TIMEOUT_US 1000000) and returns the count sent so far; busy-polls 2 ms then yields with vTaskDelay(1) (fn-h89/lib/hardware/PPIChannel.cpp:14-15, 157-176). Also aborts immediately if /OBF goes low (host started sending) - 'reply cut short' (162-166). /STB held until IBF rises or 100 us (16, 179-188)",
       "fujinet-pc: TTYChannel opened with readTimeout(200) ms (fn-h89/lib/bus/rs232/rs232.cpp:229-241; UARTChannel=TTYChannel on Unix fn-h89/lib/hardware/UARTChannel.h:8-9); BoIP channel keeps its 500 ms default (fn-h89/lib/hardware/BoIPChannel.h:8, 27; rs232.cpp:216-224)",
-      "fujinet-lib H89: reply wait TIMEOUT_SLOW = 15*PORT_TICKS_PER_SECOND = 7500 ticks of 2 ms = 15 s, applied per byte (resets on each byte) (fujinet-lib/bus/h89/fuji_bus_call.c:14, 106-107; fujinet-lib/bus/h89/portio.h:4; fujinet-lib/bus/h89/portio.c:122-138). Tick counter TIKCNT 0x000B under CP/M, 0x201B under HDOS (portio.c:52-57)",
-      "fujinet-lib H89 port_putc has NO timeout: two unbounded busy-waits on /OBF (fujinet-lib/bus/h89/portio.c:140-153). If the ESP32 is not taking bytes the H89 hangs"
+      "fujinet-lib H89: reply wait TIMEOUT_SLOW = 15*PORT_TICKS_PER_SECOND = 7500 ticks of 2 ms = 15 s, applied per byte (resets on each byte) (fujinet-lib/bus/h89/fuji_bus_call.c:14, 106-107; fujinet-lib/bus/h89/portio.h:4; fujinet-lib/bus/h89/portio.c:142-158). Tick counter TIKCNT 0x000B under CP/M, 0x201B under HDOS (portio.c:52-57)",
+      "fujinet-lib H89 port_putc has NO timeout: two unbounded busy-waits on /OBF (fujinet-lib/bus/h89/portio.c:160-173). If the ESP32 is not taking bytes the H89 hangs"
     ],
     "ppi_channel": [
       "Selected when ESP_PLATFORM && PIN_PPI_OBF: FUJINET_OVER_PPI, _serial is a PPIChannel (fn-h89/lib/bus/rs232/rs232.h:23-25, 134-135); PINMAP_H89 defines the pins (fn-h89/include/pinmap/heathkit_h89.h:29-43). fujinet-pc never builds PPIChannel (pinmap only included under ESP_PLATFORM, fn-h89/lib/hardware/PPIChannel.h:4-8) and uses TTY or BoIP",
@@ -65,7 +65,7 @@
       "ESP32->H89: per byte wait for IBF=0, DIR=0, /OE=0; drive D0-D7, pulse /STB low until IBF rises (max 100 us), release the data lines (fn-h89/lib/hardware/PPIChannel.cpp:148-194). Data pins are only driven during a strobe (76-80, 82-96)",
       "No baud rate (getBaudrate 0, setBaudrate no-op) and no modem-control lines: getDTR/getRTS true, setRI/setDSR/setCTS/setDCD no-ops (fn-h89/lib/hardware/PPIChannel.h:38-49). So the network 'data pending' interrupt that rs232.cpp drives with setRI (rs232.cpp:186-187) never reaches the H89",
       "Input flush at bus setup is skipped for the PPI (the 8255 holds a request sent during boot) (fn-h89/lib/bus/rs232/rs232.cpp:266-271)",
-      "H89 side (fujinet-lib): port C bit map PC0 DIR, PC1 /OE, PC2 ESP32 EN, PC3 INTR, PC4 /STB, PC5 IBF, PC6 /ACK, PC7 /OBF (fujinet-lib/bus/h89/portio.c:15-22). port_init sets Mode 2 (0xC0) and pulses EN to reset the ESP32, then waits 200 ms, but only if EN is not already high (portio.c:91-107). port_putc sets DIR=1, waits /OBF high, OUTs port A, waits /OBF high again, sets DIR=0 (140-153). port_getc reads port A when IBF is set (109-120)"
+      "H89 side (fujinet-lib): port C bit map PC0 DIR, PC1 /OE, PC2 ESP32 EN, PC3 INTR, PC4 /STB, PC5 IBF, PC6 /ACK, PC7 /OBF (fujinet-lib/bus/h89/portio.c:15-22). port_init leaves the card alone only when port B holds the mark A5H and EN is high; otherwise it sets Mode 2 (0xC0), raises EN and /OE on the next instruction, waits 200 ms and leaves the mark (portio.c:91-127). port_putc sets DIR=1, waits /OBF high, OUTs port A, waits /OBF high again, sets DIR=0 (160-173). port_getc reads port A when IBF is set (129-140)"
     ],
     "registered_devices": [
       {"id": "0x70", "name": "DEV_FUJINET", "class": "rs232Fuji (theFuji)", "cite": "fn-h89/src/main.cpp:349"},

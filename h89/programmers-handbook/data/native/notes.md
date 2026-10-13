@@ -9,10 +9,10 @@ it; `tools/native.sh check` redoes only the cross-check.
 
 | File | What |
 |---|---|
-| `src/native/FNON.ASM` | DRI ASM, CP/M. FujiNet Go H89's FNON (tools/disks/fnon, 8dc059d), code unchanged; two original lines are 75/76 columns. |
+| `src/native/FNON.ASM` | DRI ASM, CP/M. FujiNet Go H89's FNON (tools/disks/fnon, 51f411d), code unchanged; its longest lines are 75/76 columns. |
 | `src/native/FNONH.ASM` | Heath ASM, HDOS. The same program; `.PRINT`, `.EXIT`. |
-| `src/native/FNVER.ASM` | DRI ASM, CP/M. FUJI_GET_ADAPTERCONFIG, prints SSID + firmware version. 242 lines. |
-| `src/native/FNVERH.ASM` | Heath ASM, HDOS. The same. 236 lines. |
+| `src/native/FNVER.ASM` | DRI ASM, CP/M. FUJI_GET_ADAPTERCONFIG, prints SSID + firmware version. 243 lines. |
+| `src/native/FNVERH.ASM` | Heath ASM, HDOS. The same. 237 lines. |
 | `data/native/*.LST, *.PRN` | The assemblers' listings, pulled off the work disks (NULs and ^Z removed; Heath's form feeds kept). |
 | `data/native/timing.txt` | Emulated time of each assembly. |
 | `data/native/xcheck.txt` | The z80asm cross-check. |
@@ -21,7 +21,8 @@ it; `tools/native.sh check` redoes only the cross-check.
 | `build/native/` | FNON.COM/.HEX, FNVER.COM/.HEX, FNONH.ABS, FNVERH.ABS as they came off the disks; `z80asm/` the cross-check copies. |
 
 The four programs are pure 8080 (z80asm -m8080 accepts every line).
-FNVER/FNVERH: start the card if EN is low (FNON's code), send
+FNVER/FNVERH: start the card unless port B holds the mark A5H and EN
+is high (FNON's code), send
 `C0 70 E8 06 00 5F 00 C0` (checksum computed, every byte SLIP-escaped if
 needed), take the reply until its closing END with SLIP unescaping, a 15 s
 timeout counted in 2 ms TICKS, then check length word = bytes received,
@@ -48,8 +49,8 @@ HDOS (FNONH; FNVERH the same with its name):
     >SY1:ASM SY1:FNONH,SY1:FNONH=SY1:FNONH
 
 
-    00154 STATEMENTS ASSEMBLED
-    40215 BYTES FREE
+    00158 STATEMENTS ASSEMBLED
+    40192 BYTES FREE
      NO ERRORS DETECTED
 
     >SY1:FNONH
@@ -58,8 +59,8 @@ HDOS (FNONH; FNVERH the same with its name):
     FUJINET ALREADY ON
 
     >SY1:ASM SY1:FNVERH,SY1:FNVERH=SY1:FNVERH
-    00329 STATEMENTS ASSEMBLED
-    39933 BYTES FREE
+    00330 STATEMENTS ASSEMBLED
+    39909 BYTES FREE
      NO ERRORS DETECTED
     >SY1:FNVERH
     NETWORK:  DUMMY CAFE          (screen kept as WORKSHOP)
@@ -67,31 +68,31 @@ HDOS (FNONH; FNVERH the same with its name):
 
 ASM prints nothing but two blank lines and the three totals; the statement
 count includes the XTEXT'd lines (HOSDEF 65, ASCII 28). The listing file
-has the same totals in mixed case ("00154 Statements Assembled").
+has the same totals in mixed case ("00158 Statements Assembled").
 
 CP/M (FNVER; FNON the same):
 
     A>ASM B:FNVER
     CP/M ASSEMBLER - VER 2.0
-    03E4
+    03E1
     002H USE FACTOR
     END OF ASSEMBLY
 
     A>LOAD B:FNVER
     FIRST ADDRESS 0100
-    LAST  ADDRESS 02D9
-    BYTES READ    01DA
+    LAST  ADDRESS 02D6
+    BYTES READ    01D7
     RECORDS WRITTEN 04
 
     A>B:FNVER
     Network:  Dummy Cafe          (screen kept as Workshop)
     Firmware: v1.6-7d7a3ba
 
-FNON: `016A` / `000H USE FACTOR`; LOAD `LAST  ADDRESS 0169`,
-`BYTES READ    006A`, `RECORDS WRITTEN 01`; runs `FujiNet enabled`, then
+FNON: `0167` / `000H USE FACTOR`; LOAD `LAST  ADDRESS 0166`,
+`BYTES READ    0067`, `RECORDS WRITTEN 01`; runs `FujiNet enabled`, then
 `FujiNet already on`.
 
-`03E4` is the next free address after the program (here after its DS
+`03E1` is the next free address after the program (here after its DS
 areas, i.e. the top of FNVER's stack); USE FACTOR is how full ASM's symbol
 table got (hex).
 
@@ -104,38 +105,38 @@ interrupts off is included). It includes loading the assembler.
 
 | Program | Assembler | Assembly | LOAD |
 |---|---|---|---|
-| FNON (60 lines) | DRI ASM 2.0, CP/M | 8128 ticks = 16.3 s | 2944 ticks = 5.9 s |
-| FNVER (242 lines) | DRI ASM 2.0, CP/M | 16064 ticks = 32.1 s | 3936 ticks = 7.9 s |
-| FNONH (61 lines + 93 XTEXT'd) | Heath ASM, HDOS | 23736 ticks = 47.5 s | -- |
-| FNVERH (236 lines + 93 XTEXT'd) | Heath ASM, HDOS | 43784 ticks = 87.6 s | -- |
+| FNON (64 lines) | DRI ASM 2.0, CP/M | 8224 ticks = 16.4 s | 2952 ticks = 5.9 s |
+| FNVER (243 lines) | DRI ASM 2.0, CP/M | 16264 ticks = 32.5 s | 3936 ticks = 7.9 s |
+| FNONH (65 lines + 93 XTEXT'd) | Heath ASM, HDOS | 23656 ticks = 47.3 s | -- |
+| FNVERH (237 lines + 93 XTEXT'd) | Heath ASM, HDOS | 44336 ticks = 88.7 s | -- |
 
 (`data/native/timing.txt`. Repeat runs agree within a few ticks for CP/M;
 an earlier HDOS run of the same programs with 3 fewer comment lines took
 45.0 s and 85.3 s.)
 
 Heath's ASM is much the slower: two passes, and HOSDEF.ACM and ASCII.ACM
-are read again on each, all on the H17. Sizes: FNONH 101 bytes, FNVERH 439
-bytes of code + 200 of DS; FNON 106 bytes (1 record), FNVER 474 bytes (4
+are read again on each, all on the H17. Sizes: FNONH 98 bytes, FNVERH 436
+bytes of code + 200 of DS; FNON 103 bytes (1 record), FNVER 471 bytes (4
 records).
 
 ## Cross-check (z88dk-z80asm -m8080)
 
 ```
 z88dk-z80asm -m8080 cross-check (Z80 Macro Assembler 25085-3bd06cad56-20260712)
-compare FNON.COM: HEX 0100H-0169H (106 bytes), COM 128 bytes (1 records)
+compare FNON.COM: HEX 0100H-0166H (103 bytes), COM 128 bytes (1 records)
   HEX vs z80asm -m8080: identical
   COM vs HEX:           identical
-  z80asm beyond 0169H:  0 bytes, all zero (the DS areas)
-compare FNVER.COM: HEX 0100H-02D9H (474 bytes), COM 512 bytes (4 records)
+  z80asm beyond 0166H:  0 bytes, all zero (the DS areas)
+compare FNVER.COM: HEX 0100H-02D6H (471 bytes), COM 512 bytes (4 records)
   HEX vs z80asm -m8080: identical
   COM vs HEX:           identical
-  z80asm beyond 02D9H:  266 bytes, all zero (the DS areas)
-compare FNONH.ABS: header FF 00, load 2280H, length 101, entry 2280H
-  code vs z80asm -m8080: identical (101 bytes compared, 0 in DS areas skipped)
-  z80asm length 101, ABS length 101: same
-compare FNVERH.ABS: header FF 00, load 2280H, length 639, entry 2280H
-  code vs z80asm -m8080: identical (439 bytes compared, 200 in DS areas skipped)
-  z80asm length 639, ABS length 639: same
+  z80asm beyond 02D6H:  266 bytes, all zero (the DS areas)
+compare FNONH.ABS: header FF 00, load 2280H, length 98, entry 2280H
+  code vs z80asm -m8080: identical (98 bytes compared, 0 in DS areas skipped)
+  z80asm length 98, ABS length 98: same
+compare FNVERH.ABS: header FF 00, load 2280H, length 636, entry 2280H
+  code vs z80asm -m8080: identical (436 bytes compared, 200 in DS areas skipped)
+  z80asm length 636, ABS length 636: same
 FNON.COM: identical to FujiNet Go H89's shipped tools/disks/fnon/FNON.COM
 ```
 
@@ -153,7 +154,7 @@ that address, and LOAD's .COM against the .HEX (the .COM is padded to whole
 128-byte records with whatever LOAD's buffer held). HDOS, the .ABS header
 (FF 00, load 2280H, length, entry = END's operand) and its bytes, except the
 DS areas: **Heath's ASM writes DS space into the .ABS** (FNVERH's length,
-639, runs to the end of `REPLY DS RMAX`), filled with leftovers from its
+636, runs to the end of `REPLY DS RMAX`), filled with leftovers from its
 output buffer; DRI's ASM leaves DS out of the .HEX.
 
 ## Heath ASM (HDOS 2.0 Software Tools, ASM.ABS #104.06.00)

@@ -10,10 +10,10 @@ Sources examined (Oct 12, 2026):
 | Repo | Branch / commit |
 |---|---|
 | fujinet-firmware | `master` 0bc531d3d; H89 disk fixes on `h89-disk-fixes` 7ab84ae64 (worktree `~/Workspace/fn-h89`) |
-| fujinet-h89 | `hdos-fn-driver` dff02cc (FN.DVD is not on `main` cea13e8) |
-| fujinet-config | `add-h89` 6f48e0f |
-| fujinet-lib | `h89-keep-esp32-running` 9e6d4dd |
-| fujinet-go-h89-desktop | 8dc059d (firmware pinned at master 6b8187701) |
+| fujinet-h89 | `hdos-fn-driver` dff02cc (FN.DVD is not on `main` cea13e8); the card's start-up from `card-setup-mark` 4cb0024 (item 13) |
+| fujinet-config | `add-h89` 6f48e0f; 1823324 builds against the fujinet-lib below (item 13) |
+| fujinet-lib | `h89-keep-esp32-running` 9e6d4dd; `h89-setup-after-reset` d08f584 (item 13) |
+| fujinet-go-h89-desktop | 8dc059d (firmware pinned at master 6b8187701); `card-reset-bus-hold` 51f411d (item 13) |
 | fujinet-hardware | `H89/H89-ESP32 Schematic v1.28.pdf`; Collado, *How to control the H89-FujiNet 82C55 in Mode 2* Rev 1.0 |
 
 ## Release state
@@ -70,9 +70,20 @@ Sources examined (Oct 12, 2026):
     made on the card." Confirm, and whether **USB may be plugged in with the H89
     on** (the DevKit's own regulator would be in parallel with the card's).
     Chapter 9 assumes it may (Collado's note flashes that way).
-13. **Does EN stay low after reset?** The 82C55A's port C bus-hold pulls against
-    the 3.3K leg of the divider. Check that the ESP32 really is held in reset
-    after power-on.
+13. **EN after reset: not to be trusted (Oct 13, 2026).** On Jeff Tranter's
+    H89, HDOS CONFIG hung at "Contacting FujiNet..." while CP/M CONFIG worked.
+    After a reset the 82C55A's bus hold can make PC2 read 1 while port A is not
+    in Mode 2, and fujinet-lib 9e6d4dd (like fujinet-h89's `card_on` and FNON)
+    took EN high to mean "already set up" and skipped the mode word. Heath
+    CP/M's BIOS sends a mode word to 323Q at every cold boot, which is why CP/M
+    was fine. Whatever sets the card up now leaves A5H in port B (wired to
+    nothing) and trusts only that: fujinet-lib d08f584, fujinet-h89 4cb0024,
+    FNON in fujinet-go-h89-desktop 51f411d, which also models the reset this
+    way. The book (Ch. 4 "Reset", Ch. 11 "Starting the FujiNet") no longer says
+    the divider holds the ESP32 in reset. Still to measure on a real card:
+    whether the ESP32 keeps running or is held in reset after SHIFT+RESET, and
+    whether a running ESP32 survives the few-microsecond EN dip after a mode
+    word.
 14. **LED D1 is not driven.** `include/pinmap/heathkit_h89.h:23-27`: IO22's LED
     is active high but `leds.cpp` drives LEDs active low, so it is left unused.
     The book says "reserved; the present firmware leaves it dark."

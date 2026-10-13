@@ -21,7 +21,7 @@ RUN="$G/build/core/h89_session_run"
 ROMS="$G/tools/roms"
 FONTROM="$BOOK/build/roms/2716_444-29_h19font.u420"
 FNPC="$BOOK/build/fnpc/src/RS232/dist"                   # fujinet-pc (make rig)
-FNLIB="$BOOK/build/fnlib"                                # fujinet-lib 9e6d4dd (make rig)
+FNLIB="$BOOK/build/fnlib"                                # fujinet-lib d08f584 (make rig)
 TAP_PORT=11512
 FNPC_PORT=11514
 

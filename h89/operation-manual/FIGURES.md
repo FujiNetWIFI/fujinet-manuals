@@ -62,7 +62,8 @@ Nothing on screen differs.
 - [ ] Whether the card fits P505/P511 beside an HA-88-3 at P504, etc. (clearance).
 - [ ] USB plugged in with the H89 on is safe (two 3.3 V sources?).
 - [ ] The DevKit-VE's auto-reset vs the H89-driven EN/IO0 when flashing.
-- [ ] EN stays low after power-on and after SHIFT+RESET (ESP32 held in reset).
+- [ ] After power-on and after SHIFT+RESET: what PC2 reads (1 on one H89, Oct 2026), and whether the ESP32 keeps running or is held in reset (errata 13).
+- [ ] A running ESP32 survives the few-microsecond EN dip after a mode word (programs that find no mark in port B).
 - [ ] The ESP32 boots in under ~1 s (the drivers' first-byte timeout).
 - [ ] Current drawn from +5 V and +12 V; board dimensions (Specifications shows "to be measured").
 - [ ] The microSD breakout: push-in or friction slot; which way the label faces.

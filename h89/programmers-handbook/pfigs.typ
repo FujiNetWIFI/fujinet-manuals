@@ -87,10 +87,11 @@
 
 // starting the ESP32 (card_on)
 #let start-timing() = wave(tmax: 24, width: 3.2in, (
-  ("EN (PC2)", "bit", ((0, 0), (2, 1), (4, 0), (7, 1))),
-  ("IO0 = PC1", "bit", ((0, 0), (2, 1), (16, 0))),
+  ("EN (PC2)", "bit", ((0, 0), (2, 1))),
+  ("IO0 = PC1", "bit", ((0, 0), (2, 1), (18, 0))),
   ("DIR (PC0)", "bit", ((0, 0), (24, 0))),
-), marks: ((2, [mode 2]), (4, [reset]), (7, [run]), (16, [245 on])))
+  ("PB0-PB7", "bus", ((14, 24, [A5H]),)),
+), marks: ((2, [mode 2]), (14, [mark]), (18, [245 on])))
 
 // ---------------------------------------------------------------- frames
 // a row of labelled boxes, for a frame's layout

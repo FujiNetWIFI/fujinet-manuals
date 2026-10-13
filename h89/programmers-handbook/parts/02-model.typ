@@ -30,7 +30,7 @@ book's library and fujinet-lib all assume the setting the Operation Manual recom
 #stable((0.55in, 0.55in, 1fr),
   th[Port], th[Octal], th[Use],
   [D0H], [320Q], [PORTA. The data: every byte to and from the FujiNet goes through it.],
-  [D1H], [321Q], [PORTB. Not used.],
+  [D1H], [321Q], [PORTB. Wired to nothing. Holds a mark once the card is set up (below).],
   [D2H], [322Q], [PORTC. Status (read) and control (written).],
   [D3H], [323Q], [PCTRL. The 82C55A's control register.],
 )
@@ -55,7 +55,7 @@ are the outputs that start the ESP32 and steer the bus transceiver, read back:
   [PC5], [IBF], [20H], [1 while a byte from the ESP32 waits for the H89. `PC_IBF`.],
   [PC4], [/STB], [10H], [From the ESP32: 0 while it puts a byte in. `PC_STB`.],
   [PC3], [INTR], [08H], [Interrupt request. Not connected (J3 open).],
-  [PC2], [EN], [04H], [1 = the ESP32 is running. `PC_EN`.],
+  [PC2], [EN], [04H], [1 = the ESP32 may run. Trust it only with the mark in port B. `PC_EN`.],
   [PC1], [/OE], [02H], [0 = the bus transceiver is on. `PC_OE`.],
   [PC0], [DIR], [01H], [1 = toward the ESP32, 0 = toward the H89. `PC_DIR`.],
 )
@@ -64,30 +64,43 @@ A program changes PC0, PC1 and PC2 one at a time with the 82C55A's bit set/reset
 writing 00000bbs (binary) to PCTRL sets bit *bbb* of port C to *s*. So `DIR_TO_ESP` (01H) sets
 DIR, `DIR_TO_H89` (00H) clears it, and `OE_ON` (02H) clears /OE.
 
-#note[Writing a mode word to PCTRL clears all of port C's outputs, and EN with them. That resets
-the ESP32. Write the mode word only when the FujiNet is not already running.]
+#note[Writing a mode word to PCTRL clears all of port C's outputs, and EN with them. Write one only
+when the card has not been set up, and raise EN again with the next instruction, as `card_on` does.]
 ]
 
 #section("Starting the FujiNet")[
-When the H89 is reset, the 82C55A's ports become inputs, a resistor pulls the ESP32's enable low,
-and the FujiNet stops. Something must start it again before any program can talk to it. FN.DVD,
-FNDISK, FNON and CONFIG all do it, and so does every program in this Manual, with `card_on`:
+When the H89 is reset, the 82C55A's ports become inputs and port A leaves Mode 2. Nothing can be
+sent until a program sets the card up again. FN.DVD, FNDISK, FNON and CONFIG all do it, and so does
+every program in this Manual, with `card_on`:
 
 #snip("model.card_on", "asm", caption: [CARD.INC --- start the FujiNet if nothing has])
 
-`card_on` looks at EN first. If the FujiNet is running, it leaves it alone; a reset would throw away
-the drives FNDISK has mounted and the network connections other programs have open. Otherwise it
-sets Mode 2 and brings EN up with PC1 (and so the ESP32's IO0 strap) high, which tells the ESP32 to
-run the firmware in its flash. It pulses EN once more to be sure of a clean start, waits 200 ms,
-throws away any byte latched while the ESP32 woke up, and turns the bus transceiver on facing
+A program must not set the card up again when another already has: the mode word drops EN, and a
+FujiNet that restarts throws away the drives FNDISK has mounted and the network connections other
+programs have open. EN cannot tell which it is. After a reset the 82C55A holds its inputs high with
+weak pull-ups, and PC2 can read 1 before anything has set the card up. That is how the first HDOS
+CONFIG, which trusted EN, hung on a real H89.
+
+So whatever sets the card up leaves a mark, A5H, in port B, which is wired to nothing. A reset makes
+port B an input that reads FFH, and any other mode word clears it or makes it an input. `card_on`
+leaves the card alone when it finds the mark and EN = 1. Otherwise it sets Mode 2 and, with the next
+instruction, brings EN up with PC1 (and so the ESP32's IO0 strap) high, which tells the ESP32 to run
+the firmware in its flash. A running ESP32 sees EN low for only a few microseconds; one held in
+reset starts. `card_on` waits 200 ms with IO0 still high while the ESP32 reads its straps, leaves the
+mark, throws away any byte latched while the ESP32 woke up, and turns the bus transceiver on facing
 the H89.
 
-fujinet-lib does the same the first time a program calls it.
+fujinet-lib does the same the first time a program calls it (from d08f584 on: L22).
+
+#note[Heath's CP/M BIOS sends a mode word to 323Q at every cold boot, for the serial port that is
+usually at 320Q. It leaves port A in Mode 0, so under CP/M too nothing works until a program sets
+the card up.]
 
 #note[The firmware needs a little while after EN rises before it answers. A request sent sooner
 waits in port A until it does; `fn_call` allows 15 seconds for a reply to begin.]
 
-#pictorial(caption: [Starting the ESP32. PC1 is low after the transceiver is turned on.], start-timing())
+#pictorial(caption: [Starting the ESP32 after a reset. EN and PC1 rise with the instruction after
+the mode word. PC1 falls when the transceiver is turned on.], start-timing())
 
 #sub("Is it there?")
 With no card at the selected ports, every port reads FFH. A program that waits for IBF would see a
@@ -190,7 +203,8 @@ Keep to that, and your programs will get on with the drivers too:
 - Never leave a request half sent, or a reply half read. If your program gives up on a reply, take
   and discard whatever is still coming before the next request. `fn_call` does this for you
   (it waits until 100 ms pass with nothing arriving).
-- Don't write the 82C55A's mode word while the FujiNet is running.
+- Don't write the 82C55A's mode word when port B holds the mark. If you set the card up yourself,
+  leave the mark, as `card_on` does.
 
 The FujiNet's state is shared, too. If your program mounts a different image in drive slot 2, the
 drive FNDISK calls FN2: (HDOS) or F: (CP/M) changes under it. Programs that change the drives should

@@ -76,9 +76,9 @@ port is fixed.
 | Piece | Version |
 |---|---|
 | Firmware | fn-h89 7ab84ae64 (reports v1.6) |
-| fujinet-lib | `h89-keep-esp32-running` 9e6d4dd |
+| fujinet-lib | `h89-setup-after-reset` d08f584 (Chapters 13-19 and the library tests: `h89-keep-esp32-running` 9e6d4dd) |
 | z88dk | v2.4-1231 (3bd06cad56) |
-| FujiNet Go H89 | v0.1.0-3 (8dc059d) |
+| FujiNet Go H89 | `card-reset-bus-hold` 51f411d (Chapters 13-19 and the library tests: v0.1.0-3, 8dc059d) |
 | Games | Texas Hold'em 6bad3aa; Battleship 0c86ed6; Fujitzee from its uncommitted `add-h89` working tree |
 
 ## Building
@@ -134,6 +134,16 @@ fujinet-lib and the game repositories:
 - **Games:** screens were taken against the live game servers. While doing so, the games agent
   accidentally seated a viewer at Battleship's ai3 table, which pushed a robot off it, and sent
   `leave` requests to clear its own test player's seats.
+- **The card's start-up (Oct 13, 2026).** HDOS CONFIG hung on a real H89 (erratum L22). After
+  that, `card_on`, the four Chapter 5 programs and the book's fujinet-lib (d08f584) leave and look
+  for a mark in port B. FujiNet Go H89 51f411d resets the 82C55A the way the real card does.
+  - Run again on it: the exercisers (Z80 and C, both systems), FNHELLO, HELLO and Chapter 5.
+  - Their frames and screens matched the earlier runs, except for:
+    - values that change on every run: the clock, UUIDs, random bytes, uninitialised firmware
+      memory, and how often a STATUS loop polled;
+    - one connection fewer, since `card_on` no longer pulses EN.
+  - The byte strips are still those of the earlier runs.
+  - Not run again: the programs of Chapters 13-19 and fujinet-lib's own tests.
 - **Not done:** nothing was run on a real H89 FujiNet card.
 
 ## Decisions taken without asking

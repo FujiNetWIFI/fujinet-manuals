@@ -11,7 +11,7 @@
 ;-----------------------------------------------------------------------------
 
 PORTA           equ     0xD0    ; 82C55A port A: the byte pipe (mode 2)
-PORTB           equ     0xD1    ; port B: not used
+PORTB           equ     0xD1    ; port B: wired to nothing; holds SETUP_MARK
 PORTC           equ     0xD2    ; port C: status in, control out
 PCTRL           equ     0xD3    ; control word / port C bit set-reset
 
@@ -29,6 +29,11 @@ MODE2           equ     0xC0    ; port A mode 2; PC0-PC2 outputs, all 0
 DIR_TO_H89      equ     0x00    ; bit set/reset: PC0 = 0
 DIR_TO_ESP      equ     0x01    ; PC0 = 1
 OE_ON           equ     0x02    ; PC1 = 0: the 245 enabled
+
+; Left in port B by whatever sets up the card (card_on, fujinet-lib, FNON,
+; FN.DVD, FNDISK). A reset makes port B an input that reads FF, and any
+; other mode word clears it or makes it an input.
+SETUP_MARK      equ     0xA5
 
 ; SLIP framing
 SLIP_END        equ     0xC0

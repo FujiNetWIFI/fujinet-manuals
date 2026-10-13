@@ -75,7 +75,7 @@ DRI's. The book's programs use no `IF`.]
 ]
 
 #section("FNONH", balance: false)[
-FNONH is FNON (below) in Heath's language: 61 lines. Notice `XTEXT` before `ORG`, the octal numbers,
+FNONH is FNON (below) in Heath's language: 65 lines. Notice `XTEXT` before `ORG`, the octal numbers,
 and `.PRINT` with its strings ending in `'...'+200Q` or `ENL` (a new line with the top bit set).
 
 #plisting("native-fnonh", size: 6.4pt)
@@ -107,7 +107,7 @@ assembled.]
 #section("A FujiBus Exchange in 8080 Code", balance: false)[
 FNVER and FNVERH do the whole of `fn_call`'s work, for one request, in about 240 lines. In order:
 
-+ Start the card, as FNON does, if EN is low.
++ Start the card, as FNON does, unless port B holds the mark and EN is 1.
 + Build the packet `70 E8 06 00 00 00` and work out its checksum (an 8-bit sum with end-around carry:
   `ADD M`, then `ACI 0`), giving `70 E8 06 00 5F 00`.
 + Send it between two C0H bytes, escaping any C0H or DBH inside, a byte at a time, each when /OBF
