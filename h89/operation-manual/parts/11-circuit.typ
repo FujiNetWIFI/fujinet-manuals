@@ -61,12 +61,16 @@ ESP32 to the 82C55A directly.
 ]
 
 #section("Starting the FujiNet")[
-When the Computer resets, the 82C55A’s ports all become inputs, and the divider on the EN line pulls
-the ESP32’s enable low: the FujiNet is held in reset. A program starts it by setting Mode 2 (which
-makes PC0 through PC2 outputs, all low), then writing 006 to port C: EN high, and PC1, and so IO0,
-high too. The
-ESP32 reads IO0 as it comes out of reset: high means "run the firmware in flash." The program waits a
-moment for that, then turns PC1 low to enable the 74LVC245, and the two sides can talk.
+When the Computer resets, the 82C55A’s ports all become inputs and port A leaves Mode 2. The
+82C55A holds its inputs high with weak pull-ups, against the dividers, so PC2 may read 1 although
+nothing has set the card up. A program sets it up by setting Mode 2 (which makes PC0 through PC2
+outputs, all low), then at once writing 006 to port C: EN high, and PC1, and so IO0, high too. An
+ESP32 that was held in reset starts, and reads IO0 as it comes out of reset: high means "run the
+firmware in flash." The program waits a moment for that, writes 245 (A5H) to port B, which is wired
+to nothing, then turns PC1 low to enable the 74LVC245, and the two sides can talk.
+
+A program that finds 245 in port B, and EN high, knows the card is already set up and leaves it
+alone. A reset makes port B an input, which reads 377, and any other mode word clears it.
 
 If EN rises with PC1 low instead, the ESP32 starts in its loading mode, waiting for new firmware over
 USB. That is how the firmware is updated (Chapter 9).

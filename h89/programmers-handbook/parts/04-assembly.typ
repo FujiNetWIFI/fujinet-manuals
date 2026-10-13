@@ -187,7 +187,7 @@ the flags, and keeps BC, DE and HL.
   [`pip`], [Print the 4 bytes at HL as an IP address.],
   [`ptext`, `phexs`, `pdump`], [Print BC bytes at HL as text, as hex on one line, or as a dump.],
   [`strlen`], [BC = the length of the string at HL.],
-  [`card_on`], [Start the FujiNet if it is not running; face the bus toward the H89.],
+  [`card_on`], [Set up the card unless a program already has (Chapter 2); face the bus toward the H89.],
   [`card_present`], [Z if the card is there and running.],
   [`fn_call`], [Make one FujiBus exchange (see below).],
   [`fn_send`], [Send a request and wait for no reply (the modem's, which are not framed).],

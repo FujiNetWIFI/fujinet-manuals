@@ -1,41 +1,45 @@
 ;	FNON.ASM - enable the FujiNet card in an H89 (82C55 at 0D0H)
 ;
 ;	Sets the 82C55 to Mode 2, boots the ESP32 from flash and turns
-;	the 74LVC245 toward the H89. Leaves a card that is already on alone.
+;	the 74LVC245 toward the H89. Leaves a card that is already on alone:
+;	whatever sets the card up leaves 0A5H in port B, which a reset or
+;	another mode word clears. EN alone can't tell, as after a reset the
+;	82C55's bus hold can pull PC2 high while port A isn't in Mode 2.
 ;
 ;	A>ASM B:FNON
 ;	A>LOAD B:FNON
 ;	A>B:FNON
 ;
 ;	From FujiNet Go H89's CP/M disks: fujinet-go-h89-desktop
-;	tools/disks/fnon/FNON.ASM (8dc059d), code unchanged.
+;	tools/disks/fnon/FNON.ASM (51f411d), code unchanged.
 ;
 ;	Copyright (C) 2026 Thomas Cherryhomes
 ;	SPDX-License-Identifier: GPL-3.0-or-later
 ;
 PORTA	EQU	0D0H		;82C55 PORT A, THE BYTE PIPE
+PORTB	EQU	0D1H		;WIRED TO NOTHING: HOLDS MARK ONCE SET UP
 PORTC	EQU	0D2H		;PC0 DIR, PC1 /OE (ESP32 IO0), PC2 ESP32 EN
 PCTRL	EQU	0D3H		;CONTROL WORD, PORT C BIT SET/RESET
+MARK	EQU	0A5H		;AS FUJINET-LIB'S PORT_INIT LEAVES IT
 BDOS	EQU	0005H
 PRINT	EQU	9		;BDOS PRINT STRING
 ;
 	ORG	0100H
 ;
-START:	IN	PORTC
-	ANI	04H		;EN HIGH: CARD ALREADY RUNNING
+START:	IN	PORTB
+	CPI	MARK		;MARK AND EN HIGH: CARD ALREADY RUNNING
+	JNZ	SETUP
+	IN	PORTC
+	ANI	04H
 	JNZ	ISON
-	MVI	A,0C0H		;PORT A MODE 2, PC0-PC2 OUTPUTS
+SETUP:	MVI	A,0C0H		;PORT A MODE 2, PC0-PC2 OUTPUTS
 	OUT	PCTRL		;(CLEARS PORT C, SO EN GOES LOW)
-	MVI	A,06H		;EN=1, IO0=1
-	OUT	PORTC
-	MVI	A,02H		;EN=0 WITH IO0 ALREADY HIGH
-	OUT	PORTC
-	LXI	B,100		;HOLD RESET ABOUT 1 MS
-	CALL	WAIT
-	MVI	A,06H		;EN=1: IO0 HIGH = BOOT FROM FLASH
-	OUT	PORTC
+	MVI	A,06H		;EN=1, IO0=1 AT ONCE: A RUNNING ESP32
+	OUT	PORTC		;STAYS UP, ONE IN RESET BOOTS FROM FLASH
 	LXI	B,17000		;KEEP IO0 HIGH WHILE IT STARTS, ~200 MS
 	CALL	WAIT
+	MVI	A,MARK		;THE CARD IS SET UP
+	OUT	PORTB
 	IN	PORTA		;DROP ANY BYTE LATCHED DURING RESET
 	MVI	A,02H		;PC1=0: ENABLE THE 245
 	OUT	PCTRL

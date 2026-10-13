@@ -30,9 +30,9 @@ Everything in the book was built and run on FujiNet Go H89 under HDOS 2.0 and CP
 | Program | Version |
 |---|---|
 | Firmware | fujinet-firmware, branch `h89-disk-fixes`, 7ab84ae64 (v1.6) |
-| fujinet-lib | branch `h89-keep-esp32-running`, 9e6d4dd (the H89 is not yet in a release) |
+| fujinet-lib | branch `h89-setup-after-reset`, d08f584 (the H89 is not yet in a release); Chapters 13-19 and the library's tests ran with 9e6d4dd |
 | z88dk | v2.4-1231 (3bd06cad56) |
-| FujiNet Go H89 | v0.1.0-3 (8dc059d) |
+| FujiNet Go H89 | 51f411d (resets the 82C55A as a real H89 does); Chapters 13-19 and the library's tests ran on v0.1.0-3 (8dc059d) |
 
 The FujiNet for the H89 is new and its software is still changing. Where the firmware or the library does something it should not, the book says so in a WARNING with what to do instead; the [errata](#10-errata) list every case, cited to its line of source.
 
@@ -45,7 +45,7 @@ Four ports, a handshake and a clock. No memory, no interrupt, no ROM.
 | Port | Octal | Use |
 |---|---|---|
 | D0H | 320Q | Port A of the 82C55A, in mode 2: every byte to and from the FujiNet |
-| D1H | 321Q | Port B: not used |
+| D1H | 321Q | Port B: wired to nothing; holds A5H once the card is set up |
 | D2H | 322Q | Port C: status (read) and control (written) |
 | D3H | 323Q | The 82C55A's control register |
 
@@ -53,11 +53,11 @@ Four ports, a handshake and a clock. No memory, no interrupt, no ROM.
 |---|---|---|
 | 80H | /OBF | 0 while a byte the H89 wrote waits for the ESP32 |
 | 20H | IBF | 1 while a byte from the ESP32 waits for the H89 |
-| 04H | EN | 1 = the ESP32 is running |
+| 04H | EN | 1 = the ESP32 may run (after a reset it can read 1 before anything set the card up) |
 | 02H | /OE | 0 = the bus transceiver is on |
 | 01H | DIR | 1 = toward the ESP32, 0 = toward the H89 |
 
-- **Starting it.** If EN is 0, write C0H (mode 2) to D3H, raise EN with PC1 high (006 to D2H), pulse EN once more, wait 200 ms, read D0H once, then set /OE = 0 and DIR = 0 with bit set/reset commands (02H, 00H to D3H). Never write the mode word while the FujiNet is running: it resets the ESP32.
+- **Starting it.** Unless port B (D1H) reads A5H and EN is 1, write C0H (mode 2) to D3H and, with the very next instruction, raise EN with PC1 high (006 to D2H); wait 200 ms, write A5H to D1H, read D0H once, then set /OE = 0 and DIR = 0 with bit set/reset commands (02H, 00H to D3H). After a reset EN can read 1 while port A is not in mode 2, so don't trust EN alone; and never leave EN low after a mode word while the FujiNet is running.
 - **Sending.** DIR = 1; for each byte wait for /OBF = 1, then write D0H. After the last, wait for /OBF = 1 and set DIR = 0.
 - **Receiving.** DIR = 0; wait for IBF = 1, read D0H.
 - **Time.** The 2 ms tick word is at 201BH under HDOS, 000BH under Heath CP/M.
@@ -485,9 +485,10 @@ And the three network games, listed in full in the book: **Texas Hold'em**, **Ba
 
 ## 10. Errata
 
-The book found 216 things in the H89's FujiNet software that behave other than a programmer would expect; `errata.md` beside the book's source lists them all, each cited to its line of source. The ones that matter most:
+The book found 217 things in the H89's FujiNet software that behave other than a programmer would expect; `errata.md` beside the book's source lists them all, each cited to its line of source. The ones that matter most:
 
 - **A missing field stops the firmware.** Send every field a command takes, even unused ones.
+- **After a reset, EN can read 1 before the card is set up.** Set it up unless port B holds A5H.
 - **One END only.** A frame that starts `C0 C0` is lost, and its bytes go to the modem.
 - **100 ms between request bytes**, at most; build the request first, then send it.
 - **FUJI_GET_SSID returns the WiFi password** in plain text.

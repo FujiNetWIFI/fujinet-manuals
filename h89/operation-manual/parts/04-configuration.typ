@@ -14,7 +14,7 @@ equipment.
 The card answers at four I/O ports, 320 through 323 octal (D0 through D3 hexadecimal). The
 82C55A’s port A, at 320, carries the bytes between the Computer and the FujiNet in both directions;
 its port C, at 322, carries the handshake and the lines that start the FujiNet; 323 is the 82C55A’s
-control register. Port 321 (port B) is not used.
+control register. Port 321 (port B) is wired to nothing; the programs leave a mark there once they have set up the card.
 
 The Computer's address decoder gives each accessory a group of eight ports, and the PORT SEL jumper
 picks the group. The card uses only the first four ports of its group, but no other accessory may
@@ -39,12 +39,12 @@ jumper. A jumper on J3 would tie the card to one of the Computer's interrupt lev
 which the console and other accessories already use.
 
 #sub("Reset")
-The Computer's RESET line resets the card's 82C55A, and that holds the FujiNet in reset. So
-whenever you turn on the Computer, or push #key[SHIFT] and #key[RESET], the FujiNet stops. The
-next FujiNet program you run starts it again, which takes a moment. Its settings, its host slots
-and your choices of disk images are all kept; but the drives are not put back in service until you
-run CONFIG, unless you have told the FujiNet to do it by itself (see "When the FujiNet Starts" on
-Page 6-12).
+The Computer's RESET line resets the card's 82C55A. So whenever you turn on the Computer, or push
+#key[SHIFT] and #key[RESET], the Computer loses touch with the FujiNet until the next FujiNet
+program you run sets the card up again, which takes a moment. The FujiNet may have restarted too.
+Its settings, its host slots and your choices of disk images are always kept; but after a restart
+the drives are not put back in service until you run CONFIG, unless you have told the FujiNet to do
+it by itself (see "When the FujiNet Starts" on Page 6-12).
 ]
 
 #wide-head("I/O Port Map")
