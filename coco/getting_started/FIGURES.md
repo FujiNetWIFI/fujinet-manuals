@@ -16,10 +16,10 @@ background; the placeholders show the layout box each photo fills
 |------|------|---------|
 | `insert-cartridge.jpg` | ✅ **received** — the CocoFuji seated in the cartridge slot, label up | Installation, Fig. 3 |
 | `serial-plug.jpg` | ✅ **received** — the DIN-4 plug in the **SERIAL I/O** jack, CASS/JOYSTK labels visible | Installation, Fig. 4 |
-| `full-setup.jpg` | The complete outfit: CoCo with CocoFuji installed, serial cable routed to the back, TV/monitor showing CONFIG — placed as a **full-width closing plate**, so a wide (≈2:1) landscape shot works best | The Program Library, Fig. 21 |
+| `full-setup.jpg` | The complete outfit: CoCo with CocoFuji installed, serial cable routed to the back, TV/monitor showing CONFIG — placed as a **full-width closing plate**, so a wide (≈2:1) landscape shot works best | The Program Library, Fig. 22 |
 | `microsd-insert.jpg` | (Optional — not currently placed) Fingertip pushing a microSD card into the cartridge's card slot | spare |
 
-## Program screenshots (Figs. 17–20)
+## Program screenshots (Figs. 18–21)
 
 Rich Stephens supplied real-device captures of the four library
 programs (`images/{news,weather,wiki,netcat}.png`).
@@ -60,3 +60,12 @@ programs (`images/{news,weather,wiki,netcat}.png`).
 - Default host slots from firmware `BUILD_COCO/fnconfig.ini`
   (SD + apps.irata.online); the manual shows a taught configuration
   with tnfs.fujinet.online and fujinet.pl added.
+- The multi-disk screen (Fig. 17) is a capture, not a mock-up: HDB-DOS
+  1.5 (the Becker build of the same source as the cartridge's DW3 ROM)
+  talking to the FujiNet firmware's DriveWire disk code, in a headless
+  `fujinet-go-coco-desktop` session, with `MULTI.DSK` built by ToolShed
+  `decb dskini -h3`. The same session confirmed the chapter's rules:
+  `DRIVE n`, `DIR n`, and `"FILE:n"` address disks inside the slot's
+  image; `DRIVE #n` changes slot and resets to disk 0; `DIR 1` or
+  `SAVE"X:1"` on a one-disk image answers `?IO ERROR`; a mounted
+  `.CAS` shows the first 8 characters of its filename as the title.

@@ -157,6 +157,10 @@
 
 // ---------- "what you type" — the VDG face in print ink -------
 #let tt(s) = text(font: f-scrn, size: 7.6pt, fill: ink, s)
+// what you type on a PC, set like the manual's web addresses
+#let pc(s) = text(font: f-sans, size: 8.2pt, fill: ink, s)
+// page number of a label, for "(page 21)"-style cross-references
+#let pg(lbl) = context str(counter(page).at(lbl).first())
 
 // ---------- bullets -------------------------------------------
 #let bl(body) = block(above: 0.45em, below: 0.45em,
@@ -1064,6 +1068,7 @@ in drive 0 has a BASIC program named #tt("AUTOEXEC.BAS") on it (or is an
 OS-9 disk with a boot track), it runs automatically. Otherwise you land
 at the friendly #tt("OK") prompt with your disks ready: type
 #tt("DIR") #key("ENTER") and see.
+#metadata(none) <new-disks>
 #sect[Making New Disks]
 #ix("New disk images, creating")
 
@@ -1073,8 +1078,8 @@ SD card, say), press #key("N"). CONFIG asks two questions in the menu
 area:
 
 #bl[#tt("ENTER # OF DRIVES TO CREATE") — how many 157K virtual diskettes
-to put in the image. Answer #tt("1") (multi-disk images are an HDB-DOS
-power feature).]
+to put in the image. Answer #tt("1") for an ordinary diskette; a bigger
+number makes a multi-disk image (page #pg(<multi-disk>)).]
 #bl[#tt("ENTER FILENAME:") — name it. #tt(".DSK") is added for you if you
 forget.]
 
@@ -1181,7 +1186,7 @@ align(center, table(columns: (auto, 1fr), align: (left, left),
 // USING HDB-DOS
 // ============================================================
 #chapter("Using HDB-DOS", subs: ("Old Friends", "RUNM", "DRIVE #",
-  "FLEXIKEY", "Saving Your Work"))
+  "FLEXIKEY", "Saving Your Work", "Multi-Disk Images"))
 #ix("HDB-DOS", "Disk BASIC commands")
 
 #cols2[
@@ -1198,7 +1203,8 @@ All the Disk BASIC commands behave exactly as documented in 1981:
 
 #block(inset: (left: 0.2in), {
   par(tt("DIR") + h(10pt) + text(size: 8.6pt)[— list the disk in drive 0])
-  par(tt("DIR 1") + h(10pt) + text(size: 8.6pt)[— list the disk in drive 1])
+  par(tt("DIR 1") + h(10pt) + text(size: 8.6pt)[— list disk 1 of a
+  multi-disk image (page #pg(<multi-disk>))])
   par(tt("RUN\"GAME\"") + h(10pt) + text(size: 8.6pt)[— load and run a BASIC
   program])
   par(tt("LOADM\"PROG.BIN\"") + text(size: 8.6pt)[ then ] + tt("EXEC") +
@@ -1221,11 +1227,15 @@ of #tt("LOADM") followed by #tt("EXEC"):
 #sect[DRIVE \#]
 #ix("DRIVE # command")
 
-To make a different drive the default, HDB-DOS uses a #tt("#") where
-Disk BASIC's plain #tt("DRIVE") command would go. To switch to the disk
-image in drive slot 1:
+On the FujiNet, Disk BASIC's drive numbers don't reach the drive slots —
+HDB-DOS spends them on the disks #emph[inside] an image (page
+#pg(<multi-disk>)). To make a different drive slot the default, put a
+#tt("#") after #tt("DRIVE"). To switch to the disk image in drive slot 1:
 
 #block(inset: (left: 0.2in), tt("DRIVE #1") + h(6pt) + key("ENTER"))
+
+From then on, #tt("DIR"), #tt("SAVE"), and the rest all use slot 1 —
+until #box(tt("DRIVE #0")) brings you home.
 
 #colbreak()
 
@@ -1252,21 +1262,126 @@ floppy would. To save, use an image on your own card loaded with
   #tt("MYDISK.DSK").
 + Load it into drive 1 read/write.
 + Leave CONFIG with #key("BREAK").
-+ #tt("SAVE\"WORK:1\"") — or #tt("DRIVE #1") first, and just
-  #tt("SAVE\"WORK\"").
++ #tt("DRIVE #1"), then #tt("SAVE\"WORK\"").
 
-#ybox(title: [NOTE])[HDB-DOS has more features than this chapter — many
-of them, like multi-disk #tt("DRIVE") banks, are power tools. The
-complete HDB-DOS manual is free at cloud9tech.com. For questions about
-HDB-DOS itself, that manual is the authority.]
+#v(2pt)
+Old Disk BASIC hands, take note: #tt("SAVE\"WORK:1\"") means disk 1
+#emph[inside] the current image, not drive slot 1 — on an ordinary
+one-disk image it just answers #tt("?IO ERROR").
 
-#block(breakable: false, {
+#block(breakable: false, above: 1.5em, {
   sect[Getting Back to CONFIG]
   par[Press the Computer's RESET button (right rear corner of the case),
   then type #tt("DOS") #key("ENTER"). The FujiNet serves CONFIG again,
   with your drives just as you left them. (Powering off and on works
   too.)]
 })
+
+#colbreak()
+
+#metadata(none) <multi-disk>
+#sect[Multi-Disk Images]
+#ix("Multi-disk images", "Virtual disks")
+
+A #strong[multi-disk image] is one file holding up to 256 ordinary
+35-track diskettes — 161,280 bytes ("157K") apiece — stored back to
+back. HDB-DOS treats each one as a drive of its own, numbered 0 to 255.
+
+The idea comes from HDB-DOS's day job. It was built so Disk BASIC, which
+understands nothing bigger than a 157K floppy, could use a hard drive:
+the drive is carved into 157K "virtual disks." Over DriveWire — and the
+FujiNet — the same trick works with one big file in a single drive slot.
+
+#subsect[Selecting a Disk]
+#ix("DRIVE command")
+
+Inside the image, Disk BASIC's own drive numbers do the choosing:
+
+#block(inset: (left: 0.2in), {
+  par(tt("DRIVE 1") + h(10pt) + text(size: 8.6pt)[— make disk 1 the
+  default; #tt("DIR"), #tt("LOADM"), #tt("RUNM"), etc. then use it])
+  par(tt("DIR 2") + h(10pt) + text(size: 8.6pt)[— list disk 2 without
+  switching])
+})
+
+#tt("DRIVE #1") — #emph[with] the #tt("#") — is something else: it
+selects drive slot 1 on the FujiNet (DriveWire drive 1) and starts you
+at disk 0 of whatever image is there.
+
+#subsect[Making One]
+#ix("ToolShed", "New disk images, creating")
+
+CONFIG makes them (#key("N"), page #pg(<new-disks>)). On a PC, use the
+free #strong[ToolShed] utilities from
+#box(pc("github.com/nitros9project/toolshed")):
+
+#block(inset: (left: 0.2in), pc("decb dskini -h3 multi.dsk"))
+
+#pc("-h3") means three blank disks in one file. Disk numbers go after a
+colon:
+
+#block(inset: (left: 0.2in), {
+  par(pc("decb copy -2 -b game.bin multi.dsk,GAME.BIN:1"))
+  par(pc("decb dir multi.dsk,:1"))
+})
+
+Or build the disks separately — each an ordinary 35-track, 161,280-byte
+disk, or the numbering slips — and append them:
+
+#block(inset: (left: 0.2in), {
+  par(pc("cat a.dsk b.dsk c.dsk > multi.dsk"))
+  par(pc("copy /b a.dsk+b.dsk+c.dsk multi.dsk") + h(8pt) +
+    text(size: 8.6pt)[— on Windows])
+})
+
+#subsect[Disk Titles]
+#ix("Disk titles", "RENAME DRIVE command")
+
+Each 157K disk can carry a title (it lives on track 17, sector 17), and
+#tt("DIR") prints it above the file list (Figure 17):
+
+#bl[ToolShed sets a title at creation, nine characters at most: \
+#h(0.2in)#pc("decb dskini -nGAMES1 a.dsk") \
+With #pc("-h") every disk gets the same name, so for different names
+build each disk on its own and #pc("cat") them together.]
+#bl[From BASIC, any disk in the image, any time: \
+#h(0.2in)#tt("RENAME DRIVE 1,\"GAMES1\"") \
+Up to 255 characters (past 32 it wraps on the screen); #tt("\"\"")
+clears it.]
+
+// captured from HDB-DOS 1.5 talking to the FujiNet firmware
+#let bas(s) = vrow(N(s + rp(" ", 32 - s.clusters().len())))
+#block(breakable: false, {
+tv(
+  bas("DIR 1"),
+  bas(""),
+  bas("GAME    .BIN  2"),
+  bas("DRIVE=1  FREE=66"),
+  bas("OK"),
+  bas("RENAME DRIVE 1,\"GAMES1\""),
+  bas("OK"),
+  bas("DRIVE 1"),
+  bas("OK"),
+  bas("DIR"),
+  bas(""),
+  bas("GAMES1"),
+  bas("GAME    .BIN  2"),
+  bas("DRIVE=1  FREE=66"),
+  bas("OK"),
+  vrow(FB(1, vg.k), N(rp(" ", 31))))
+figcap("17", [Disk 1 of a multi-disk image: listed, titled, and made
+the default drive.])
+})
+
+Recent FujiNet firmware can also load a cassette file (#tt(".CAS")) into
+a drive slot as a read-only diskette, and it fills in the same sector —
+so #tt("DIR") on a mounted tape shows its name: the first 8 characters
+of the #tt(".CAS") filename.
+#ix("Cassette (.CAS) images")
+
+#ybox(title: [NOTE])[HDB-DOS has more features than this chapter covers.
+The complete HDB-DOS manual is free at cloud9tech.com. For questions
+about HDB-DOS itself, that manual is the authority.]
 
 #v(4pt)
 #gbar
@@ -1302,7 +1417,7 @@ the daily drivers, all free in the #tt("COCO") folder at
 #tt("TNFS.FUJINET.ONLINE"). Load one into drive 0, leave CONFIG, and it
 runs by itself.
 
-#prog([News — #tt("NEWS.DSK")], "17",
+#prog([News — #tt("NEWS.DSK")], "18",
   [The News topic menu.], "prog-news.png")[
 A wire-service reader. Pick a topic — world news, business, science,
 technology, sports — scroll the headlines, and read whole stories on your
@@ -1310,21 +1425,21 @@ CoCo. On a CoCo 1 or 2 it offers 32- and 42-column displays (the latter
 with real lowercase); a CoCo 3 can use its native 40- and 80-column
 screens.]
 
-#prog([Weather — #tt("WEATHER.DSK")], "18",
+#prog([Weather — #tt("WEATHER.DSK")], "19",
   [Weather, with a forecast a keypress away.], "prog-weather.png")[
 Current conditions and forecasts, anywhere you can name. It finds your
 location automatically (by your network address), shows temperature,
 humidity, wind, dew point, sunrise and sunset — and switches between
 Fahrenheit and metric on a keypress.]
 
-#prog([Wiki — #tt("WIKI.DSK")], "19",
+#prog([Wiki — #tt("WIKI.DSK")], "20",
   [Wikipedia in 42 columns of real lowercase.], "prog-wiki.png")[
 Wikipedia, on a Color Computer. Type a subject, pick from the matching
 articles, and read — the soft 42-column font with true lowercase makes
 long articles a pleasure. Forty years on, your CoCo contains the sum of
 human knowledge. Approximately.]
 
-#prog([Netcat — #tt("NETCAT.DSK")], "20",
+#prog([Netcat — #tt("NETCAT.DSK")], "21",
   [Netcat dialing a telnet BBS.], "prog-netcat.png")[
 #ix("Bulletin boards (BBS)")
 A simple, solid terminal program for the telnet bulletin boards that are
@@ -1350,7 +1465,7 @@ will happily get you started.
   phimg("full-setup.jpg",
     "the whole setup: CoCo with CocoFuji installed, serial cable to the rear, TV showing CONFIG",
     height: 3.7in)
-  figcap("21", [The complete outfit — disks and programs alike,
+  figcap("22", [The complete outfit — disks and programs alike,
   conjured out of thin air.])
 })
 
@@ -1666,10 +1781,10 @@ improvements are welcome back.
       text(font: f-sans, weight: 700, size: 9pt)[Page]
     })
   }
-  let entryline(k) = block(above: 0.45em, below: 0pt, {
-    text(size: 9pt, k)
+  let entryline(k) = block(above: 0.2em, below: 0pt, {
+    text(size: 8.6pt, k)
     lead
-    text(size: 9pt, entries.at(k).map(str).join(", "))
+    text(size: 8.6pt, entries.at(k).map(str).join(", "))
   })
   grid(columns: (1fr, 1fr), column-gutter: 0.45in,
     { colhead; for k in keys.slice(0, half) { entryline(k) } },

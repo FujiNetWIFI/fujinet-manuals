@@ -319,8 +319,9 @@ own disk to drive 0 at startup, and its AUTOEXEC.BAS launches the menu.)
 
 While browsing a writable host, press **N**:
 
-1. `ENTER # OF DRIVES TO CREATE` — answer `1` (each "drive" is one 157K
-   virtual diskette; multi-disk images are an HDB-DOS power feature)
+1. `ENTER # OF DRIVES TO CREATE` — answer `1` for an ordinary diskette
+   (each "drive" is one 157K virtual diskette; a bigger number makes a
+   [multi-disk image](#multi-disk-images))
 2. `ENTER FILENAME:` — `.DSK` is appended if you forget
 
 The image appears in the current folder, blank — no formatting needed.
@@ -415,7 +416,12 @@ Useful extras:
 
 - **RUNM** — `RUNM"PROG.BIN"` loads *and* runs a machine-language program
   in one step.
-- **DRIVE #n** — switch the default drive with a `#`: `DRIVE #1`.
+- **DRIVE #n** — switch to another drive slot with a `#`: `DRIVE #1`
+  makes slot 1 the default until `DRIVE #0`. Disk BASIC's plain drive
+  numbers (`DIR 1`, `DRIVE 1`, `SAVE"WORK:1"`) don't reach the drive
+  slots — they pick disks *inside* a
+  [multi-disk image](#multi-disk-images), and on an ordinary one-disk
+  image they answer `?IO ERROR`.
 - **AUTOEXEC.BAS** — a BASIC program with this name on the drive 0 disk
   runs automatically at boot.
 - **FLEXIKEY** — the right-arrow key replays the last line you typed one
@@ -423,9 +429,81 @@ Useful extras:
   SHIFT+left-arrow abandons the line.
 
 A read-only image refuses `SAVE` like a write-protected floppy — flip it
-to W in the Drive Slots screen first. The full HDB-DOS manual is free at
-cloud9tech.com (the FujiNet team didn't write HDB-DOS and can't modify
-it).
+to W in the Drive Slots screen first. To save to a fresh `MYDISK.DSK` in
+drive slot 1: `DRIVE #1`, then `SAVE"WORK"`.
+
+### Multi-Disk Images
+
+A multi-disk image is one file holding up to 256 ordinary 35-track
+RS-DOS disks (161,280 bytes, "157K", each), stored back to back. HDB-DOS
+treats each one as its own drive, numbered 0–255.
+
+HDB-DOS was built so Disk BASIC, which only understands 157K floppies,
+could use hard drives: the drive is carved into 157K "virtual disks".
+Over DriveWire (and FujiNet) the same trick works with one big file in a
+single drive slot.
+
+**Selecting a disk.** `DRIVE 1` makes disk 1 inside the mounted image
+the default drive; `DIR`, `LOADM`, `RUNM` etc. then use it. `DIR 2`
+lists disk 2 without switching. `DRIVE #1` (with the `#`) is something
+else: it selects drive slot 1 (DriveWire drive 1) and resets to disk 0.
+
+**Making one.** CONFIG's **N** key makes one (ask for more than one
+drive). On a PC, use [ToolShed](https://github.com/nitros9project/toolshed):
+
+```
+decb dskini -h3 multi.dsk
+```
+
+`-h3` = three blank disks in one file. Disk numbers go after a colon:
+
+```
+decb copy -2 -b game.bin multi.dsk,GAME.BIN:1
+decb dir multi.dsk,:1
+```
+
+Or build the disks separately (each an ordinary 35-track, 161,280-byte
+disk) and append them:
+
+```
+cat a.dsk b.dsk c.dsk > multi.dsk
+copy /b a.dsk+b.dsk+c.dsk multi.dsk      (Windows)
+```
+
+**Disk titles.** Each 157K disk can carry a title (track 17, sector 17),
+and `DIR` prints it above the file list:
+
+```
+DIR 1
+
+GAME    .BIN  2
+DRIVE=1  FREE=66
+OK
+RENAME DRIVE 1,"GAMES1"
+OK
+DRIVE 1
+OK
+DIR
+
+GAMES1
+GAME    .BIN  2
+DRIVE=1  FREE=66
+OK
+```
+
+- ToolShed, at creation, max 9 characters: `decb dskini -nGAMES1 a.dsk`.
+  With `-h` every disk gets the same name, so for different names build
+  each disk on its own and `cat` them.
+- From BASIC, any disk in the image, any time: `RENAME DRIVE 1,"GAMES1"`.
+  Up to 255 characters; past 32 it wraps on the screen. `""` clears it.
+
+Recent FujiNet firmware can also load a cassette file (`.CAS`) into a
+drive slot as a read-only diskette, and it fills in the same sector — so
+`DIR` on a mounted tape shows its name: the first 8 characters of the
+`.CAS` filename.
+
+The full HDB-DOS manual is free at cloud9tech.com (the FujiNet team
+didn't write HDB-DOS and can't modify it).
 
 ## The Program Library
 
