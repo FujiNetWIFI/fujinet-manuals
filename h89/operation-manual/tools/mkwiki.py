@@ -52,6 +52,6 @@ def octal_table(name):
 
 src = os.path.join(BOOK, "wiki", "FujiNet-Operation-Manual-for-the-Heathkit-H89.md.in")
 text = open(src).read()
-text = text.replace("{{ACCTEST_TABLE}}", octal_table("acctest")).replace("{{FLASHMODE_TABLE}}", octal_table("flashmode"))
+text = text.replace("{{ACCTEST_TABLE}}", octal_table("acctest"))
 open(src[:-3], "w").write(text)
 print("wrote", os.path.relpath(src[:-3], BOOK))

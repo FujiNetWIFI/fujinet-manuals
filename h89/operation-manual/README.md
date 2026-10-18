@@ -1,8 +1,9 @@
 # FujiNet Manual for the H89 FujiNet — Operation
 
-The end-user manual for the **H89 FujiNet** card (H89-ESP32-FUJINET, V1.0,
-10/31/2025; hardware by Joseph Travis, layout and schematics by Norberto
-Collado). It covers:
+The end-user manual for the **H89 FujiNet** card (H89-ESP32-FUJINET, V1.1,
+reworked for fujinet-firmware #2042; hardware by Joseph Travis, layout and
+schematics by Norberto Collado). This is the second edition; the first covered
+the V1.0 card. It covers:
 
 - installing the card;
 - checking it with a program keyed into the monitor;
@@ -53,8 +54,8 @@ These targets regenerate them:
 
 | Target | Rebuilds | Needs |
 |---|---|---|
-| `make acctest` | `data/acctest.json`, `data/flashmode.json` from `test/*.asm` | z88dk's `z88dk-z80asm` |
-| `make verify` | keys the acceptance test into MTR-88, MTR-89 and MTR-90 (444-84 and 444-142) and checks the display, plus the failure cases | FujiNet Go H89 and its ROMs |
+| `make acctest` | `data/acctest.json` from `test/acctest.asm` | z88dk's `z88dk-z80asm` |
+| `make verify` | keys the acceptance test into MTR-88, MTR-89 and MTR-90 (444-84 and 444-142) and checks the display, plus the failure cases and the MTR-90 port check | FujiNet Go H89 and its ROMs |
 | `make boot-disks` | an HDOS 2.0 disk with FN.DVD; a 62K CP/M 2.2.04 | fujinet-h89, FujiNet Go H89 |
 | `make shots` | every screen in the book | the above, fujinet-config, z88dk |
 | `make cover` | `images/cover-board.png` | ImageMagick |
@@ -72,7 +73,8 @@ These targets regenerate them:
 - **The acceptance test** is `test/acctest.asm`. `tools/mkacctest.py` assembles
   it and writes the octal table and the listing the book prints, so the book
   can't carry a byte the assembler didn't make.
-- **Drawings** are in `figs.typ`, measured from the photo of the card.
+- **Drawings** are in `figs.typ`, measured from `images/photo/board.jpg`, the
+  KiCad render of the V1.1 card.
 
 ## Fonts
 
@@ -85,14 +87,14 @@ These targets regenerate them:
 
 ## Sources of truth
 
-| What | Where | Branch / commit (Oct 12, 2026) |
+| What | Where | Branch / commit (Oct 12, 2026; card Oct 18) |
 |---|---|---|
 | CONFIG for the H89 | `fujinet-config` `src/h89/` | `add-h89` 6f48e0f; 1823324 builds against fujinet-lib d08f584 |
 | FNDISK.COM, FN.DVD, hdosfs.py | `fujinet-h89` | `hdos-fn-driver` dff02cc; the card's start-up `card-setup-mark` 4cb0024 |
 | H89 bus library | `fujinet-lib` `bus/h89/` | `h89-setup-after-reset` d08f584 (was `h89-keep-esp32-running` 9e6d4dd) |
-| Firmware (RS232 over the 82C55) | `fujinet-firmware` | master 0bc531d3d; disk fixes `h89-disk-fixes` 7ab84ae64 |
-| Emulator, FNON.ASM | `fujinet-go-h89-desktop` | 8dc059d; FNON and the card's reset `card-reset-bus-hold` 51f411d |
-| Hardware | `fujinet-hardware/H89/` | schematic v1.28; Collado's 82C55 note Rev 1.0 |
+| Firmware (RS232 over the 82C55) | `fujinet-firmware` | master 7e8e647 (#2042, the reworked card's pin map); first edition master 0bc531d3d and `h89-disk-fixes` 7ab84ae64 |
+| Emulator | `fujinet-go-h89-desktop` | 8dc059d; the card's reset `card-reset-bus-hold` 51f411d; the reworked V1.1 card `card-rev11` 6ceac07 |
+| Hardware | `../learn/H89-ESP32-FUJINET.pdf`, `images/photo/board.jpg`; `fujinet-hardware/H89/` | Rev 1.1 schematic and the V1.1 render; schematic v1.28; Collado's 82C55 note Rev 1.0 |
 
 Where the sources and the book differ, see `errata.md`. The photo shot list and
 the things to check on a real card are in `FIGURES.md`.

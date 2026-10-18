@@ -21,8 +21,8 @@
  *              is full. Returns how many it took (0: none came).
  *
  * Both senders first drop any byte still waiting from an earlier
- * reply (fujinet-lib leaves a frame's closing C0H behind). The card
- * must be running: call fujinet-lib first, or run FNON.
+ * reply (fujinet-lib leaves a frame's closing C0H behind). The card's
+ * 82C55A must be in mode 2: call fujinet-lib first.
  *
  * Copyright (C) 2026 Thomas Cherryhomes
  * SPDX-License-Identifier: GPL-3.0-or-later

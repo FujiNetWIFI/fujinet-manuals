@@ -34,8 +34,7 @@ clean:
 # ---- the keyed-in programs: the book prints what the assembler made ------
 acctest:
 	python3 tools/mkacctest.py test/acctest.asm build
-	python3 tools/mkacctest.py test/flashmode.asm build
-	cp build/acctest.json build/flashmode.json data/
+	cp build/acctest.json data/
 verify: acctest $(FONTROM)
 	tools/run-acctest.sh
 

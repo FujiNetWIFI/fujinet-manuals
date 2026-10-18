@@ -5,13 +5,13 @@
 #   - with the card:    a line "12 <text> H", then the H: prompt
 #   - card absent:      "H" alone (no 1)
 #   - HA-88-3 at 320Q:  "H" alone (the 8250 answers, not an 82C55)
-# plus the MTR-90 port check (200, then 206) and the flash-mode program.
+# plus the MTR-90 port check (200, then port B reading back 252).
 #
 #   tools/run-acctest.sh [screens-dir]
 #
 # Needs: ~/Workspace/fujinet-go-h89-desktop built with the FujiNet runtime,
-# its tools/roms (MAME's h89.zip + heath_tlb.zip), build/acctest.keys and
-# build/flashmode.keys (make acctest).
+# its tools/roms (MAME's h89.zip + heath_tlb.zip) and build/acctest.keys
+# (make acctest).
 set -uo pipefail
 cd "$(dirname "$0")/.."
 G="${H89GO:-$HOME/Workspace/fujinet-go-h89-desktop}"
@@ -20,7 +20,6 @@ ROMS="$G/tools/roms"
 OUT="${1:-build/acctest}"
 mkdir -p "$OUT"; OUT="$(cd "$OUT" && pwd)"   # the FujiNet runtime moves the cwd
 KEYS="$(cat build/acctest.keys)"
-FLASH="$(cat build/flashmode.keys)"
 fail=0
 
 # the screen as text, without the FujiNet log lines
@@ -60,22 +59,16 @@ check mem16 '^12 .* H$' "16K machine"
 
 # MTR-90's own port commands: no program at all
 "$RUN" --roms "$ROMS" --monitor 2732_444-142_mtr90.u518 --timeout 30 \
-    --until 'H:' --type 'O323,300\r' --prompt 'H:' --type 'I322\r' --prompt 'H:' \
-    --type 'O322,006\r' --prompt 'H:' --type 'I322\r' --prompt 'H:' \
+    --until 'H:' --type 'O323,300\r' --prompt 'H:' --debug card --type 'I322\r' --prompt 'H:' \
+    --type 'O321,252\r' --prompt 'H:' --type 'I321\r' --prompt 'H:' --debug card \
     --screen --ppm "$OUT/ports.ppm" > "$OUT/ports.log" 2>&1
 screen < "$OUT/ports.log" > "$OUT/ports.txt"
 check ports '^ *2[04]0$' "In 322 after the mode set reads 200 (or 240)"
-check ports '^ *2[04]6$' "In 322 after Out 322,006 reads 206 (or 246)"
+check ports '^ *252$' "In 321 after Out 321,252 reads 252"
+lamps="$(grep -o 'lamps PB7-PB0 [*.]*' "$OUT/ports.log" | cut -d' ' -f3 | tr '\n' ' ')"
+if [[ "$lamps" == '******** .*.*.*.* ' ]]; then echo "PASS ports: lamps all lit after the mode set, PB0, PB2, PB4, PB6 after Out 321,252"
+else echo "FAIL ports: lamps $lamps"; fail=1; fi
 cat "$OUT/ports.txt" | sed 's/^/      /'
-
-# flash mode on a monitor without Out
-"$RUN" --roms "$ROMS" --monitor 2716_444-62_mtr89.u518 --timeout 30 \
-    --until 'H:' --type 'S040100\r' --type "$FLASH\r" \
-    --prompt 'H:' --type 'G040100\r' --wait 2000 --prompt 'H:' \
-    --screen --debug card > "$OUT/flash.log" 2>&1
-screen < "$OUT/flash.log" > "$OUT/flash.txt"
-check flash '^ *H$' "flash-mode program returns with H"
-grep -A3 -- '---- card ----' "$OUT/flash.log" | sed 's/^\[fujinet\] /      /'
 
 # screens for the book: the first entries being keyed, on MTR-90 and MTR-88
 for mon in 2732_444-142_mtr90.u518 2716_444-40_mtr88.u518; do

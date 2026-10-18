@@ -115,22 +115,6 @@
   "run": "memprobe-c-hdos",
   "replaced": []
  },
- "native-fnon-asm": {
-  "run": "native-fnon-asm",
-  "replaced": []
- },
- "native-fnon-run": {
-  "run": "native-fnon-run",
-  "replaced": []
- },
- "native-fnonh-asm": {
-  "run": "native-fnonh-asm",
-  "replaced": []
- },
- "native-fnonh-run": {
-  "run": "native-fnonh-run",
-  "replaced": []
- },
  "native-fnver-asm": {
   "run": "native-fnver-asm",
   "replaced": []

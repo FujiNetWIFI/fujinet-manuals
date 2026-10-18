@@ -13,12 +13,14 @@ equipment.
 #sub("I/O Ports")
 The card answers at four I/O ports, 320 through 323 octal (D0 through D3 hexadecimal). The
 82C55A’s port A, at 320, carries the bytes between the Computer and the FujiNet in both directions;
-its port C, at 322, carries the handshake and the lines that start the FujiNet; 323 is the 82C55A’s
-control register. Port 321 (port B) is wired to nothing; the programs leave a mark there once they have set up the card.
+its port C, at 322, carries the handshake and the lines that steer the bus transceiver; 323 is the
+82C55A’s control register. Port 321 (port B) drives the card's eight lamps, D3 through D10, and the
+header J12; the FujiNet does not use it.
 
 The Computer's address decoder gives each accessory a group of eight ports, and the PORT SEL jumper
-picks the group. The card uses only the first four ports of its group, but no other accessory may
-use the same group. In a standard Heath system, the group 320--327 belongs to the second port of the
+picks the group. JP1 picks the first four ports of the group (on 0) or the last four (on 4).
+
+The card uses only four ports of its group, but no other accessory may use the same group. In a standard Heath system, the group 320--327 belongs to the second port of the
 HA-88-3 serial interface (the DCE port HDOS uses as its alternate terminal). It is free unless that
 port's 8250 is installed.
 
@@ -39,12 +41,15 @@ jumper. A jumper on J3 would tie the card to one of the Computer's interrupt lev
 which the console and other accessories already use.
 
 #sub("Reset")
-The Computer's RESET line resets the card's 82C55A. So whenever you turn on the Computer, or push
-#key[SHIFT] and #key[RESET], the Computer loses touch with the FujiNet until the next FujiNet
-program you run sets the card up again, which takes a moment. The FujiNet may have restarted too.
-Its settings, its host slots and your choices of disk images are always kept; but after a restart
-the drives are not put back in service until you run CONFIG, unless you have told the FujiNet to do
-it by itself (see "When the FujiNet Starts" on Page 6-12).
+The Computer's RESET line resets the card's 82C55A, and nothing else on the card. So whenever you
+push #key[SHIFT] and #key[RESET], the Computer loses touch with the FujiNet until the next FujiNet
+program you run sets the 82C55A up again, which it does at once. The FujiNet itself keeps running,
+with its drives in service.
+
+The FujiNet starts afresh only when the Computer is turned on. Its settings, its host slots and
+your choices of disk images are always kept; but after it starts, the drives are not put back in
+service until you run CONFIG, unless you have told the FujiNet to do it by itself (see "When the
+FujiNet Starts" on Page 6-12).
 ]
 
 #wide-head("I/O Port Map")
@@ -57,10 +62,12 @@ it by itself (see "When the FujiNet Starts" on Page 6-12).
   #sub("Jumper Settings")
   #stable((auto, auto, 1fr),
     th[Jumper], th[Position], th[Use],
-    [PORT SEL], [320Q], [Ports 320--323. *The position to use.*],
-    [], [330Q], [Ports 330--333 (the HA-88-3 DTE port's group). Not used by present software.],
-    [], [340Q], [Ports 340--343 (the HA-88-3 LP port's group). Not used by present software.],
-    [], [170Q], [Ports 170--173 (the Z-89-37’s group). Not used by present software.],
+    [PORT SEL (J1)], [320Q], [The group 320--327. *The position to use.*],
+    [], [330Q], [The group 330--337 (the HA-88-3 DTE port's). Not used by present software.],
+    [], [340Q], [The group 340--347 (the HA-88-3 LP port's). Not used by present software.],
+    [], [170Q], [The group 170--177 (the Z-89-37’s). Not used by present software.],
+    [JP1 (BA2)], [0], [The first four ports of the group: 320--323. *The position to use.*],
+    [], [4], [The last four: 324--327. Not used by present software.],
     [J3], [none], [No interrupts. *The setting to use.*],
     [], [/INT3, /INT4, /INT5], [Interrupt level 3, 4 or 5. Not used by present software.],
   )

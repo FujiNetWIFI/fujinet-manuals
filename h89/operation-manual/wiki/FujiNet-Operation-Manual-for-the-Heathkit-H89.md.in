@@ -6,6 +6,16 @@
 
 The printed edition, styled after Heath's 1979 *H88 Operation Manual*, is in the [fujinet-manuals](https://github.com/FujiNetWIFI/fujinet-manuals) repository under `h89/operation-manual/`.
 
+### Changes in this edition
+
+This second edition covers the **V1.1 card, reworked for fujinet-firmware #2042** (October 2026). The first covered the V1.0 card.
+
+- **The card.** V1.1 has a second 74LVC245 (U5) in place of the divider resistors, the 82C55A as U2 (PLCC) or U6 (DIP), eight lamps on port B, and JP1 (BA2) beside PORT SEL. Every component number has changed.
+- **The rework.** The ESP32's EN, IO0 and IO2 are no longer connected to the card; /OE and DIR reach it on IO21 and IO22; LED D1 is gone.
+- **Starting.** The FujiNet runs from power-on. The Computer no longer starts it, and SHIFT + RESET no longer stops or restarts it: the FujiNet drives stay in service through a reset.
+- **Firmware updates** are over USB alone. The monitor commands and the program that put the FujiNet in loading mode are gone.
+- **Testing.** The port test writes a pattern to port B, and the Communication Test is 114 bytes instead of 129.
+
 ---
 
 ## Contents
@@ -25,7 +35,7 @@ The printed edition, styled after Heath's 1979 *H88 Operation Manual*, is in the
 
 ### In a Hurry?
 
-1. Set the card's **PORT SEL** jumper to **320Q** and leave **J3** empty.
+1. Set the card's **PORT SEL** jumper (J1) to **320Q**, **JP1** to **0**, and leave **J3** empty.
 2. With the Computer unplugged, put the card on a free pair of accessory sockets: **P504/P510** or **P505/P511** (not P506/P512).
 3. Run the [Communication Test](#communication-test) from the H: prompt. You should see `12`, then the FujiNet's answer.
 4. Write the *FujiNet for HDOS* or *FujiNet for CP/M* disk image to a diskette.
@@ -54,13 +64,16 @@ The H89 still starts HDOS or CP/M from its own floppy drive. The FujiNet drives 
 | | |
 |---|---|
 | Bus | H89/H88 accessory bus. One pair of sockets: P504+P510 or P505+P511 |
-| I/O ports | 320–323 octal (D0–D3 hex), PORT SEL at 320Q. Positions 330Q, 340Q and 170Q are not used by present software |
+| I/O ports | 320–323 octal (D0–D3 hex), PORT SEL (J1) at 320Q and JP1 on 0. Positions 330Q, 340Q and 170Q, and JP1 on 4, are not used by present software |
 | Interface | 82C55A; port A in Mode 2 for data, port C for control. No interrupts (J3 open) |
-| FujiNet | ESP32 on an ESP32-DevKitC-VE module (8 MB flash, 8 MB PSRAM). 802.11 b/g/n, 2.4 GHz. microSD (FAT32) |
+| Level shifting | Two 74LVC245s: U3 for the data, U5 for the control lines |
+| Reset | RESET resets the 82C55A only; the FujiNet runs from power-on |
+| Lamps | Eight LEDs (D3–D10) on port B, for programs to use |
+| FujiNet | ESP32 on an ESP32-DevKitC-VE module (8 MB flash, 8 MB PSRAM). 802.11 b/g/n, 2.4 GHz. microSD (FAT32). USB for firmware updates |
 | Disk image | .H8D: 102,400 bytes, 40 tracks × 10 sectors × 256 bytes (the H-17-1 diskette) |
 | Software | HDOS 2.0 (FN.DVD, CONFIG.ABS); Heath/Zenith CP/M 2.2.04, 62K system (FNDISK.COM, CONFIG.COM) |
 | Memory | HDOS 48K (64K to run CONFIG after FN.DVD is loaded); CP/M 64K |
-| Power | From the bus |
+| Power | From the bus: +5 V, and through D2 to the module's own 3.3 V regulator |
 
 ## 3. Set-Up and Testing
 
@@ -72,19 +85,19 @@ The card's ICs are MOS devices. Touch the Computer's chassis (unplugged) before 
 
 ### Jumpers
 
-<img src="images/h89-operation-jumpers.png" width="480" alt="PORT SEL with its jumper on 320Q; J3 with no jumpers">
+<img src="images/h89-operation-jumpers.png" width="480" alt="JP1 with its jumper on 0; PORT SEL with its jumper on 320Q; J3 with no jumpers">
 
 | Jumper | To |
 |---|---|
-| PORT SEL | 320Q |
-| J3 (INT LVL) | no jumper |
-| three-pin header | as supplied |
+| PORT SEL (J1, IO_PORT_SEL) | 320Q |
+| JP1 (BA2) | 0 |
+| J3 (/INTE_ENA) | no jumper |
 
 Port 320 is also the second (DCE, "alternate terminal") port of the HA-88-3 serial board. If that port's 8250 is installed, it and the FujiNet would collide.
 
 ### microSD card
 
-The card is optional. Format it FAT32 (cards of 32 GB or less come that way), copy your .H8D images onto it, and slide it into the socket. Insert or remove it only with the power off: the FujiNet reads it only when it starts.
+The card is optional. Format it FAT32 (cards of 32 GB or less come that way), copy your .H8D images onto it, and slide it into the socket. Insert or remove it only with the power off and no USB cable in the module: the FujiNet reads it only when it starts, at power-on.
 
 ### Installing the card
 
@@ -95,7 +108,7 @@ The card is optional. Format it FAT32 (cards of 32 GB or less come that way), co
 3. With the component side facing the same way as the other boards, put the 10-pin connector on the 10-pin socket and the 25-pin connector on the 25-pin socket. Press straight down until seated. Make sure no row is offset by a pin.
 4. Keep cables off the ESP32's antenna. Close the cabinet and plug in.
 
-*Tip:* if you will update the firmware, run a USB cable from the ESP32 module out of the cabinet now.
+*Tip:* firmware updates go through the ESP32 module's USB connector. If you will update the firmware, run a USB cable from the module out of the cabinet now.
 
 ### Testing
 
@@ -107,16 +120,16 @@ The card is optional. Format it FAT32 (cards of 32 GB or less come that way), co
   H: Out 323,300
   H: In 322
 200
-  H: Out 322,006
-  H: In 322
-206
+  H: Out 321,252
+  H: In 321
+252
 ```
 
-Type `O` then `323,300` RETURN; then `I` then `322` RETURN. Expect `200` (`240` is fine too). Then `O` `322,006` RETURN and `I` `322` RETURN: expect `206` (or `246`). `377` means nothing answered at 320. Never type `O322,004`: that starts the FujiNet's firmware-loading mode. Push SHIFT + RESET when done.
+Type `O` then `323,300` RETURN; then `I` then `322` RETURN. Expect `200` (`240` is fine too). Then `O` `321,252` RETURN, which lights every other lamp on port B, and `I` `321` RETURN: expect `252`. `377` means nothing answered at 320. Push SHIFT + RESET when done: it resets the 82C55A, and the FujiNet keeps running.
 
 #### Communication Test
 
-A 129-byte program you key in with the monitor's **Substitute** command. It starts the FujiNet, asks it for its adapter configuration, and prints the answer. It works on MTR-88, MTR-89 and MTR-90.
+A 114-byte program you key in with the monitor's **Substitute** command. It sets up the card's 82C55A, asks the FujiNet for its adapter configuration, and prints the answer. It works on MTR-88, MTR-89 and MTR-90.
 
 1. Push SHIFT + RESET. Type `S` (the monitor finishes "Substitute"), then `040100` RETURN.
 2. Enter each number below and push SPACE after each. Each line starts at the address shown at its left; check it as you go. After the last number, push RETURN.
@@ -140,7 +153,7 @@ The text after `12` is the FujiNet's answer: here, the WiFi network it has joine
 |---|---|
 | `12` and text, `H` | The card works |
 | only `H` (beep) | No 82C55A at 320: PORT SEL, seating, or another board at 320 |
-| `1` only | The FujiNet isn't taking the request: firmware, power, 74LVC245 |
+| `1` only | The FujiNet isn't taking the request: firmware, power, the 74LVC245s |
 | `12` only | No answer came back: firmware, or the return path |
 | no beep / no `H` | The program was keyed in wrong |
 
@@ -150,9 +163,9 @@ To run it again: SHIFT + RESET, then `G040100` RETURN (not a bare G).
 
 <img src="images/h89-operation-portmap.png" width="340" alt="The H89's I/O ports, with the FujiNet's 320-323 marked">
 
-- **Ports.** The card answers at 320–323. Port A (320) carries the data, port C (322) the handshake and the FujiNet's start lines, and 323 is the control register.
+- **Ports.** The card answers at 320–323. Port A (320) carries the data, port B (321) drives the eight lamps, port C (322) the handshake and the bus transceiver's lines, and 323 is the control register.
 - **Interrupts.** None.
-- **Reset.** The Computer's RESET stops the FujiNet, and the next FujiNet program starts it.
+- **Reset.** The Computer's RESET resets the card's 82C55A, and the next FujiNet program sets it up again. The FujiNet itself runs from power-on and keeps running, with its drives in service.
 - **Memory.**
   - HDOS: CONFIG.ABS runs from 052200 (2A80h), and FN.DVD takes about 4.3K once loaded. On a 48K Computer, CONFIG fits only before FN.DVD is loaded.
   - CP/M: FNDISK puts about 2K above the BIOS, so it needs a 62K system.
@@ -277,7 +290,7 @@ FUJINET DRIVES:
 
 HDOS prints this in capitals. `Q` leaves without putting drives in service.
 
-**After every reset**, the FujiNet waits for CONFIG before it puts its drives in service. Run CONFIG and push ESC. Or set **Enable CONFIG boot disk** to **No** on the FujiNet's web page, and the FujiNet does it by itself.
+**After every power-on**, the FujiNet waits for CONFIG before it puts its drives in service (SHIFT + RESET doesn't restart it, so its drives stay in service). Run CONFIG and push ESC. Or set **Enable CONFIG boot disk** to **No** on the FujiNet's web page, and the FujiNet does it by itself.
 
 ## 7. Using FujiNet Drives
 
@@ -302,7 +315,7 @@ LABEL: FUJINET DEMO DISK
 | HDOS says | Means |
 |---|---|
 | ?02 UNKNOWN DEVICE NAME | FN.DVD not on SY0:, or HDOS not restarted since |
-| ?02 UNIT NOT AVAILABLE | Empty slot, drives not in service since reset, or FujiNet not answering |
+| ?02 UNIT NOT AVAILABLE | Empty slot, drives not in service since power-on, or FujiNet not answering |
 | ?02 UNABLE TO READ THIS DISK... | Not an initialized HDOS disk |
 | ?02 DEVICE IS INCAPABLE OF WRITE OPERATIONS... | Slot is read only |
 | ?02 READ FAILURE / WRITE FAILURE | FujiNet or host not answering |
@@ -330,9 +343,9 @@ Installed.
 | No room above the BIOS. Make a 62K system… | 64K CP/M: see section 5 |
 | Needs Heath/Zenith CP/M 2.2.04. | Other CP/M versions aren't supported |
 | No FujiNet card (82C55 at 0D0H) found. | Card, jumper, or port conflict |
-| The FujiNet isn't answering. | Push SHIFT + RESET, run CONFIG, retry |
+| The FujiNet isn't answering. | Wait a moment and retry; if it still doesn't answer, turn the Computer off and on |
 | No 8 free drive letters there. | The letter is a BIOS drive, or later than I: |
-| Bdos Err On F: Select | Empty slot, not an .H8D, or not in service since reset |
+| Bdos Err On F: Select | Empty slot, not an .H8D, or not in service since power-on |
 | Bdos Err On E: Bad Sector (writing) | Read-only slot; push CTRL-C |
 
 ### Blank disk images
@@ -358,18 +371,14 @@ Installed.
 
 ## 9. Firmware Updates
 
-Use the FujiNet-Flasher (fujinet.online/download) and a data USB cable to the ESP32 module. **The Computer must be on.** Route the cable out of the cabinet before you turn it on, and never reach into a running H89.
+Use the FujiNet-Flasher (fujinet.online/download) and a data USB cable to the ESP32 module. The Flasher does it all over USB: the module goes into loading mode when the Flasher asks and starts the new firmware when it is done. The Computer can't put the FujiNet in loading mode. **Leave the Computer on** (its 82C55A then holds the bus transceiver off). Route the cable out of the cabinet before you turn it on, and never reach into a running H89.
 
 1. Turn on the Computer and get to `H:`.
-2. Put the FujiNet in loading mode.
-   - MTR-90: `O323,300` RETURN, then `O322,004` RETURN.
-   - MTR-88/89: key this in at 040100 and run it with `G040100`:
+2. Plug in the USB cable. In the Flasher, pick the port, the platform "Heathkit H89" and a version, then Flash.
+3. Unplug the USB cable from your personal computer.
+4. Check the version on CONFIG's Info screen.
 
-{{FLASHMODE_TABLE}}
-
-3. Plug in the USB cable. In the Flasher, pick the port, the platform "Heathkit H89" and a version, then Flash.
-4. Unplug the USB cable and push **SHIFT + RESET**. Until you do, programs say the FujiNet isn't answering.
-5. Check the version on CONFIG's Info screen.
+If the Flasher can't connect: check the cable carries data and (Windows) the CP210x driver, then unplug it, turn the Computer off and on, and try again.
 
 The FujiNet's diagnostic output comes out of the USB port at 460,800 baud.
 
@@ -377,9 +386,10 @@ The FujiNet's diagnostic output comes out of the USB port at 460,800 baud.
 
 Run the [Communication Test](#communication-test) first. Remember:
 
-- A reset stops the FujiNet.
-- Drives wait for CONFIG after a reset, unless you set the web option.
+- The FujiNet runs from power-on to power-off. SHIFT + RESET resets only the card's 82C55A.
+- Drives wait for CONFIG after power-on, unless you set the web option.
 - The microSD card is read only at start-up.
+- A USB cable from a personal computer keeps the FujiNet running with the Computer off.
 - The FujiNet hears 2.4 GHz only.
 - The H89 can't boot from a FujiNet drive.
 - Public servers are read only.
@@ -387,8 +397,8 @@ Run the [Communication Test](#communication-test) first. Remember:
 | Condition | Possible cause |
 |---|---|
 | No `H:` with the card in | Card not seated or offset; SW501 set to auto-boot or memory test |
-| Port test 377, or test shows only `H` | PORT SEL not at 320Q; card not seated; HA-88-3 port at 320 |
-| Test shows `1` only | Firmware missing, or left in loading mode (SHIFT+RESET); no 3.3 V; U2 |
+| Port test 377, or test shows only `H` | PORT SEL not at 320Q; JP1 not on 0; card not seated; HA-88-3 port at 320 |
+| Test shows `1` only | Firmware missing, or still in loading mode after an update (unplug USB, turn the Computer off and on); no power at the module (D2); U3, U5, the rework wires |
 | Test shows `12` only | Wrong firmware; return path |
 | CONFIG: "Contacting FujiNet..." for a long time | FujiNet not answering: run the test |
 | NOT ENOUGH RAM FOR THIS PROGRAM (CONFIG.ABS) | 48K with FN.DVD loaded: restart HDOS and run CONFIG first |
@@ -408,7 +418,7 @@ Run the [Communication Test](#communication-test) first. Remember:
 | `S040100`, SPACE, `-`, RETURN | Substitute |
 | `G040100` | run the test |
 | `O323,300`, `I322` | MTR-90 port check (200) |
-| `O322,004` | MTR-90: FujiNet loading mode |
+| `O321,252`, `I321` | MTR-90: every other lamp, reads back 252 |
 
 ## 12. Getting Help
 

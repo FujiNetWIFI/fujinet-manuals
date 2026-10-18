@@ -2,8 +2,8 @@
 ; fujinet.inc -- the H89 FujiNet card and the FujiBus protocol, as names.
 ;
 ; The card is an 82C55A at 0D0H (320Q): port A carries the bytes, port C
-; the handshake and the lines that start the ESP32, and 0D3H is the
-; control register. fncmd.inc (made from the firmware) names every device
+; the handshake and the 245's direction and enable, port B the eight lamps,
+; and 0D3H is the control register. fncmd.inc (made from the firmware) names every device
 ; and command.
 ;
 ; Copyright (C) 2026 Thomas Cherryhomes
@@ -11,7 +11,7 @@
 ;-----------------------------------------------------------------------------
 
 PORTA           equ     0xD0    ; 82C55A port A: the byte pipe (mode 2)
-PORTB           equ     0xD1    ; port B: wired to nothing; holds SETUP_MARK
+PORTB           equ     0xD1    ; port B: lamps D3-D10, each lit by a 0
 PORTC           equ     0xD2    ; port C: status in, control out
 PCTRL           equ     0xD3    ; control word / port C bit set-reset
 
@@ -20,9 +20,9 @@ PC_OBF          equ     0x80    ; PC7 /OBF: 1 = the byte we wrote was taken
 PC_ACK          equ     0x40    ; PC6 /ACK (driven by the ESP32)
 PC_IBF          equ     0x20    ; PC5 IBF: 1 = a byte from the ESP32 waits
 PC_STB          equ     0x10    ; PC4 /STB (driven by the ESP32)
-PC_EN           equ     0x04    ; PC2: ESP32 enable (1 = running)
-PC_OE           equ     0x02    ; PC1: 74LVC245 /OE (0 = on); also ESP32 IO0
-PC_DIR          equ     0x01    ; PC0: 74LVC245 direction (1 = toward ESP32)
+PC_EN           equ     0x04    ; PC2: not connected (the ESP32's EN, once)
+PC_OE           equ     0x02    ; PC1: 74LVC245 /OE (0 = on); ESP32 IO21
+PC_DIR          equ     0x01    ; PC0: 74LVC245 direction (1 = toward ESP32); IO22
 
 ; control register values
 MODE2           equ     0xC0    ; port A mode 2; PC0-PC2 outputs, all 0
@@ -30,9 +30,10 @@ DIR_TO_H89      equ     0x00    ; bit set/reset: PC0 = 0
 DIR_TO_ESP      equ     0x01    ; PC0 = 1
 OE_ON           equ     0x02    ; PC1 = 0: the 245 enabled
 
-; Left in port B by whatever sets up the card (card_on, fujinet-lib, FNON,
-; FN.DVD, FNDISK). A reset makes port B an input that reads FF, and any
-; other mode word clears it or makes it an input.
+; Left in port B by fujinet-lib, FN.DVD and FNDISK when they set up the
+; card, which they skip while it is there and PC2 reads 1. card_on doesn't
+; use it. A reset makes port B an input that reads FF, and any mode word
+; clears it or makes it an input.
 SETUP_MARK      equ     0xA5
 
 ; SLIP framing

@@ -1,7 +1,9 @@
 # FujiNet Manual for the H89 FujiNet — Programming
 
 The programmer's companion to the H89 FujiNet Operation Manual
-(`../operation-manual/`). It covers:
+(`../operation-manual/`). This is the second edition, for the card as reworked
+for fujinet-firmware #2042 (Oct 2026); the first was for the V1.0 card, where
+the H89 had to start the ESP32. It covers:
 
 - how a program talks to the card: the 82C55A's ports, the handshake, and the
   FujiBus protocol, byte by byte;
@@ -75,10 +77,10 @@ port is fixed.
 
 | Piece | Version |
 |---|---|
-| Firmware | fn-h89 7ab84ae64 (reports v1.6) |
+| Firmware | fn-h89 7ab84ae64 (reports v1.6); the card's pin map is master 7e8e647 (#2042), which fujinet-pc doesn't build |
 | fujinet-lib | `h89-setup-after-reset` d08f584 (Chapters 13-19 and the library tests: `h89-keep-esp32-running` 9e6d4dd) |
 | z88dk | v2.4-1231 (3bd06cad56) |
-| FujiNet Go H89 | `card-reset-bus-hold` 51f411d (Chapters 13-19 and the library tests: v0.1.0-3, 8dc059d) |
+| FujiNet Go H89 | `card-rev11` 6ceac07, the reworked V1.1 card (Chapters 2, 4, 5 and the exercisers); before it `card-reset-bus-hold` 51f411d (Chapters 13-19 and the library tests: v0.1.0-3, 8dc059d) |
 | Games | Texas Hold'em 6bad3aa; Battleship 0c86ed6; Fujitzee from its uncommitted `add-h89` working tree |
 
 ## Building
@@ -142,6 +144,19 @@ fujinet-lib and the game repositories:
     - values that change on every run: the clock, UUIDs, random bytes, uninitialised firmware
       memory, and how often a STATUS loop polled;
     - one connection fewer, since `card_on` no longer pulses EN.
+  - The byte strips are still those of the earlier runs.
+  - Not run again: the programs of Chapters 13-19 and fujinet-lib's own tests.
+- **The reworked card (Oct 18, 2026, second edition).** fujinet-firmware #2042 took the ESP32's
+  EN, IO0 and IO2 off the card. `card_on` and FNVER/FNVERH now write the mode word and read port A,
+  nothing more; FNON and FNONH are gone. FujiNet Go H89 6ceac07 (`card-rev11`) models the
+  reworked card: the ESP32 runs from power-on and RESET reaches only the 82C55A.
+  - Run again on it: the exercisers (Z80 and C, both systems), FNHELLO, HELLO and Chapter 5.
+    EXLIB had to be rebuilt first: its binary predated d08f584 and still trusted PC2, which reads
+    1 after a reset, so it never set the card up.
+  - The requests matched the earlier runs byte for byte, apart from how often a STATUS loop
+    polled; the modem's unframed bytes matched too. Replies differed only in values that change on
+    every run: the clock, file dates, uninitialised firmware memory. One connection fewer, since
+    the card now dials FujiNet once, at power-on. The screens matched.
   - The byte strips are still those of the earlier runs.
   - Not run again: the programs of Chapters 13-19 and fujinet-lib's own tests.
 - **Not done:** nothing was run on a real H89 FujiNet card.

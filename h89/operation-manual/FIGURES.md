@@ -12,18 +12,18 @@ arrives. Put the JPEG in `images/photo/` and swap the `photo-slot(...)` for an
 |---|---|---|
 | 3-3 | `parts/03-setup.typ` | The H89 with its cabinet shell tilted back, showing the CPU logic circuit board and its accessory sockets. |
 | 3-5 | `parts/03-setup.typ` | The FujiNet card seated on P504 and P510, beside the floppy disk interface board. Ideally from an angle that shows the component side facing the right way. |
-| (cover) | `images/cover-board.png` | Optional: an H89 photo for a three-tone cover like the H88's. `tools/duotone.sh` makes one from any photo, though its crop and mask are set for `board.jpg`. |
+| (cover) | `images/cover-board.png` | Optional: a photo of a reworked V1.1 card for the cover, in place of the KiCad render. `tools/duotone.sh` makes the three-tone print; its crop and mask are set for the render in `board.jpg`. |
 
 ## Drawn
 
 | Pictorial | Source |
 |---|---|
-| 3-1 the card | `figs.typ` `card()`, measured from `images/photo/board.jpg` at half scale |
-| 3-2 the jumpers | `figs.typ` `jumpers()` |
+| 3-1 the card | `figs.typ` `card()`, measured from `images/photo/board.jpg` (the KiCad render of the V1.1 board) at half scale; the rework (D1 and R7 removed, EN/IO0/IO2 cut, wires to IO21/IO22) drawn from fujinet-firmware #2042 |
+| 3-2 the jumpers | `figs.typ` `jumpers()`: JP1, J1 and J3, in board order |
 | 3-4 the sockets | `figs.typ` `sockets()`, schematic, not to scale |
 | 4-1 the port map | `figs.typ` `portmap()`, after H88 p. 5-6 |
-| 11-1 block diagram | `figs.typ` `blocks()`, from schematic v1.28 and the pinmap |
-| cover | `images/cover-board.png` from `tools/duotone.sh` (inks eyedropped from the H88 cover) |
+| 11-1 block diagram | `figs.typ` `blocks()`, from the Rev 1.1 schematic and the #2042 pin map |
+| cover | `images/cover-board.png` from `tools/duotone.sh` (inks eyedropped from the H88 cover), from the V1.1 render |
 
 ## Screens (captured, not typed)
 
@@ -55,15 +55,16 @@ Nothing on screen differs.
 ## Verify on a real card
 
 - [ ] PORT SEL positions vs bus selects (320Q = D0H–D7H); J3 left open is safe.
-- [ ] The three-pin header's purpose and label; "leave as supplied" is right.
-- [ ] U4 (prototype area) is a second 74LVC245.
-- [ ] Q1's part and job (TO-92: a 3.3 V regulator?).
+- [ ] JP1 on 0 puts the card at 320-323 (the book reads it from the schematic).
+- [ ] The rework as built: EN, IO0 and IO2 cut, D1 and R7 off, /OE to IO21 and DIR to IO22 (errata 32).
+- [ ] Which of the three rows of pads (J4/J7/J8, J5/J9/J11) carry the bus connectors.
+- [ ] Whether U2 (PLCC) or U6 (DIP) is fitted.
 - [ ] Which way the card faces in the socket pair (Pictorial 3-5 photo).
 - [ ] Whether the card fits P505/P511 beside an HA-88-3 at P504, etc. (clearance).
-- [ ] USB plugged in with the H89 on is safe (two 3.3 V sources?).
-- [ ] The DevKit-VE's auto-reset vs the H89-driven EN/IO0 when flashing.
-- [ ] After power-on and after SHIFT+RESET: what PC2 reads (1 on one H89, Oct 2026), and whether the ESP32 keeps running or is held in reset (errata 13).
-- [ ] A running ESP32 survives the few-microsecond EN dip after a mode word (programs that find no mark in port B).
+- [ ] USB with the H89 off: does U3 drive the unpowered 82C55A (errata 12)?
+- [ ] The FujiNet-Flasher reaches the DevKitC's loading mode by itself (auto-reset), with the H89 on.
+- [ ] The ESP32 keeps running, and its drives stay mounted, through SHIFT+RESET.
+- [ ] The lamps: all lit after the Port Test's O323,300; PB0, PB2, PB4, PB6 after O321,252.
 - [ ] The ESP32 boots in under ~1 s (the drivers' first-byte timeout).
 - [ ] Current drawn from +5 V and +12 V; board dimensions (Specifications shows "to be measured").
 - [ ] The microSD breakout: push-in or friction slot; which way the label faces.

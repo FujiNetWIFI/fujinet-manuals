@@ -654,7 +654,8 @@ replies arrive intact.
 #cmdcard("Reset", dev: 0x70, cmd: 0xFF, equ: "FUJI_RESET",
   lines: (("Fields", [none]), ("Payload", [none]), ("Reply", [none: the FujiNet restarts])))
 Restarts the FujiNet, as switching it off and on would: every drive is unmounted and every network
-channel closed, and the FujiNet starts again from its saved settings.
+channel closed, and the FujiNet starts again from its saved settings. Short of turning the H89 off,
+this is the only way to restart it: the H89's RESET does not reach it.
 
 #warning[There is no reply. A program sends RESET, and then waits for its own timeout (`fn_call`
 gives up after 15 seconds, and so does fujinet-lib's `fuji_reset()`, which then returns `false`). Wait

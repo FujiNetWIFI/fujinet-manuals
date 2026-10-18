@@ -56,8 +56,8 @@ In "Put it in which drive?": #key[RETURN] read only, #typed("W") read/write.
   [#typed("G040100")#ret], [Run the program at 040100],
   [#typed("O323,300")#ret], [(MTR-90) Set up the 82C55A],
   [#typed("I322")#ret], [(MTR-90) Read port C: 200],
-  [#typed("O322,004")#ret], [(MTR-90) FujiNet loading mode],
-  [#key[SHIFT] #key[RESET]], [Reset; the FujiNet stops],
+  [#typed("O321,252")#ret], [(MTR-90) Light every other lamp],
+  [#key[SHIFT] #key[RESET]], [Reset; the FujiNet keeps running],
 )
 ]
 
@@ -68,10 +68,6 @@ uses the monitor's routine at 003302 to print a character, and ends with a halt,
 turns into a beep and its prompt.
 
 #listing("acctest")
-
-The program that puts the FujiNet in loading mode (Page 9-2):
-
-#listing("flashmode")
 ]
 
 #section("The FujiNet's Devices")[

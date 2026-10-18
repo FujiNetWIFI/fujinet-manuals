@@ -29,8 +29,9 @@ later, start HDOS again. A 64K Computer can run it at any time.
 #step[Put the FujiNet for CP/M diskette in drive B and type #typed("B:CONFIG")#ret.]
 
 #sub("What You See First")
-CONFIG draws its frame and says #scr("Contacting FujiNet...") while it starts the FujiNet and asks
-it how things stand. That takes a few seconds after the Computer has been reset. Then:
+CONFIG draws its frame and says #scr("Contacting FujiNet...") while it sets up the card and asks
+the FujiNet how things stand. Just after the Computer is turned on, that can take a few seconds,
+while the FujiNet starts. Then:
 
 - If the FujiNet has never been told about a WiFi network, CONFIG shows the WiFi Networks screen.
   See "Joining Your WiFi Network."
@@ -292,12 +293,16 @@ To leave CONFIG without putting drives in service, push #typed("Q") (Quit) inste
 kept on the FujiNet for the next time.
 
 #sub("When the FujiNet Starts")
-Each time you turn on the Computer or push #key[SHIFT] and #key[RESET], the FujiNet starts afresh.
-It joins your WiFi network and remembers its host slots and your choices of disk images. But as it
-comes from the factory, it does not put the drives in service by itself: it waits for CONFIG. So,
-after a reset, run CONFIG and push #key[ESC] before you use the FujiNet drives.
+Each time you turn on the Computer, the FujiNet starts afresh. It joins your WiFi network and
+remembers its host slots and your choices of disk images. But as it comes from the factory, it
+does not put the drives in service by itself: it waits for CONFIG. So, after you turn on the
+Computer, run CONFIG and push #key[ESC] before you use the FujiNet drives.
+
+Pushing #key[SHIFT] and #key[RESET] does not restart the FujiNet. Its drives stay in service, and
+after a reset you can go straight to FN.DVD or FNDISK.
 
 If you would rather the FujiNet put your drives in service by itself, open its web page (Page 8-2),
-set "Enable CONFIG boot disk" to "No," and save. From then on, after a reset, you can go straight
-to FN.DVD or FNDISK. CONFIG is still there whenever you want to change something.
+set "Enable CONFIG boot disk" to "No," and save. From then on, after you turn on the Computer, you
+can go straight to FN.DVD or FNDISK too. CONFIG is still there whenever you want to change
+something.
 ]

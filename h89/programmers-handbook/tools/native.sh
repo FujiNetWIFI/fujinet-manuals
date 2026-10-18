@@ -4,7 +4,7 @@
 # and Digital Research's ASM 2.0 and LOAD (Heath CP/M 2.2.04) -- then run
 # against the rig, and checked byte for byte against z88dk-z80asm -m8080.
 #
-#   tools/native.sh                  all four: fnon fnver fnonh fnverh
+#   tools/native.sh                  both: fnver fnverh
 #   tools/native.sh fnverh fnver     some of them
 #   tools/native.sh check            only the z80asm cross-check, on what
 #                                    an earlier run left in build/native/
@@ -86,11 +86,7 @@ hdos_native() { # prog
     cp "$BOOK/build/disks/hdos-fn.h8d" "$ra/boot.h8d"
     local BOOT RUNS
     mapfile -t BOOT < <(hdos_boot_steps)
-    case "$1" in
-      fnonh)  RUNS=(--type "SY1:$P\r" --until 'FUJINET ENABLED' --wait 500 --prompt '>'
-                    --type "SY1:$P\r" --until 'ALREADY ON' --wait 500 --prompt '>') ;;
-      fnverh) RUNS=(--type "SY1:$P\r" --wait 1500 --prompt '>') ;;
-    esac
+    RUNS=(--type "SY1:$P\r" --wait 1500 --prompt '>')
     flock 9
     rig_start "$ra"
     emu "$ra" --timeout 300 --disk "h17:1=$ra/boot.h8d" --disk "h17:2=$ra/data.h8d" "${BOOT[@]}" \
@@ -123,11 +119,7 @@ cpm_native() {  # prog
     mapfile -t ASMK < <(slow "ASM B:$P")
     mapfile -t LOADK < <(slow "LOAD B:$P")
     mapfile -t RUNK < <(slow "B:$P")
-    case "$1" in
-      fnon)  RUNS=("${RUNK[@]}" --type '\r' --until 'FujiNet enabled' --wait 500 --prompt 'A>'
-                   "${RUNK[@]}" --type '\r' --until 'already on' --wait 500 --prompt 'A>') ;;
-      fnver) RUNS=("${RUNK[@]}" --type '\r' --wait 1500 --prompt 'A>') ;;
-    esac
+    RUNS=("${RUNK[@]}" --type '\r' --wait 1500 --prompt 'A>')
     flock 9
     rig_start "$ra"
     emu "$ra" --timeout 300 --disk "h17:1=$ra/boot.h8d" --disk "h17:2=$ra/data.h8d" "${BOOT[@]}" \
@@ -156,37 +148,29 @@ xcheck() {
     mkdir -p "$z"
     {
         echo "z88dk-z80asm -m8080 cross-check ($(z88dk-z80asm 2>&1 | head -1))"
-        for p in FNON FNVER; do
+        for p in FNVER; do
             [[ -f "$OUT/$p.COM" ]] || continue
             NPY z80 dri "$SRC/$p.ASM" "$z/$p.asm"
             z88dk-z80asm -m8080 -b -l -o="$z/$p.bin" "$z/$p.asm" || rc=1
             NPY compare-cpm "$OUT/$p.HEX" "$OUT/$p.COM" "$z/$p.bin" || rc=1
         done
-        for p in FNONH FNVERH; do
+        for p in FNVERH; do
             [[ -f "$OUT/$p.ABS" ]] || continue
             NPY z80 heath "$SRC/$p.ASM" "$z/$p.asm" "$WORK"
             z88dk-z80asm -m8080 -b -l -m -o="$z/$p.bin" "$z/$p.asm" || rc=1
             NPY compare-abs "$OUT/$p.ABS" "$z/$p.bin" "$z/$p.map" 2280 || rc=1
         done
-        local shipped="$G/tools/disks/fnon/FNON.COM"
-        if [[ -f "$OUT/FNON.COM" && -f "$shipped" ]]; then
-            if cmp -s "$OUT/FNON.COM" "$shipped"; then
-                echo "FNON.COM: identical to FujiNet Go H89's shipped tools/disks/fnon/FNON.COM"
-            else
-                echo "FNON.COM: differs from FujiNet Go H89's shipped tools/disks/fnon/FNON.COM"
-            fi
-        fi
     } | tee "$DATA/xcheck.txt"
     return $rc
 }
 
 progs=("$@")
-[[ ${#progs[@]} -eq 0 ]] && progs=(fnon fnver fnonh fnverh)
+[[ ${#progs[@]} -eq 0 ]] && progs=(fnver fnverh)
 fail=0
 for p in "${progs[@]}"; do
     case "$p" in
-      fnon|fnver)    echo "native $p: CP/M ASM + LOAD"; cpm_native "$p" || fail=1 ;;
-      fnonh|fnverh)  echo "native $p: HDOS ASM"; hdos_native "$p" || fail=1 ;;
+      fnver)   echo "native $p: CP/M ASM + LOAD"; cpm_native "$p" || fail=1 ;;
+      fnverh)  echo "native $p: HDOS ASM"; hdos_native "$p" || fail=1 ;;
       check)         ;;
       *) echo "native.sh: no program $p" >&2; exit 2 ;;
     esac

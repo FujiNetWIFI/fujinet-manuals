@@ -8,6 +8,16 @@ The printed edition — about 250 pages, styled after Heath's 1979 *H88 Operatio
 
 Everything in the book was built and run on FujiNet Go H89 under HDOS 2.0 and CP/M 2.2.04, with the emulated card connected to fujinet-pc built from the same firmware as the card. The bytes printed with each command were recorded on the bus as the examples ran. Nothing has been run on a real card.
 
+### Changes in this edition
+
+This second edition is for the card as reworked for fujinet-firmware #2042 (October 2026): the ESP32's EN, IO0 and IO2 are off the card, and the FujiNet runs from power-on.
+
+- **Port C.** PC2, once the ESP32's EN, is connected to nothing. PC1 (/OE) and PC0 (DIR) still steer the bus transceiver; the ESP32 reads them on IO21 and IO22.
+- **Setting the card up** is one mode word and a read of port A. No mark, no EN, no 200 ms wait; a mode word is safe between transactions. `card_present` checks /OE and DIR only. fujinet-lib, FN.DVD and FNDISK still do the old start-up, which costs them only time (L23).
+- **Port B** drives eight lamps on the card.
+- **RESET** resets the 82C55A only; FUJI_RESET restarts the FujiNet.
+- **FNON and FNONH are gone**; the 8080 chapter has FNVER and FNVERH.
+
 ---
 
 ## Contents
@@ -29,10 +39,10 @@ Everything in the book was built and run on FujiNet Go H89 under HDOS 2.0 and CP
 
 | Program | Version |
 |---|---|
-| Firmware | fujinet-firmware, branch `h89-disk-fixes`, 7ab84ae64 (v1.6) |
+| Firmware | for the card: fujinet-firmware master from 7e8e647 (#2042: /OE and DIR on IO21 and IO22); the examples ran on fujinet-pc from `h89-disk-fixes`, 7ab84ae64 (v1.6) |
 | fujinet-lib | branch `h89-setup-after-reset`, d08f584 (the H89 is not yet in a release); Chapters 13-19 and the library's tests ran with 9e6d4dd |
 | z88dk | v2.4-1231 (3bd06cad56) |
-| FujiNet Go H89 | 51f411d (resets the 82C55A as a real H89 does); Chapters 13-19 and the library's tests ran on v0.1.0-3 (8dc059d) |
+| FujiNet Go H89 | `card-rev11` 6ceac07, the reworked card (Chapters 2, 4 and 5 and the exercisers); Chapters 13-19 and the library's tests ran on v0.1.0-3 (8dc059d) |
 
 The FujiNet for the H89 is new and its software is still changing. Where the firmware or the library does something it should not, the book says so in a WARNING with what to do instead; the [errata](#10-errata) list every case, cited to its line of source.
 
@@ -45,7 +55,7 @@ Four ports, a handshake and a clock. No memory, no interrupt, no ROM.
 | Port | Octal | Use |
 |---|---|---|
 | D0H | 320Q | Port A of the 82C55A, in mode 2: every byte to and from the FujiNet |
-| D1H | 321Q | Port B: wired to nothing; holds A5H once the card is set up |
+| D1H | 321Q | Port B: the card's eight lamps, each lit by a 0 bit |
 | D2H | 322Q | Port C: status (read) and control (written) |
 | D3H | 323Q | The 82C55A's control register |
 
@@ -53,11 +63,11 @@ Four ports, a handshake and a clock. No memory, no interrupt, no ROM.
 |---|---|---|
 | 80H | /OBF | 0 while a byte the H89 wrote waits for the ESP32 |
 | 20H | IBF | 1 while a byte from the ESP32 waits for the H89 |
-| 04H | EN | 1 = the ESP32 may run (after a reset it can read 1 before anything set the card up) |
-| 02H | /OE | 0 = the bus transceiver is on |
-| 01H | DIR | 1 = toward the ESP32, 0 = toward the H89 |
+| 04H | -- | not connected (fujinet-lib still sets it) |
+| 02H | /OE | 0 = the bus transceiver is on; the ESP32 reads it on IO21 |
+| 01H | DIR | 1 = toward the ESP32, 0 = toward the H89; the ESP32 reads it on IO22 |
 
-- **Starting it.** Unless port B (D1H) reads A5H and EN is 1, write C0H (mode 2) to D3H and, with the very next instruction, raise EN with PC1 high (006 to D2H); wait 200 ms, write A5H to D1H, read D0H once, then set /OE = 0 and DIR = 0 with bit set/reset commands (02H, 00H to D3H). After a reset EN can read 1 while port A is not in mode 2, so don't trust EN alone; and never leave EN low after a mode word while the FujiNet is running.
+- **Setting it up.** The FujiNet runs from power-on; the H89 only has to put its 82C55A in mode 2 after a reset. Write C0H to D3H and read D0H once. The mode word leaves /OE = 0 and DIR = 0: the transceiver on, facing the H89. It touches only the 82C55A, so it is safe whenever no request or reply is under way.
 - **Sending.** DIR = 1; for each byte wait for /OBF = 1, then write D0H. After the last, wait for /OBF = 1 and set DIR = 0.
 - **Receiving.** DIR = 0; wait for IBF = 1, read D0H.
 - **Time.** The 2 ms tick word is at 201BH under HDOS, 000BH under Heath CP/M.

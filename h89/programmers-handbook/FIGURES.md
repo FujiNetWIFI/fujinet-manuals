@@ -39,10 +39,6 @@ the stand-in values.
 | isspeople-asm-hdos | isspeople-asm-hdos | nothing |
 | memprobe-cpm | memprobe-c-cpm | nothing |
 | memprobe-hdos | memprobe-c-hdos | nothing |
-| native-fnon-asm | native-fnon-asm | nothing |
-| native-fnon-run | native-fnon-run | nothing |
-| native-fnonh-asm | native-fnonh-asm | nothing |
-| native-fnonh-run | native-fnonh-run | nothing |
 | native-fnver-asm | native-fnver-asm | nothing |
 | native-fnver-run | native-fnver-run | Dummy Cafe -> Workshop |
 | native-fnverh-asm | native-fnverh-asm | nothing |
