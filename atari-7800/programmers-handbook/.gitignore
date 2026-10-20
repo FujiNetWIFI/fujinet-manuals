@@ -1,0 +1,7 @@
+preview/
+build/
+listings/*/build/
+listings/snippets/
+*.bin
+*.map
+*.o
