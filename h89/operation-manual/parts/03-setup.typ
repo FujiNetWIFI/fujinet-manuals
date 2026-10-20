@@ -20,8 +20,8 @@ Check the contents of your package against this list.
 
 #stable((0.45in, 1fr),
   th[Qty.], th[Description],
-  [1], [H89 FujiNet circuit board, assembled and tested, with the FujiNet firmware loaded],
-  [1], [Jumper (shunt), installed on the PORT SEL header at 320Q],
+  [1], [H89 FujiNet circuit board (V1.1, reworked; see "The Rework" in Chapter 11), assembled and tested, with the FujiNet firmware loaded],
+  [2], [Jumpers (shunts), installed on the PORT SEL header at 320Q and on JP1 at 0],
 )
 
 If anything is missing, see "Getting Help" in the Appendix.
@@ -42,26 +42,28 @@ bag, component side up.
 Refer to Pictorial 3-1 for the location of the jumpers, and to Pictorial 3-2 for the following
 steps.
 
-The PORT SEL jumper chooses the group of I/O ports the card answers. The FujiNet programs expect
-the card at port 320, so the jumper goes on the 320Q position. The other positions are for future
+The PORT SEL jumper chooses the group of eight I/O ports the card answers, and JP1 chooses the
+first four ports of the group or the last four. The FujiNet programs expect the card at port 320,
+so the PORT SEL jumper goes on the 320Q position and JP1 on 0. The other positions are for future
 software.
 
 J3 connects the card to one of the Computer's interrupt lines. The FujiNet programs do not use
 interrupts, so J3 has no jumper on it.
 
-#step[Find the PORT SEL header near the bottom edge of the card, between the ESP32 module and the
-25-pin connector. Make sure the jumper is on the pair of pins marked 320Q, and on no other.]
+#step[Find the PORT SEL header, J1 (marked IO_PORT_SEL), near the bottom edge of the card, below
+the ESP32 module. Make sure the jumper is on the pair of pins marked 320Q, and on no other.]
 
-#step[Find J3, marked INT LVL, to the right of PORT SEL. Make sure there are no jumpers on it. If
-there is one, remove it and store it on a single pin of J3 so it is not lost.]
+#step[Find JP1, marked BA2, to the left of J1. Make sure its jumper joins the middle pin to the pin
+marked 0.]
 
-#step[Leave the three-pin jumper to the left of PORT SEL as it was supplied.]
+#step[Find J3, marked /INTE_ENA, to the right of J1. Make sure there are no jumpers on it. If there
+is one, remove it and store it on a single pin of J3 so it is not lost.]
 
 #stable((auto, 1fr),
   th[Jumper], th[To],
-  [PORT SEL], [320Q],
-  [J3 (INT LVL)], [No jumper],
-  [Three-pin header], [As supplied],
+  [PORT SEL (J1)], [320Q],
+  [JP1 (BA2)], [0],
+  [J3 (/INTE_ENA)], [No jumper],
 )
 
 NOTE: Port 320 is also the second port of the HA-88-3 three-port serial interface accessory, which
@@ -69,7 +71,7 @@ HDOS uses as its alternate terminal port. If your Computer has an HA-88-3 board 
 installed for that port, it and the FujiNet would both answer at 320. See "Installing the Card."
 ]
 
-#wide(pictorial(caption: [The H89 FujiNet card, component side.], card(s: 0.0102in)))
+#wide(pictorial(caption: [The H89 FujiNet card, component side.], card(s: 0.0083in)))
 
 #section("The microSD Card")[
 You can put a microSD card in the FujiNet's socket to keep your own library of disk images on the
@@ -79,11 +81,12 @@ when new.
 #step[On your personal computer, copy your .H8D disk images onto the microSD card. You may put them
 in folders.]
 
-#step[Slide the microSD card into the socket on the breakout board at the top edge of the
+#step[Slide the microSD card into the socket on the breakout board near the top edge of the
 FujiNet card, contacts first and label up, until it stops.]
 
-The FujiNet looks at the microSD card only when it starts. Insert or remove the card only while
-the Computer is turned off.
+The FujiNet looks at the microSD card only when it starts, when the Computer is turned on. Insert or
+remove the card only while the Computer is turned off, and with no USB cable plugged into the ESP32
+module: a USB cable keeps the FujiNet running.
 ]
 
 #pictorial(caption: [PORT SEL at 320Q; no jumper on J3.], jumpers())
@@ -135,9 +138,9 @@ every pin went into its socket, and that no row is offset by one.]
 
 #step[Close and lock the cabinet shell, and plug in the line cord.]
 
-NOTE: If you expect to update the FujiNet's firmware, you may want to plug a USB cable into the
-ESP32 module now and lead it out of the cabinet, so you need not open a running Computer later.
-See "Firmware Updates" on Page 9-1.
+NOTE: The FujiNet's firmware is updated through the USB connector on the ESP32 module. If you
+expect to update it, you may want to plug a USB cable into the module now and lead it out of the
+cabinet, so you need not open the Computer later. See "Firmware Updates" on Page 9-1.
 
 The FujiNet's antenna is inside the cabinet. The plastic shell lets the signal through, but the
 picture tube and chassis do not. If your WiFi router is far away, you may need to move it closer.
@@ -157,8 +160,8 @@ your WiFi network: the tests use nothing but the Computer's monitor. If, at any 
 
 There are three tests. The Initial Tests make sure the Computer still starts with the card in it.
 The Port Test (for MTR-90 only) checks the card's 82C55A with the monitor's own commands. The
-Communication Test is a short program you key into memory; it starts the FujiNet, sends it a
-request, and prints the answer.
+Communication Test is a short program you key into memory; it sets up the card, sends the FujiNet
+a request, and prints the answer.
 
 #sub("Initial Tests")
 #step[Push the rear panel POWER switch to ON. The speaker should produce a "beep," and after the
@@ -185,32 +188,31 @@ Test.
 #step[Type #typed("I"); the monitor finishes the word "In." Type #typed("322")#ret. The monitor shows
 what it read from port 322 on the next line. It should be #scr("200").]
 
-#step[Type #typed("O") again, and then #typed("322,006")#ret. This lets the FujiNet start.]
+#step[Type #typed("O") again, and then #typed("321,252")#ret. This writes a pattern to port B, which
+lights every other one of the card's eight lamps.]
 
-#step[Type #typed("I322")#ret again. The monitor should now show #scr("206").]
+#step[Type #typed("I321")#ret. The monitor should show #scr("252"), the pattern you wrote.]
 
 #session("mtr-ports", rows: (0, 6), cols: (0, 26), typed-rows: none,
   under: ((0, 5, 5), (0, 9, 15), (1, 5, 5), (1, 8, 10), (3, 5, 5), (3, 9, 15), (4, 5, 5), (4, 8, 10)))
 
 The first number shows the 82C55A answered at port 322. (The second digit may be 4 instead of 0:
-240 and 246 are good results too.) The second shows the FujiNet's start-up line is set. If you see
-#scr("377"), nothing answered at port 322: check the PORT SEL jumper and that the card is seated.
+240 is a good result too.) The second shows the 82C55A keeps what is written to it. If you see
+#scr("377"), nothing answered: check the PORT SEL jumper, JP1, and that the card is seated.
 
-NOTE: Never type O322,004. That starts the FujiNet in its firmware-loading mode (see Page 9-1).
-
-#step[Push #key[SHIFT] and #key[RESET]. The FujiNet goes back to its resting state.]
+#step[Push #key[SHIFT] and #key[RESET]. This resets the 82C55A. The FujiNet itself keeps running.]
 
 #sub("Communication Test")
 This test is the Computer and the FujiNet talking to each other. You will first enter a short
-program into memory with the monitor's Substitute command, and then run it. The program starts the
-FujiNet, asks it for its adapter configuration, and prints what comes back.
+program into memory with the monitor's Substitute command, and then run it. The program sets up the
+card's 82C55A, asks the FujiNet for its adapter configuration, and prints what comes back.
 
 The program prints a #scr("1") as soon as it finds the card's 82C55A, and a #scr("2") once the
 FujiNet has taken the request. Then it prints the text in the FujiNet's answer: the name of your
 WiFi network and the FujiNet's own name, if it has joined a network, and the version of its
 firmware. Then the monitor beeps, prints an #scr("H"), and gives you the prompt.
 
-The program is 129 numbers long. Take your time; if you make a mistake, you can go back and fix it.
+The program is 114 numbers long. Take your time; if you make a mistake, you can go back and fix it.
 
 #step[Push #key[SHIFT] and #key[RESET] to make sure you have the #scr("H:") prompt.]
 
@@ -235,7 +237,7 @@ check it as you go.]
 #session("mtr-keying-mtr90", rows: (0, 7), cols: (0, 26), typed-rows: none,
   under: ((0, 5, 5), (0, 16, 21), (1, 11, 13), (2, 11, 13), (3, 11, 13), (4, 11, 13), (5, 11, 13), (6, 11, 13)))
 
-#step[After the last entry (#scr("300") at address 040300), push RETURN instead of the SPACE bar.
+#step[After the last entry (#scr("300") at address 040261), push RETURN instead of the SPACE bar.
 The Computer gives you the #scr("H:") prompt.]
 
 If you made a mistake: while you are still entering, push the minus sign (#typed("-")) to go back
@@ -245,7 +247,7 @@ without changing them; push RETURN when you are done.
 
 #step[Type #typed("G"); the Computer will finish the word "Go." Type #typed("040100")#ret.]
 
-In a second or so, the display should be:
+At once, the display should be:
 
 #session("mtr-pass-444-142_mtr90", rows: (22, 23), cols: (0, 40), typed-rows: none,
   under: ((22, 5, 5), (22, 8, 13)))
@@ -264,7 +266,7 @@ The program stays in memory until you turn off the Computer. To run it again, pu
   th[You See], th[It Means],
   [#scr("12") and text, #scr("H")], [The card is working. Go on to "System Configuration."],
   [Only #scr("H") (and a beep)], [No 82C55A answered at port 320: the PORT SEL jumper, the card's seating, or another board at 320.],
-  [#scr("1"), and nothing more], [The 82C55A is there, but the FujiNet is not taking the request: its firmware, its power, or the 74LVC245.],
+  [#scr("1"), and nothing more], [The 82C55A is there, but the FujiNet is not taking the request: its firmware, its power, or the 74LVC245s.],
   [#scr("12"), and nothing more], [The request went out but no answer came back: the FujiNet's firmware, or the return path through the 82C55A.],
   [No beep, no #scr("H"), or a garbled screen], [The program was keyed in wrong. Push #key[SHIFT] and #key[RESET] and check your entries.],
 )

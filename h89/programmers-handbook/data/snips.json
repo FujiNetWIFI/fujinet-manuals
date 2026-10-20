@@ -3462,11 +3462,11 @@
    "where": [
     [
      "src/asm/inc/card.inc",
-     15,
-     38
+     16,
+     19
     ]
    ],
-   "text": "        in      a,(PORTB)               ; set up since the last reset?\n        cp      SETUP_MARK\n        jr      nz,card_start\n        in      a,(PORTC)\n        and     PC_EN\n        jr      nz,card_ready           ; yes, and running: leave it\ncard_start:\n        ld      a,MODE2                 ; mode 2; PC0-PC2 out, all 0\n        out     (PCTRL),a\n        ld      a,0x06                  ; EN=1, IO0=1 at once\n        out     (PORTC),a\n        ld      b,100                   ; about 200 ms with IO0 high\ncard_wait:\n        call    tick\n        djnz    card_wait\n        ld      a,SETUP_MARK            ; the card is set up\n        out     (PORTB),a\ncard_ready:\n        in      a,(PORTA)               ; drop a byte latched at start\n        ld      a,OE_ON\n        out     (PCTRL),a\n        ld      a,DIR_TO_H89\n        out     (PCTRL),a\n        ret"
+   "text": "        ld      a,MODE2                 ; mode 2; PC0-PC2 out, all 0\n        out     (PCTRL),a\n        in      a,(PORTA)               ; drop a byte latched before\n        ret"
   }
  },
  "model.card_present": {
@@ -3474,11 +3474,11 @@
    "where": [
     [
      "src/asm/inc/card.inc",
-     44,
-     48
+     26,
+     29
     ]
    ],
-   "text": "card_present:\n        in      a,(PORTC)\n        and     0x07                    ; EN, /OE, DIR\n        cp      PC_EN\n        ret"
+   "text": "card_present:\n        in      a,(PORTC)\n        and     PC_OE|PC_DIR            ; /OE and DIR both 0\n        ret"
   }
  },
  "model.expired": {
@@ -3522,8 +3522,8 @@
    "where": [
     [
      "src/asm/inc/card.inc",
-     53,
-     60
+     34,
+     41
     ]
    ],
    "text": "tick:\n        ld      a,(TICKS)\n        ld      c,a\ntick_wait:\n        ld      a,(TICKS)\n        cp      c\n        jr      z,tick_wait\n        ret"

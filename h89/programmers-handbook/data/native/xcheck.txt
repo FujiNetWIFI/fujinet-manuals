@@ -1,16 +1,8 @@
 z88dk-z80asm -m8080 cross-check (Z80 Macro Assembler 25085-3bd06cad56-20260712)
-compare FNON.COM: HEX 0100H-0166H (103 bytes), COM 128 bytes (1 records)
+compare FNVER.COM: HEX 0100H-02ABH (428 bytes), COM 512 bytes (4 records)
   HEX vs z80asm -m8080: identical
   COM vs HEX:           identical
-  z80asm beyond 0166H:  0 bytes, all zero (the DS areas)
-compare FNVER.COM: HEX 0100H-02D6H (471 bytes), COM 512 bytes (4 records)
-  HEX vs z80asm -m8080: identical
-  COM vs HEX:           identical
-  z80asm beyond 02D6H:  266 bytes, all zero (the DS areas)
-compare FNONH.ABS: header FF 00, load 2280H, length 98, entry 2280H
-  code vs z80asm -m8080: identical (98 bytes compared, 0 in DS areas skipped)
-  z80asm length 98, ABS length 98: same
-compare FNVERH.ABS: header FF 00, load 2280H, length 636, entry 2280H
-  code vs z80asm -m8080: identical (436 bytes compared, 200 in DS areas skipped)
-  z80asm length 636, ABS length 636: same
-FNON.COM: identical to FujiNet Go H89's shipped tools/disks/fnon/FNON.COM
+  z80asm beyond 02ABH:  266 bytes, all zero (the DS areas)
+compare FNVERH.ABS: header FF 00, load 2280H, length 593, entry 2280H
+  code vs z80asm -m8080: identical (393 bytes compared, 200 in DS areas skipped)
+  z80asm length 593, ABS length 593: same

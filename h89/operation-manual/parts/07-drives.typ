@@ -69,7 +69,7 @@ HDOS reports a FujiNet drive's troubles in its own words:
 #stable((1.6in, 1fr),
   th[HDOS Says], th[It Means],
   [?02 UNKNOWN DEVICE NAME], [HDOS has no FN.DVD: it is not on SY0:, or HDOS has not been started again since you copied it.],
-  [?02 UNIT NOT AVAILABLE], [That drive slot is empty, the drives have not been put in service since the Computer was reset (run CONFIG and push #key[ESC]), or the FujiNet is not answering.],
+  [?02 UNIT NOT AVAILABLE], [That drive slot is empty, the drives have not been put in service since the Computer was turned on (run CONFIG and push #key[ESC]), or the FujiNet is not answering.],
   [?02 UNABLE TO READ THIS DISK, IT PROBABLY HAS NOT BEEN PROPERLY INITIALIZED], [The slot holds something that is not an HDOS disk: another computer's image, a CP/M disk, or a blank image.],
   [?02 DEVICE IS INCAPABLE OF WRITE OPERATIONS (OR IS WRITE LOCKED)], [The image is in the slot read only. Dismount, put it in read/write with CONFIG, and mount it again.],
   [?02 READ FAILURE, ?02 WRITE FAILURE], [The FujiNet stopped answering, or could not reach the host (for a network host, check the WiFi).],
@@ -141,7 +141,7 @@ FNDISK’s own messages:
   [No room above the BIOS. Make a 62K system (MOVCPM17 62 \*, then SYSGEN) and boot that.], [Your CP/M is a 64K system. See Page 5-3.],
   [Needs Heath/Zenith CP/M 2.2.04.], [This is some other CP/M. FNDISK works only with 2.2.04.],
   [No FujiNet card (82C55 at 0D0H) found.], [Nothing answered at port 320: the card, its PORT SEL jumper, or another board at 320.],
-  [The FujiNet isn't answering.], [The card is there but the FujiNet did not reply. Push #key[SHIFT] and #key[RESET] and try again; see Page 10-4.],
+  [The FujiNet isn't answering.], [The card is there but the FujiNet did not reply. Wait a moment and try again; if it still does not answer, turn the Computer off and on. See Page 10-4.],
   [No 8 free drive letters there.], [The letter you gave FNDISK is one of your BIOS’s drives, or is later than I:.],
 )
 
@@ -150,7 +150,7 @@ FNDISK’s own messages:
 
 #section("A Typical Session", balance: false)[
 Here is a whole working session, from power-on, under each operating system. These examples
-assume the FujiNet is waiting for CONFIG after a reset (the way it comes); if you have told it to
+assume the FujiNet is waiting for CONFIG after power-on (the way it comes); if you have told it to
 put its drives in service by itself, skip the CONFIG steps.
 
 #grid(columns: (1fr, 1fr), column-gutter: 1.2em,

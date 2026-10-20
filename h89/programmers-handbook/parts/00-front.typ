@@ -109,6 +109,7 @@
     #text(weight: "bold")[Copyright © 2026] \
     Thomas Cherryhomes \
     #text(style: "oblique")[Free software: GNU GPL, version 3] \
+    Second edition, October 2026 \
     Printed wherever you are]))
 ]
 

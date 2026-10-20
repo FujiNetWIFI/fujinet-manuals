@@ -146,20 +146,42 @@ versions, which are the ones its examples ran against:
 
 #stable((1.25in, 1fr),
   th[Program], th[Version],
-  [Firmware], [fujinet-firmware, branch h89-disk-fixes, 7ab84ae64 (reports itself as v1.6)],
+  [Firmware], [For the card: fujinet-firmware master from 7e8e647 (PR \#2042), which reads /OE and
+    DIR on IO21 and IO22. The examples ran on fujinet-pc built from branch h89-disk-fixes, 7ab84ae64,
+    which reports itself as v1.6; the PC build has no pin map.],
   [fujinet-lib], [branch h89-setup-after-reset, d08f584 (the H89 is not yet in a release). The
     programs of Chapters 13 to 19 and the library's own tests ran with 9e6d4dd, which differs only in
     how it starts the card (L22).],
   [z88dk], [v2.4-1231 (3bd06cad56)],
-  [FujiNet Go H89], [51f411d, which resets the card's 82C55A as a real H89 does. The programs of
-    Chapters 13 to 19 and the library's tests ran on v0.1.0-3 (8dc059d).],
+  [FujiNet Go H89], [branch card-rev11, 6ceac07, whose card is the reworked V1.1: the ESP32 runs
+    from power-on, and RESET reaches only the 82C55A. The programs of Chapters 2, 4 and 5 and the
+    exercisers ran on it; those of Chapters 13 to 19 and the library's tests ran on v0.1.0-3
+    (8dc059d).],
   [FNDISK, FN.DVD], [fujinet-h89, branch card-setup-mark, 4cb0024],
-  [FNON], [FujiNet Go H89, 51f411d],
 )
 
 Where the firmware or the library does something it should not, the entry says so in a WARNING,
 with what to do instead. The examples all work as printed. The Appendix lists every such case in one
 place, with the line of source it comes from, so it can be checked against later versions.
+]
+
+#section("Changes in This Edition")[
+This second edition is for the card as reworked for fujinet-firmware \#2042 (October 2026). The
+rework takes the ESP32's EN, IO0 and IO2 off the card, and the FujiNet now runs from power-on.
+What changed for a program:
+
+- _Port C._ PC2, once the ESP32's EN, is connected to nothing. PC1 (/OE) and PC0 (DIR) still steer
+  the bus transceiver, and the ESP32 reads them on IO21 and IO22 (Chapter 2).
+- _Setting the card up._ `card_on` is one mode word and a read of port A. It no longer looks for the
+  mark in port B, raises EN or waits 200 ms, and a mode word is safe at any time between
+  transactions. `card_present` checks /OE and DIR only. fujinet-lib, FN.DVD and FNDISK still do the
+  old start-up, which costs them only time (L23).
+- _Port B_ drives eight lamps on the card. It is no longer "wired to nothing."
+- _RESET_ resets the 82C55A only. A program that wants the FujiNet restarted sends FUJI_RESET
+  (Chapter 8).
+- _Chapter 5_ has FNVER and FNVERH only. FNON and FNONH, which existed to start the card, are gone.
+- _Versions._ The table above names the firmware with the new pin map and the FujiNet Go H89 that
+  models the reworked card.
 ]
 
 #section("How the Examples Were Checked")[

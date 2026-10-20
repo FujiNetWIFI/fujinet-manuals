@@ -9,7 +9,7 @@
 #let name = sys.inputs.at("name", default: "hosts")
 #{
   if kind == "crt" { block(width: 6.2in, crt(name, width: 6.2in)) }
-  else if name == "card" { card(s: 0.0102in) }
+  else if name == "card" { card(s: 0.0083in) }
   else if name == "jumpers" { jumpers() }
   else if name == "sockets" { sockets() }
   else if name == "portmap" { portmap() }

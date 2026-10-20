@@ -24,7 +24,7 @@ ESC             equ     0x1B
 main:
         ld      hl,t_banner
         call    print
-        call    card_on                 ; start the card (if nothing has)
+        call    card_on                 ; set the card up
         call    card_present
         jp      nz,no_card
 

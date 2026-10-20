@@ -106,6 +106,7 @@
     #text(weight: "bold")[Copyright © 2026] \
     Thomas Cherryhomes \
     #text(style: "oblique")[Free software: GNU GPL, version 3] \
+    Second edition, October 2026 \
     Printed wherever you are]))
 ]
 
@@ -114,3 +115,4 @@
 #align(center, text(font: f-head, weight: "bold", size: 13pt)[TABLE OF CONTENTS])
 #v(0.25in)
 #contents()
+

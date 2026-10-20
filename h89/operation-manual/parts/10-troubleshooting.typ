@@ -22,11 +22,14 @@ talking, and the trouble is in the settings or the software.
 
 Remember these things the FujiNet does by design:
 
-- Turning on the Computer, or pushing #key[SHIFT] and #key[RESET], stops the FujiNet. The next
-  FujiNet program starts it again.
+- The FujiNet starts when the Computer is turned on, and runs until it is turned off.
+  #key[SHIFT] and #key[RESET] reset only the card's 82C55A; the next FujiNet program sets it up
+  again.
 - After it starts, the FujiNet waits for CONFIG before it puts its drives in service, unless you have
   told it otherwise (Page 6-12).
 - The FujiNet reads its microSD card only when it starts.
+- A USB cable from a personal computer keeps the FujiNet running with the Computer off. Unplug it
+  when you are done with it.
 - It hears only 2.4 GHz WiFi networks.
 - The H89 cannot start HDOS or CP/M from a FujiNet drive.
 - Public servers on the Internet can only be read.
@@ -41,15 +44,15 @@ what you see, and check each cause in turn.
   [The Computer does not give the #scr("H:") prompt with the card installed.],
   [The card is not fully seated, or is offset by a pin. Turn off the Computer, unplug it, and reseat the card. Switch SW501 is set for automatic booting or a memory test at power-up: push #key[SHIFT] and #key[RESET].],
   [Port Test reads 377.],
-  [Nothing answered at port 322. The PORT SEL jumper is missing or not on 320Q; the card is not seated; the card is in the floppy disk interface's sockets (P506 and P512).],
-  [Port Test reads something other than 200 (or 240), or the second reading is not 206 (or 246).],
-  [Another accessory also answers at port 320 to 327: an HA-88-3 with the 8250 for its 320 port installed. Remove that 8250. Otherwise, a fault on the card (U1, U3).],
+  [Nothing answered at port 322. The PORT SEL jumper is missing or not on 320Q; JP1 is not on 0; the card is not seated; the card is in the floppy disk interface's sockets (P506 and P512).],
+  [Port Test reads something other than 200 (or 240), or the second reading is not 252.],
+  [Another accessory also answers at port 320 to 327: an HA-88-3 with the 8250 for its 320 port installed. Remove that 8250. Otherwise, a fault on the card (U1, U2).],
   [Communication Test: only #scr("H") (and a beep).],
   [As for "Port Test reads 377," above.],
   [Communication Test: #scr("1"), and nothing more.],
-  [The FujiNet is not taking bytes. Its firmware is missing or is not the H89 firmware; it was left in loading mode after a firmware update (push #key[SHIFT] and #key[RESET]); no 3.3 volts on the ESP32 module; a fault in U2 (74LVC245) or the divider resistors at J2.],
+  [The FujiNet is not taking bytes. Its firmware is missing or is not the H89 firmware for this card; it is still in loading mode after a firmware update (unplug the USB cable from your personal computer, and turn the Computer off and on); no power on the ESP32 module (D2); a fault in U3 or U5 (74LVC245), or in the wires to IO21 and IO22.],
   [Communication Test: #scr("12"), and nothing more.],
-  [The FujiNet took the request but no answer came back: the wrong firmware, or a fault on the return path (U1’s port A strobe lines, U2).],
+  [The FujiNet took the request but no answer came back: the wrong firmware, or a fault on the return path (U2’s port A strobe lines, U3, U5).],
   [Communication Test: no beep, no #scr("H"), garbled screen.],
   [The program was keyed in wrong. Check every entry (Page 3-6). Make sure you ran it with #typed("G040100").],
   [Communication Test: #scr("12") and the firmware version, but no names.],
@@ -79,7 +82,7 @@ what you see, and check each cause in turn.
   [?02 UNKNOWN DEVICE NAME.],
   [FN.DVD is not on SY0:, or HDOS has not been started since it was copied there (Page 5-1).],
   [?02 UNIT NOT AVAILABLE.],
-  [The slot is empty; the drives have not been put in service since the last reset (run CONFIG and push #key[ESC]); the FujiNet is not answering.],
+  [The slot is empty; the drives have not been put in service since the Computer was turned on (run CONFIG and push #key[ESC]); the FujiNet is not answering.],
   [?02 UNABLE TO READ THIS DISK...],
   [The slot holds something that is not an initialized HDOS disk.],
   [?02 DEVICE IS INCAPABLE OF WRITE OPERATIONS...],
@@ -97,9 +100,9 @@ what you see, and check each cause in turn.
   [No FujiNet card (82C55 at 0D0H) found.],
   [See "Port Test reads 377," above.],
   [The FujiNet isn't answering.],
-  [The FujiNet is starting, or was left in loading mode. Push #key[SHIFT] and #key[RESET], start CP/M, and run CONFIG, then FNDISK.],
+  [The FujiNet is still starting: wait a moment and run FNDISK again. Or it is in loading mode after a firmware update: unplug the USB cable from your personal computer, and turn the Computer off and on.],
   [Bdos Err On D: Select.],
-  [The slot is empty, holds something that is not an .H8D image, or the drives have not been put in service since the last reset (run CONFIG).],
+  [The slot is empty, holds something that is not an .H8D image, or the drives have not been put in service since the Computer was turned on (run CONFIG).],
   [Bdos Err On D: Bad Sector, when writing.],
   [The image is in read only. Push CTRL-C; change it to read/write with CONFIG.],
   [Drives D: through K: are gone.],
@@ -109,8 +112,8 @@ what you see, and check each cause in turn.
 #sub("Firmware Updates")
 #chart(
   [The Flasher cannot connect.],
-  [The FujiNet is not in loading mode; the USB cable carries only power; the CP210x driver is missing (Windows).],
+  [The USB cable carries only power; the CP210x driver is missing (Windows); the Computer is off.],
   [After an update, the programs say the FujiNet is not answering.],
-  [Push #key[SHIFT] and #key[RESET] to take it out of loading mode.],
+  [It is still in loading mode. Unplug the USB cable from your personal computer, and turn the Computer off and on.],
 )
 ]

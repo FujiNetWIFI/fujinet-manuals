@@ -43,7 +43,7 @@ HELLO is FNHELLO again, in C:
 
 `fuji_get_adapter_config()` fills in an `AdapterConfig` structure, which has the same layout as
 the reply (Chapter 8), and returns `true` for an ACK. That is all there is to it. fujinet-lib
-starts the card the first time it is called, the way `card_on` does, and makes the whole exchange
+sets the card up the first time it is called, much as `card_on` does, and makes the whole exchange
 itself.
 ]
 

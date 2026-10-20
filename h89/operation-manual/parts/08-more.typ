@@ -9,8 +9,8 @@ servers can only be read.
 
 - Use a card formatted FAT32. Cards of 32 gigabytes or smaller come that way; larger cards come
   formatted exFAT, which the FujiNet cannot read, and must be formatted FAT32 first.
-- The FujiNet reads the card only when it starts. Put the card in, or take it out, only with the
-  Computer turned off.
+- The FujiNet reads the card only when it starts, when the Computer is turned on. Put the card in,
+  or take it out, only with the Computer turned off and no USB cable in the ESP32 module.
 - To add disk images, turn off the Computer, take the card out, copy the images onto it with your
   personal computer, and put it back. Or copy them to it with CONFIG from another host (Page 6-9).
 - The FujiNet also keeps a copy of its settings on the card, in a file named fnconfig.ini. Leave it
@@ -87,7 +87,7 @@ If you write programs, all of the FujiNet is open to you. The Computer talks to 
 sending small packets through the 82C55A at port 320, and the library that CONFIG and the FujiNet's
 test programs are built on, fujinet-lib, is free to use from C with the z88dk compiler, for HDOS and
 for CP/M. The Communication Test in Chapter 3, listed in the Appendix, shows the whole exchange in
-129 bytes of 8080 code.
+114 bytes of 8080 code.
 
 #sub("FujiNet Go H89")
 FujiNet Go H89 is a program for Windows, macOS and Linux that is an H89 with an H19 and a FujiNet

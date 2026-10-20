@@ -9,20 +9,21 @@ it; `tools/native.sh check` redoes only the cross-check.
 
 | File | What |
 |---|---|
-| `src/native/FNON.ASM` | DRI ASM, CP/M. FujiNet Go H89's FNON (tools/disks/fnon, 51f411d), code unchanged; its longest lines are 75/76 columns. |
-| `src/native/FNONH.ASM` | Heath ASM, HDOS. The same program; `.PRINT`, `.EXIT`. |
-| `src/native/FNVER.ASM` | DRI ASM, CP/M. FUJI_GET_ADAPTERCONFIG, prints SSID + firmware version. 243 lines. |
-| `src/native/FNVERH.ASM` | Heath ASM, HDOS. The same. 237 lines. |
+| `src/native/FNVER.ASM` | DRI ASM, CP/M. FUJI_GET_ADAPTERCONFIG, prints SSID + firmware version. 220 lines. |
+| `src/native/FNVERH.ASM` | Heath ASM, HDOS. The same; `.PRINT`, `.EXIT`. 214 lines. |
 | `data/native/*.LST, *.PRN` | The assemblers' listings, pulled off the work disks (NULs and ^Z removed; Heath's form feeds kept). |
 | `data/native/timing.txt` | Emulated time of each assembly. |
 | `data/native/xcheck.txt` | The z80asm cross-check. |
 | `data/native/probes/` | Syntax probes: sources, listings, console screens (evidence for the facts below). |
-| `screens/native-<name>-asm.json`, `-run.json` | The kept screens (fnon, fnver, fnonh, fnverh). |
-| `build/native/` | FNON.COM/.HEX, FNVER.COM/.HEX, FNONH.ABS, FNVERH.ABS as they came off the disks; `z80asm/` the cross-check copies. |
+| `screens/native-<name>-asm.json`, `-run.json` | The kept screens (fnver, fnverh). |
+| `build/native/` | FNVER.COM/.HEX and FNVERH.ABS as they came off the disks; `z80asm/` the cross-check copies. |
 
-The four programs are pure 8080 (z80asm -m8080 accepts every line).
-FNVER/FNVERH: start the card unless port B holds the mark A5H and EN
-is high (FNON's code), send
+FNON and FNONH, which only started the card, went with the second edition
+(Oct 18, 2026): on the reworked card there is nothing to start.
+
+The two programs are pure 8080 (z80asm -m8080 accepts every line).
+FNVER/FNVERH: set the card up (the mode word C0H, then a read of port A,
+as `card_on` does), send
 `C0 70 E8 06 00 5F 00 C0` (checksum computed, every byte SLIP-escaped if
 needed), take the reply until its closing END with SLIP unescaping, a 15 s
 timeout counted in 2 ms TICKS, then check length word = bytes received,
@@ -41,26 +42,16 @@ ASCII.ACM (from `HDOS_2_0_Software_Tools.h17disk`) and the source; CP/M, a
 (HDOS 2.0, 56K) or `build/disks/cpm62.h8d` (62K CP/M 2.2.04, has ASM.COM
 and LOAD.COM).
 
-HDOS (FNONH; FNVERH the same with its name):
+HDOS (FNVERH):
 
     >MOUNT SY1:
     VOLUME 000, MOUNTED ON SY1:
     LABEL: NATIVE ASSEMBLY
-    >SY1:ASM SY1:FNONH,SY1:FNONH=SY1:FNONH
-
-
-    00158 STATEMENTS ASSEMBLED
-    40192 BYTES FREE
-     NO ERRORS DETECTED
-
-    >SY1:FNONH
-    FUJINET ENABLED
-    >SY1:FNONH
-    FUJINET ALREADY ON
-
     >SY1:ASM SY1:FNVERH,SY1:FNVERH=SY1:FNVERH
-    00330 STATEMENTS ASSEMBLED
-    39909 BYTES FREE
+
+
+    00307 STATEMENTS ASSEMBLED
+    39949 BYTES FREE
      NO ERRORS DETECTED
     >SY1:FNVERH
     NETWORK:  DUMMY CAFE          (screen kept as WORKSHOP)
@@ -68,31 +59,27 @@ HDOS (FNONH; FNVERH the same with its name):
 
 ASM prints nothing but two blank lines and the three totals; the statement
 count includes the XTEXT'd lines (HOSDEF 65, ASCII 28). The listing file
-has the same totals in mixed case ("00158 Statements Assembled").
+has the same totals in mixed case ("00307 Statements Assembled").
 
-CP/M (FNVER; FNON the same):
+CP/M (FNVER):
 
     A>ASM B:FNVER
     CP/M ASSEMBLER - VER 2.0
-    03E1
+    03B6
     002H USE FACTOR
     END OF ASSEMBLY
 
     A>LOAD B:FNVER
     FIRST ADDRESS 0100
-    LAST  ADDRESS 02D6
-    BYTES READ    01D7
+    LAST  ADDRESS 02AB
+    BYTES READ    01AC
     RECORDS WRITTEN 04
 
     A>B:FNVER
     Network:  Dummy Cafe          (screen kept as Workshop)
     Firmware: v1.6-7d7a3ba
 
-FNON: `0167` / `000H USE FACTOR`; LOAD `LAST  ADDRESS 0166`,
-`BYTES READ    0067`, `RECORDS WRITTEN 01`; runs `FujiNet enabled`, then
-`FujiNet already on`.
-
-`03E1` is the next free address after the program (here after its DS
+`03B6` is the next free address after the program (here after its DS
 areas, i.e. the top of FNVER's stack); USE FACTOR is how full ASM's symbol
 table got (hex).
 
@@ -105,42 +92,31 @@ interrupts off is included). It includes loading the assembler.
 
 | Program | Assembler | Assembly | LOAD |
 |---|---|---|---|
-| FNON (64 lines) | DRI ASM 2.0, CP/M | 8224 ticks = 16.4 s | 2952 ticks = 5.9 s |
-| FNVER (243 lines) | DRI ASM 2.0, CP/M | 16264 ticks = 32.5 s | 3936 ticks = 7.9 s |
-| FNONH (65 lines + 93 XTEXT'd) | Heath ASM, HDOS | 23656 ticks = 47.3 s | -- |
-| FNVERH (237 lines + 93 XTEXT'd) | Heath ASM, HDOS | 44336 ticks = 88.7 s | -- |
+| FNVER (220 lines) | DRI ASM 2.0, CP/M | 14768 ticks = 29.5 s | 3848 ticks = 7.7 s |
+| FNVERH (214 lines + 93 XTEXT'd) | Heath ASM, HDOS | 40840 ticks = 81.7 s | -- |
 
-(`data/native/timing.txt`. Repeat runs agree within a few ticks for CP/M;
-an earlier HDOS run of the same programs with 3 fewer comment lines took
-45.0 s and 85.3 s.)
+(`data/native/timing.txt`, Oct 18, 2026. Repeat runs agree within a few
+ticks for CP/M. The first edition's longer programs, with the old start-up,
+took 32.5 s + 7.9 s and 88.7 s.)
 
 Heath's ASM is much the slower: two passes, and HOSDEF.ACM and ASCII.ACM
-are read again on each, all on the H17. Sizes: FNONH 98 bytes, FNVERH 436
-bytes of code + 200 of DS; FNON 103 bytes (1 record), FNVER 471 bytes (4
-records).
+are read again on each, all on the H17. Sizes: FNVERH 393 bytes of code +
+200 of DS; FNVER 428 bytes (4 records).
 
 ## Cross-check (z88dk-z80asm -m8080)
 
 ```
 z88dk-z80asm -m8080 cross-check (Z80 Macro Assembler 25085-3bd06cad56-20260712)
-compare FNON.COM: HEX 0100H-0166H (103 bytes), COM 128 bytes (1 records)
+compare FNVER.COM: HEX 0100H-02ABH (428 bytes), COM 512 bytes (4 records)
   HEX vs z80asm -m8080: identical
   COM vs HEX:           identical
-  z80asm beyond 0166H:  0 bytes, all zero (the DS areas)
-compare FNVER.COM: HEX 0100H-02D6H (471 bytes), COM 512 bytes (4 records)
-  HEX vs z80asm -m8080: identical
-  COM vs HEX:           identical
-  z80asm beyond 02D6H:  266 bytes, all zero (the DS areas)
-compare FNONH.ABS: header FF 00, load 2280H, length 98, entry 2280H
-  code vs z80asm -m8080: identical (98 bytes compared, 0 in DS areas skipped)
-  z80asm length 98, ABS length 98: same
-compare FNVERH.ABS: header FF 00, load 2280H, length 636, entry 2280H
-  code vs z80asm -m8080: identical (436 bytes compared, 200 in DS areas skipped)
-  z80asm length 636, ABS length 636: same
-FNON.COM: identical to FujiNet Go H89's shipped tools/disks/fnon/FNON.COM
+  z80asm beyond 02ABH:  266 bytes, all zero (the DS areas)
+compare FNVERH.ABS: header FF 00, load 2280H, length 593, entry 2280H
+  code vs z80asm -m8080: identical (393 bytes compared, 200 in DS areas skipped)
+  z80asm length 593, ABS length 593: same
 ```
 
-All four: byte for byte identical.
+Both: byte for byte identical.
 
 The converted sources are in `build/native/z80asm/`. The conversion
 (`tools/native.py z80 dri|heath`) changes only what the dialects force:
@@ -168,8 +144,8 @@ Running it
 - HDOS command-line style: `ASM binary,listing=source`. The defaults are
   SY0: and .ABS / .LST / .ASM (the string `SY0ABSSY0LSTSY0ASM` in ASM.ABS;
   we always named the device and let the extensions default). We typed
-  `SY1:ASM SY1:FNONH,SY1:FNONH=SY1:FNONH` (HDOS runs SY1:ASM.ABS by its
-  name; no RUN needed) -> SY1:FNONH.ABS and SY1:FNONH.LST.
+  `SY1:ASM SY1:FNVERH,SY1:FNVERH=SY1:FNVERH` (HDOS runs SY1:ASM.ABS by its
+  name; no RUN needed) -> SY1:FNVERH.ABS and SY1:FNVERH.LST.
 - No listing named (`ASM SY1:T4=SY1:T4`): the error lines are shown on the
   console (`F  042.202  000  00100  L8CHARSX  NOP`). With a listing, the
   console gets only the totals and the errors go to the listing.
@@ -266,7 +242,7 @@ Evidence: `data/native/probes/C1.ASM`, `C1.PRN`, `e6-console.txt`.
   whole records.
 - Labels: long names fine (17-character labels differing only in the last
   character kept apart); EQU/SET names take no colon, instruction labels
-  were written with one (as in FNON); lower case accepted (`label1: nop`);
+  were written with one (as in FNVER); lower case accepted (`label1: nop`);
   `;` comments anywhere; `*` in column 1 a comment line.
 - `$` is the location counter; `$` inside a name or number is ignored
   (`D$O$L` = `DOL`, `1$000B` = 8).

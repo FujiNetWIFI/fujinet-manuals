@@ -23,7 +23,7 @@ PICS = {"netcat": ("crt", "netcat-cpm"), "iss": ("crt", "iss-asm-hdos"),
 
 TOP = [
     "**A missing field stops the firmware.** Send every field a command takes, even unused ones.",
-    "**After a reset, EN can read 1 before the card is set up.** Set it up unless port B holds A5H.",
+    "**After a reset, port A is out of mode 2.** Write the mode word (C0H to D3H) before the first request.",
     "**One END only.** A frame that starts `C0 C0` is lost, and its bytes go to the modem.",
     "**100 ms between request bytes**, at most; build the request first, then send it.",
     "**FUJI_GET_SSID returns the WiFi password** in plain text.",

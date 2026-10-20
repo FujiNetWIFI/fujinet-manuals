@@ -83,4 +83,23 @@ Page 6-3 is the third page of Chapter 6.
 This Manual describes the first release of the FujiNet software for the H89. The FujiNet's
 programs are improved all the time. If something on your screen differs from a picture in this
 Manual, believe your screen, and look for news on the FujiNet Wiki (see the inside front cover).
+
+#sub("Changes in This Edition")
+#metadata("Changes in This Edition") <toc2>
+This second edition covers the V1.1 card, reworked for the present firmware (fujinet-firmware
+7e8e647, October 2026). The first edition covered the V1.0 card. What changed:
+
+- _The card._ The V1.1 board has a second 74LVC245 (U5) in place of the divider resistors, the
+  82C55A as U2 (a PLCC part) or U6 (a DIP), eight lamps on port B, and JP1 (BA2) beside PORT SEL.
+  Every component number has changed. Pictorial 3-1, the jumper steps, the circuit description and
+  the parts list are new.
+- _The rework._ The ESP32's EN, IO0 and IO2 are no longer connected to the card. /OE and DIR reach
+  it on IO21 and IO22, and LED D1 is gone (Chapter 11).
+- _Starting._ The FujiNet runs from the moment the Computer is turned on. The Computer no longer
+  starts it, and #key[SHIFT] and #key[RESET] no longer stop or restart it: the FujiNet drives stay
+  in service through a reset (Chapters 4 and 6).
+- _Firmware updates_ are done over USB alone (Chapter 9). The monitor commands and the program that
+  put the FujiNet in its loading mode are gone.
+- _Testing._ The Port Test writes a pattern to port B instead of starting the FujiNet, and the
+  Communication Test is 114 numbers long instead of 129 (Chapter 3).
 ]

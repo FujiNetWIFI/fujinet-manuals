@@ -10,7 +10,7 @@ with z88dk's assembler, carry it to the H89, and run it under HDOS or CP/M --- t
 for both.
 
 It also introduces the book's assembly library: a handful of include files that hide the
-differences between HDOS and CP/M, start the card, and make a complete FujiBus exchange with one
+differences between HDOS and CP/M, set the card up, and make a complete FujiBus exchange with one
 call. Every assembly program in this Manual uses it, and it is listed in full at the end of the
 chapter.
 
@@ -39,7 +39,7 @@ linker (z88dk-z80asm), and tools for making disk images. It knows both HDOS and 
 ]
 
 #section("A First Program")[
-Here is FNHELLO, the shortest useful FujiNet program. It starts the card, asks the FujiNet for its
+Here is FNHELLO, the shortest useful FujiNet program. It sets the card up, asks the FujiNet for its
 adapter configuration (Chapter 8), and prints four things from the reply:
 
 #plisting("fnhello", size: code-size)
@@ -187,8 +187,8 @@ the flags, and keeps BC, DE and HL.
   [`pip`], [Print the 4 bytes at HL as an IP address.],
   [`ptext`, `phexs`, `pdump`], [Print BC bytes at HL as text, as hex on one line, or as a dump.],
   [`strlen`], [BC = the length of the string at HL.],
-  [`card_on`], [Set up the card unless a program already has (Chapter 2); face the bus toward the H89.],
-  [`card_present`], [Z if the card is there and running.],
+  [`card_on`], [Set the card up with one mode word, which also faces the bus toward the H89 (Chapter 2).],
+  [`card_present`], [Z if the card is there and facing the H89.],
   [`fn_call`], [Make one FujiBus exchange (see below).],
   [`fn_send`], [Send a request and wait for no reply (the modem's, which are not framed).],
   [`fn_raw`], [Take unframed bytes (the modem's) into DE, BC = room, until 200 ms of quiet.],
@@ -244,7 +244,7 @@ through Z80 code, but show the Z80's extra instructions as data. A listing from 
 where to set breakpoints.
 
 #chart(
-  [The program hangs at its first request.], [The card was never started (call `card_on`), or it is
+  [The program hangs at its first request.], [The card was never set up (call `card_on`), or it is
     set to other ports.],
   [Every request times out.], [A request is malformed --- usually the length --- so the FujiNet says
     nothing (Chapter 3).],

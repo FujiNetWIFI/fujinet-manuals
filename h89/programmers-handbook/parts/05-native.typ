@@ -15,12 +15,10 @@ is longer, and neither assembler has macros. But they talk to the FujiNet exactl
 programs do, and their output is byte for byte what the book's cross-assembler makes from the same
 source.
 
-This chapter shows four small programs, two for each system:
-
-- FNONH (HDOS) and FNON (CP/M) start the card if nothing has, as `card_on` does (Chapter 2);
-- FNVERH (HDOS) and FNVER (CP/M) make one complete FujiBus exchange in 8080 code --- the request
-  FUJI_GET_ADAPTERCONFIG, built, checksummed, framed and sent, and the reply taken, unescaped and
-  checked --- and print the FujiNet's network and firmware version.
+This chapter shows one small program in each system's assembler: FNVERH for HDOS and FNVER for
+CP/M. Each sets the card up, as `card_on` does (Chapter 2), and makes one complete FujiBus exchange
+in 8080 code --- the request FUJI_GET_ADAPTERCONFIG, built, checksummed, framed and sent, and the
+reply taken, unescaped and checked --- and prints the FujiNet's network and firmware version.
 ]
 
 #section("Heath's ASM, Under HDOS")[
@@ -33,7 +31,7 @@ This chapter shows four small programs, two for each system:
 #sub("Assembling")
 ASM takes an HDOS command line: the program to make, the listing, an equals sign, and the source:
 
-#code("SY1:ASM SY1:FNONH,SY1:FNONH=SY1:FNONH")
+#code("SY1:ASM SY1:FNVERH,SY1:FNVERH=SY1:FNVERH")
 
 Each name takes its usual extension (.ABS, .LST, .ASM). With no listing named, ASM shows any errors on
 the console; with one, they go in the listing, and the console shows only the totals. ASM makes the
@@ -42,14 +40,15 @@ shows its banner and asks with `*`.
 
 #steps(
   [Mount the work diskette: #typed("MOUNT SY1:") #ret.],
-  [Assemble: #typed("SY1:ASM SY1:FNONH,SY1:FNONH=SY1:FNONH") #ret. ASM takes about 50 seconds;
-   FNVERH, a larger program, about 90.],
-  [Run it: #typed("SY1:FNONH") #ret.],
+  [Assemble: #typed("SY1:ASM SY1:FNVERH,SY1:FNVERH=SY1:FNVERH") #ret. ASM takes about 80
+   seconds.],
+  [Run it: #typed("SY1:FNVERH") #ret.],
 )
 
-#session("native-fnonh-run", rows: (12, 23))
+#session("native-fnverh-run", rows: (13, 23))
 
-The second run finds the FujiNet running, and leaves it alone.
+HDOS prints the version in capitals: its console turns lower case to upper unless a program says
+otherwise, and FNVERH leaves HDOS alone.
 
 #sub("Heath's assembly language")
 The book's programs keep to these rules, which differ from both z88dk's and Digital Research's:
@@ -74,13 +73,6 @@ The book's programs keep to these rules, which differ from both z88dk's and Digi
 DRI's. The book's programs use no `IF`.]
 ]
 
-#section("FNONH", balance: false)[
-FNONH is FNON (below) in Heath's language: 65 lines. Notice `XTEXT` before `ORG`, the octal numbers,
-and `.PRINT` with its strings ending in `'...'+200Q` or `ENL` (a new line with the top bit set).
-
-#plisting("native-fnonh", size: 6.4pt)
-]
-
 #section("Digital Research's ASM, Under CP/M")[
 Heath's CP/M 2.2.04 has ASM and LOAD on its system diskette. ASM reads the source and writes a .HEX
 file and a .PRN listing; LOAD turns the .HEX into a .COM file to run.
@@ -96,7 +88,7 @@ file and a .PRN listing; LOAD turns the .HEX into a .COM file to run.
 
 #session("native-fnver-run", rows: (5, 23))
 
-The assembly took 32 seconds and the LOAD 8. DRI's language is the one most 8080 books use: labels as
+The assembly took 30 seconds and the LOAD 8. DRI's language is the one most 8080 books use: labels as
 long as you like, with a colon after an instruction label; `;` for comments, anywhere; `$` the
 location counter; operators with the usual precedence and parentheses; `IF` and `ENDIF`.
 
@@ -105,9 +97,9 @@ assembled.]
 ]
 
 #section("A FujiBus Exchange in 8080 Code", balance: false)[
-FNVER and FNVERH do the whole of `fn_call`'s work, for one request, in about 240 lines. In order:
+FNVER and FNVERH do the whole of `fn_call`'s work, for one request, in about 220 lines. In order:
 
-+ Start the card, as FNON does, unless port B holds the mark and EN is 1.
++ Set the card up, as `card_on` does: the mode word C0H, then a read of port A.
 + Build the packet `70 E8 06 00 00 00` and work out its checksum (an 8-bit sum with end-around carry:
   `ADD M`, then `ACI 0`), giving `70 E8 06 00 5F 00`.
 + Send it between two C0H bytes, escaping any C0H or DBH inside, a byte at a time, each when /OBF
@@ -120,8 +112,6 @@ FNVER and FNVERH do the whole of `fn_call`'s work, for one request, in about 240
 
 The reply the FujiNet sent contained the escape pair DB DC (a C0H in a MAC address), so the
 unescaping was exercised.
-
-#session("native-fnverh-run", rows: (13, 23))
 
 #sub("From Z80 to 8080")
 These are the substitutions the 8080 programs make for what the book's Z80 library does:
@@ -150,20 +140,20 @@ These are the substitutions the 8080 programs make for what the book's Z80 libra
 `CP 3`, assembles without a word of complaint and does something quite different.]
 
 #sub("The same bytes")
-Each of the four programs was also assembled by z88dk-z80asm in 8080 mode (`-m8080`), from the same
+Both programs were also assembled by z88dk-z80asm in 8080 mode (`-m8080`), from the same
 source with only the dialect changed. The results are identical, byte for byte: every byte of ASM's
 .HEX files and LOAD's .COM files, and every code byte of Heath ASM's .ABS files. (Heath's ASM also
 writes the space reserved by `DS` into the .ABS file, filled with whatever was in its buffer, where
-the others leave it out.) FNON.COM is also identical to the copy that comes with FujiNet Go H89.
+the others leave it out.)
 ]
 
 #section("The Listings", balance: false)[
 These are the assemblers' own listings, as they came off the work diskettes: FNVERH from Heath's ASM,
 with its split-octal addresses, octal bytes and statement numbers (the lines of HOSDEF.ACM and
-ASCII.ACM are not listed, so the numbers jump); FNVER from DRI's, in hexadecimal. FNON's source
-follows them.
+ASCII.ACM are not listed, so the numbers jump); FNVER from DRI's, in hexadecimal. In FNVERH, notice
+`XTEXT` before `ORG`, the octal numbers, and `.PRINT` with its strings ending in `'...'+200Q` or
+`ENL` (a new line with the top bit set).
 
 #plisting("native-fnverh", size: 5.8pt)
 #plisting("native-fnver", size: 6.2pt)
-#plisting("native-fnon", size: 6.4pt)
 ]

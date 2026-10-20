@@ -1,5 +1,5 @@
 ;-----------------------------------------------------------------------------
-; FNHELLO -- first contact. Starts the FujiNet card, asks it for its adapter
+; FNHELLO -- first contact. Sets the FujiNet card up, asks it for its adapter
 ; configuration, and prints the network it has joined, its name, its address
 ; and its firmware version. One source, two systems:
 ;   z88dk-z80asm -b -DHDOS -I=../inc fnhello.asm   ->  FNHELLO.ABS (HDOS)
@@ -14,7 +14,7 @@ INCLUDE "fujinet.inc"
 main:
         ld      hl,t_banner
         call    print
-        call    card_on                 ; start the card (if nothing has)
+        call    card_on                 ; set the card up
         call    card_present
         jr      nz,no_card
 ;@ex hello.config
