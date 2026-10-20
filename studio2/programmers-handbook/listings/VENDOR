@@ -1,0 +1,21 @@
+# What the handbook carries from other repositories, at the revision it was
+# verified against. tools/vendorcheck.py byte-compares every entry; a
+# trailing / names a whole directory. repo | rev | source | destination
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/fujinet.inc  | listings/runtime/fujinet.inc
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/s2macro.inc  | listings/runtime/s2macro.inc
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/s2call.inc   | listings/runtime/s2call.inc
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/fujilib.inc  | listings/runtime/fujilib.inc
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/fujidisp.inc | listings/runtime/fujidisp.inc
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/input.inc    | listings/runtime/input.inc
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/hello.asm    | listings/runtime/hello.asm
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/fujitest.asm | listings/runtime/fujitest.asm
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/testrom/fujiboot.asm | listings/runtime/fujiboot.asm
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/tools/checkrom.py    | listings/runtime/tools/checkrom.py
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/tools/mkst2.py       | listings/runtime/tools/mkst2.py
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/tools/st2.py         | listings/runtime/tools/st2.py
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/emu/s2screen.lua     | emu/s2screen.lua
+fujinet-config     | 86c763d   | studio2/tools/fitcheck.py         | listings/runtime/tools/fitcheck.py
+fujinet-config     | 86c763d   | studio2/                          | listings/config/
+fujinet-5cardstud  | 1008f9a   | studio2/                          | listings/5cardstud/
+fujinet-battleship | 87b8cc7   | studio2/                          | listings/battleship/
+fujinet-firmware   | 07e9bbaa9 | pico/studio2/emu/5carddrive.lua   | emu/5carddrive.lua
