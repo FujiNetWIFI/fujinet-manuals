@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Capture CONFIG's screens for Chapter 6 from the real program on FujiNet Go
-# H89's headless machine: HDOS 2.0 (with FN.DVD) and CP/M 2.2.04 (62K),
+# H89's headless machine: HDOS 2.0 or 3.0 (with FN.DVD) and CP/M 2.2.04 (62K),
 # CONFIG from fujinet-config's r2r/h89-*. Writes build/shots/<name>.ppm and
 # screens/<name>.json (the cells, via ppm2cells).
 #

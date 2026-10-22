@@ -26,7 +26,7 @@ Some features of the FujiNet are:
 - A microSD card socket on the board, for your own library of disk images.
 - FujiNet CONFIG, a full-screen program for the H19 terminal, to join your network, browse hosts
   and put disk images in drives. There is a version for HDOS and one for CP/M.
-- FNDISK, the drivers that let HDOS and CP/M use the FujiNet drives: FN.DVD for HDOS 2.0 and
+- FNDISK, the drivers that let HDOS and CP/M use the FujiNet drives: FN.DVD for HDOS 2.0 or 3.0 and
   FNDISK.COM for Heath/Zenith CP/M 2.2.04.
 - A web page of its own, on your network, for settings you would rather make from another
   computer.

@@ -162,7 +162,7 @@ Oct 18, 2026):
 
 ## FNDISK / FN.DVD (fujinet-h89)
 
-28. **FN.DVD is HDOS 2.0 only** (`hdos/fn/hdos.inc:4-6` uses HDOS 2.0's addresses).
+28. **FN.DVD is HDOS 2.0/3.0 only** (`hdos/fn/hdos.inc:4-6` uses HDOS 2.0/3.0's addresses).
 29. **FN.DVD has no INIT.** The book says blank HDOS images must be made
     elsewhere (`hdosfs.py blank`).
 30. **CP/M BIOS-80 and other CP/Ms are refused** by the version check
