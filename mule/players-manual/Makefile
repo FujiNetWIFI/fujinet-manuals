@@ -1,6 +1,7 @@
 # M.U.L.E. — THE FUJINET MULTIPLAYER EDITION: PLAYER'S GUIDE
 # (1983 Electronic Arts M.U.L.E. booklet styling, square pages)
-# One source, ten editions, three outputs: PDF, FujiNet wiki, WordPress (WXR).
+# One source, ten editions, three outputs: PDF, FujiNet wiki, WordPress (WXR),
+# plus a one-page cheat sheet (PDF) per edition.
 # Requires Typst 0.13+ and python3 with PyYAML and Pillow.
 
 TYPST := $(shell command -v typst 2>/dev/null || echo $(HOME)/.local/bin/typst)
@@ -21,9 +22,10 @@ NAME_intv      := Intellivision
 NAME_astrocade := Bally-Astrocade
 NAME_a2600     := Atari-2600
 PDFS := $(foreach p,$(PLATFORMS),pdf/MULE-Players-Guide-$(NAME_$(p)).pdf)
+SHEETS := $(foreach p,$(PLATFORMS),pdf/MULE-Cheat-Sheet-$(NAME_$(p)).pdf)
 TYPSTFLAGS := --font-path fonts --ignore-system-fonts
 
-all: check-facts pdfs wiki wordpress
+all: check-facts pdfs sheets wiki wordpress
 
 # copy the screenshots out of the game repo (its screenshots/, made by
 # screenshots/make-shots.sh) and cut the map icons
@@ -42,6 +44,16 @@ $(foreach p,$(PLATFORMS),$(eval $(call PDF_RULE,$(p))))
 
 pdfs: $(PDFS)
 
+# the one-page cheat sheet, one per edition
+define SHEET_RULE
+pdf/MULE-Cheat-Sheet-$(NAME_$(1)).pdf: build/$(1).json cheatsheet.typ $(wildcard fonts/*)
+	@mkdir -p pdf
+	$(TYPST) compile $(TYPSTFLAGS) --input platform=$(1) cheatsheet.typ $$@
+endef
+$(foreach p,$(PLATFORMS),$(eval $(call SHEET_RULE,$(p))))
+
+sheets: $(SHEETS)
+
 wiki: $(foreach p,$(PLATFORMS),build/$(p).json)
 	python3 tools/build_wiki.py
 
@@ -52,11 +64,14 @@ wordpress: $(foreach p,$(PLATFORMS),build/$(p).json)
 check-facts:
 	python3 tools/checkfacts.py --game $(GAME)
 
-# no fallback fonts: every PDF uses only the faces in fonts/
-check: pdfs
-	@for f in $(PDFS); do \
+# no fallback fonts: every PDF uses only the faces in fonts/; a cheat sheet is one page
+check: pdfs sheets
+	@for f in $(PDFS) $(SHEETS); do \
 	  pdffonts $$f | tail -n +3 | awk '{print $$1}' | grep -vE 'Souvenir|BenguiatGothic' && { echo "unexpected font in $$f"; exit 1; } || true; \
 	done; echo "fonts: OK"
+	@for f in $(SHEETS); do \
+	  pdfinfo $$f | grep -qE '^Pages: +1$$' || { echo "$$f is more than one page"; exit 1; }; \
+	done; echo "sheets: one page each"
 
 # PREVIEW=atari make preview
 PREVIEW ?= atari
@@ -74,4 +89,4 @@ learn:
 clean:
 	rm -rf build preview preview.pdf
 
-.PHONY: all learn assets pdfs wiki wordpress check check-facts preview watch clean
+.PHONY: all learn assets pdfs sheets wiki wordpress check check-facts preview watch clean

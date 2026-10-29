@@ -1,0 +1,64 @@
+# The one-page cheat sheet, platform-neutral. Rendered by cheatsheet.typ
+# from the `sheet` key of build/<platform>.json (tools/expand.py).
+#
+# Same inline markup and {tokens} as manual.yaml, plus {tnfs}. The tables
+# (controls, land, store, months) and the colonists and rating lines are generated from
+# platforms.yaml and rules.yaml. Every fact here is one the guide states.
+
+kind: Cheat Sheet
+
+# the screen strip: a scene, the month step it shows, a caption
+strip:
+  - { scene: 05-land-grant,           n: 2, label: Land Grant }
+  - { scene: 07-land-auction-bidding, n: 3, label: Bidding }
+  - { scene: 08-develop-town,         n: 4, label: In Town }
+  - { scene: 11-production,           n: 5, label: Production }
+  - { scene: 15-trading,              n: 7, label: Trading }
+
+controls: "Everything is done with a direction and **the button**."
+
+getting_in:
+  - "**Start:** pick **M.U.L.E.** and the room **Planet IRATA** in the FujiNet Lobby, or mount *{tnfs}* and give your name and a table."
+  - "**In the room:** left and right choose your species, and the button says you're ready. The game starts 31 seconds after the last person joins, or 6 seconds once everyone is ready. The computer plays every empty seat."
+  - "**{leave}** leaves. During a game it asks first, and the computer takes your seat."
+
+month:
+  - { title: Summary, text: "Everyone's money, land and goods, best first. Press the button when you've read it." }
+  - { title: Land Grant, text: "One free plot a month. A square steps across the map. Press the button when it's over the plot you want." }
+  - { title: Land Auction, text: "Some months only. Push up to bid, $4 a step. Let go and you drift back down." }
+  - { title: Development, text: "Your turn. Press the button to start. The more Food you have, the longer it lasts. {end} ends it early." }
+  - { title: Production, text: "The M.U.L.E.s work. Food is eaten, Energy is used, and some of what's left spoils." }
+  - { title: Colony Event, text: "Pests, pirates, acid rain, planetquakes. Most months, something hits the whole colony." }
+  - { title: Auctions, text: "Smithore, Crystite, Food, then Energy. Push up to be a **Seller**, down to be a **Buyer**, or press {sitout} to sit it out. Sellers walk down, Buyers walk up, and goods change hands where they meet. The store sells at the top and buys at the bottom." }
+
+town:
+  - [Corral, "Buy a M.U.L.E. Walk it back in for a refund (not the outfit)."]
+  - [Outfitters, "Fit it out for Food, Energy, Smithore or Crystite."]
+  - [Your plot, "Press the button to install it, or to swap it for the one there."]
+  - [Assay Office, "Press the button on a plot (no M.U.L.E. in tow) to take a sample, then bring it here."]
+  - [Land Office, "Then press the button on your plot to sell it at the next auction."]
+  - [Pub, "Ends your turn and pays: the more time left, the more it pays."]
+  - [Wampus, "Flashes in the mountains. Walk up with no M.U.L.E. and press the button."]
+
+watch:
+  - "A M.U.L.E. **runs away** on land that isn't yours, without an outfit, or when your time runs out."
+  - "Smithore and Crystite M.U.L.E.s can't work on the river. Nothing goes in town."
+  - "Every M.U.L.E. that isn't making Energy uses 1 Energy a month. For each unit you're short, one plot makes nothing."
+  - "Half of leftover Food and a quarter of leftover Energy spoil. You can hold at most 50 Smithore and 50 Crystite."
+  - "You can't sell Food or Energy below your **critical level** (the line on the status bars)."
+  - "If the colony runs out of **Food or Energy**, it fails at once and nobody wins."
+  - "**Collusion:** two players who press the button at nearly the same moment in an auction trade only with each other."
+
+bonuses:
+  - "**Three of a kind:** for every three plots you own that make the same good, each makes 1 more."
+  - "**Neighbours:** a plot makes 1 more if a plot of yours beside it (not diagonally) makes the same good."
+  - "No plot makes more than 8."
+
+scoring: "**Money**, plus **$500 a plot** (a plot with a M.U.L.E. adds its outfit price plus $35), plus your **goods** at the store's price. The richest colonist is the **FIRST FOUNDER**. The colony is rated on everyone's totals together:"
+
+tips:
+  - "Food by the river, Smithore on the mountains, Energy on the plains."
+  - "Grow your own Food early, or your turns get too short to do anything else."
+  - "Put the same good side by side, and on three plots or more."
+  - "Smithore is the bottleneck: no Smithore for the store, no new M.U.L.E.s."
+  - "Assay before you dig. A High Crystite deposit is a winning ticket."
