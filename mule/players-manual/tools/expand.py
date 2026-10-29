@@ -17,6 +17,9 @@ Expanded blocks ("t" is the type):
   shot {img, alt, title, caption}       shots {imgs: [{img, label}], caption}
   event {kind, name, text, effect, times}
 Inline text keeps **bold** and *italic*.
+
+The cheat sheet (content/cheatsheet.yaml, cheatsheet.typ) is under the
+"sheet" key: its text, and its tables in the same {head, rows} form.
 """
 import json
 import os
@@ -30,6 +33,7 @@ ROOT = os.path.dirname(HERE)
 C = os.path.join(ROOT, "content")
 
 ALT_SCENES = ("02-lobby", "08-develop-town", "09-develop-map")   # MS-DOS: CGA beside PCjr
+GOODS = ("food", "energy", "smithore", "crystite")
 
 
 def load(name):
@@ -100,6 +104,7 @@ class Ed:
         k["name"] = self.p["name"]
         k["machine"] = self.p["machine"]
         k["file"] = self.p["file"]
+        k["tnfs"] = self.p["tnfs"]
         return re.sub(r"\{(\w+)\}", lambda m: str(k.get(m.group(1), m.group(0))), s)
 
     def wanted(self, b):
@@ -205,11 +210,7 @@ class Ed:
                              ["Opening stock"] + [str(r["store_start"][k]) for k in ("food", "energy", "smithore", "crystite", "mules")],
                              ["Lowest price"] + [f"${r['price_floor'][k]}" for k in ("food", "energy", "smithore", "crystite")] + ["–"]]},
                    {"t": "h", "text": "Month by Month"},
-                   {"t": "table", "head": ["Months", "1–3", "4–7", "8–11", "12"],
-                    "rows": [["Food for a full turn", "3", "4", "5", "5"],
-                             ["Event base amount", "$25", "$50", "$75", "$100"],
-                             ["Wampus reward", "$100", "$200", "$300", "$400"],
-                             ["Pub base winnings", "$50", "$100", "$150", "$200"]]},
+                   self.months(),
                    {"t": "h", "text": "Limits"},
                    {"t": "list", "ordered": False, "items": [
                        "A plot makes at most 8 units a month.",
@@ -219,6 +220,60 @@ class Ed:
                        "Each plot counts $500 towards your score; a M.U.L.E. on it adds its outfit cost plus $35."]}]
             return out
         raise SystemExit(f"unknown gen: {g}")
+
+    def months(self):
+        return {"t": "table", "head": ["Months", "1–3", "4–7", "8–11", "12"],
+                "rows": [["Food for a full turn", "3", "4", "5", "5"],
+                         ["Event base amount", "$25", "$50", "$75", "$100"],
+                         ["Wampus reward", "$100", "$200", "$300", "$400"],
+                         ["Pub base winnings", "$50", "$100", "$150", "$200"]]}
+
+    # -- the cheat sheet --
+    def sheet(self):
+        s, r, f = load("cheatsheet.yaml"), self.rules, self.fill
+        strip = [{"img": self.scene(x["scene"]), "n": x["n"], "label": x["label"]} for x in s["strip"]]
+        o, sp, fl = r["outfit"], r["start_prices"], r["price_floor"]
+        # the land table's columns are headed by the outfitted M.U.L.E.s' icons
+        land = [[self.icon(t["id"]), f"**{t['name']}**", str(t["food"]), str(t["energy"]),
+                 str(t["smithore"]), "deposit" if t["crystite"] == "deposit" else "–"] for t in r["terrain"]]
+        land.append([self.icon("town"), "**Town**", "–", "–", "–", "–"])
+        head = [{"img": self.icon(g)["img"], "text": g.capitalize()} if self.icon(g) else g.capitalize() for g in GOODS]
+        store = [["Outfit"] + [f"${o[g]}" for g in GOODS] + ["–"],
+                 ["Opening price"] + [f"${sp[g]}" for g in GOODS] + [f"${sp['mule']}"],
+                 ["Lowest price"] + [f"${fl[g]}" for g in GOODS] + ["–"]]
+        # species that play alike share a line: the Flapper, the Humanoid, the other six
+        kinds = {}
+        for x in r["species"]:
+            kinds.setdefault((x["money"], x["ptu"]), []).append(x["name"])
+        turn = {x["name"]: round(101 * x["ptu"] / 60) for x in r["species"]}
+        words = {3: "three", 4: "four", 5: "five", 6: "six"}
+        groups = sorted(kinds.items(), key=lambda kv: -kv[0][0])
+        cm, sg = r["computer"], r["start_goods"]
+        colonists = "; ".join(
+            f"**{' and '.join(n) if len(n) <= 2 else 'the other ' + words[len(n)]}** ${m:,} with {turn[n[0]]}-second turns"
+            for (m, _), n in groups)
+        colonists += f"; the **computer** ({cm['species']}) ${cm['money']:,}. Everyone starts with {sg['food']} Food and {sg['energy']} Energy."
+        verdict = lambda t: re.sub(r"^the colony (was )?", "", re.match(r"[^.!]*", t).group(0))
+        rating = " · ".join(f"{x['total'].split(', or')[0]} **{verdict(x['text'])}**" for x in r["rating"])
+        return {
+            "kind": s["kind"],
+            "strip": [x for x in strip if x["img"]],
+            "controls_note": f(s["controls"]),
+            "controls": {"head": ["Control", "What it does"], "widths": [1, 1.7],
+                         "rows": [[", ".join(c[:-1]), c[-1]] for c in self.p["controls"]]},
+            "getting_in": [f(x) for x in s["getting_in"]],
+            "month": [{"n": i + 1, "title": f(x["title"]), "text": f(x["text"])} for i, x in enumerate(s["month"])],
+            "town": {"head": ["", ""], "kv": True, "rows": [[f"**{a}**", f(b)] for a, b in s["town"]]},
+            "watch": [f(x) for x in s["watch"]],
+            "land": {"head": ["", "Land"] + head, "icon": True, "rows": land},
+            "store": {"head": ["", "Food", "Energy", "Smithore", "Crystite", "M.U.L.E."], "rows": store},
+            "bonuses": [f(x) for x in s["bonuses"]],
+            "months": self.months(),
+            "colonists": colonists,
+            "scoring": f(s["scoring"]),
+            "rating": rating,
+            "tips": [f(x) for x in s["tips"]],
+        }
 
     # -- the book --
     def expand(self):
@@ -266,7 +321,7 @@ class Ed:
         return {"platform": self.id, "name": self.p["name"], "long": self.p["long"], "slug": self.p["slug"],
                 "shots": self.shots, "title": self.man["title"], "subtitle": self.man["subtitle"],
                 "kind": self.man["kind"], "cover": self.scene("01-title") or self.scene("02-lobby"),
-                "blocks": out}
+                "blocks": out, "sheet": self.sheet()}
 
 
 def main():

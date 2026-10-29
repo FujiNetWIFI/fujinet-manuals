@@ -20,6 +20,7 @@ Each edition is built three ways from a single source:
 | PDF | `pdf/MULE-Players-Guide-<Machine>.pdf` | printing and download |
 | GitHub-wiki Markdown | `wiki/*.md` and `wiki/images/` | the [FujiNet wiki](https://github.com/FujiNetWIFI/fujinet-firmware/wiki) |
 | WordPress WXR | `wordpress/mule-players-guide.wxr` and `wordpress/images.zip` | fujinet.online, through Tools → Import → WordPress |
+| Cheat sheet (PDF) | `pdf/MULE-Cheat-Sheet-<Machine>.pdf` | one US Letter page: the controls, a month's phases, the tables and the tips |
 
 ## House style
 
@@ -37,7 +38,8 @@ Only the layout and typography are borrowed. All of the text is new.
 
     make assets       # copy the screenshots from the game repo, cut the map icons
     make              # check the facts, then build the PDFs, the wiki and the WordPress import
-    make check        # the PDFs use only the fonts in fonts/
+    make sheets       # just the one-page cheat sheets
+    make check        # the PDFs use only the fonts in fonts/, and each cheat sheet is one page
     PREVIEW=coco make preview   # write each page as a PNG to preview/
 
 The build needs:
@@ -56,8 +58,10 @@ The build needs:
 | `content/platforms.yaml` | For each edition: the hardware, the file and its TNFS address, the boot steps, the notes, the key names and the controls table. |
 | `content/rules.yaml` | The numbers: species, yields, prices, limits and the colony ratings. |
 | `content/events.yaml` | The 22 personal events and the 8 colony events, in the game's own words. |
+| `content/cheatsheet.yaml` | The cheat sheet's text, with the same `{tokens}`. Its tables come from `rules.yaml` and `platforms.yaml`. |
 | `tools/expand.py` | Turns the content and one platform into `build/<platform>.json`. Every renderer reads this file. |
 | `manual.typ` | The PDF: the house style only. |
+| `cheatsheet.typ` | The cheat sheet: the same house style on one Letter page. It reads the `sheet` key of `build/<platform>.json`. |
 | `tools/build_wiki.py`, `tools/build_wxr.py` | The wiki and the WordPress import. |
 | `tools/checkfacts.py` | Compares the event texts, the rating texts and the numbers with the server source (`internal/rules/*.go`). `make` stops if they differ. |
 | `tools/pull_assets.py` | Copies `screenshots/<target>/` from the game repo, scales each screen by whole numbers so its shape is right on paper, and cuts single map plots (the land icons) from the land-auction screen. |
