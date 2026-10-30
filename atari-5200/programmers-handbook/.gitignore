@@ -1,0 +1,8 @@
+preview/
+build/
+listings/*/build/
+listings/snippets/
+*.bin
+*.map
+*.o
+__pycache__/
