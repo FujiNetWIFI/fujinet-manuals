@@ -4,8 +4,8 @@
    "where": [
     [
      "src/asm/inc/fujibus.inc",
-     304,
-     315
+     296,
+     307
     ]
    ],
    "text": "; D += BC bytes from HL: an 8-bit sum with end-around carry\nfn_cksum:\n        ld      a,b\n        or      c\n        ret     z\n        ld      a,d\n        add     a,(hl)\n        adc     a,0\n        ld      d,a\n        inc     hl\n        dec     bc\n        jr      fn_cksum"
@@ -16,8 +16,8 @@
    "where": [
     [
      "src/asm/inc/fujibus.inc",
-     319,
-     345
+     311,
+     337
     ]
    ],
    "text": "; BC bytes from HL, SLIP-escaped\nfn_slip:\n        ld      a,b\n        or      c\n        ret     z\n        ld      a,(hl)\n        cp      SLIP_END\n        jr      z,fn_slipe\n        cp      SLIP_ESC\n        jr      z,fn_slipx\n        call    fn_putc\n        jr      fn_slipn\nfn_slipe:\n        ld      a,SLIP_ESC\n        call    fn_putc\n        ld      a,SLIP_ESC_END\n        call    fn_putc\n        jr      fn_slipn\nfn_slipx:\n        ld      a,SLIP_ESC\n        call    fn_putc\n        ld      a,SLIP_ESC_ESC\n        call    fn_putc\nfn_slipn:\n        inc     hl\n        dec     bc\n        jr      fn_slip"
@@ -3478,7 +3478,7 @@
      29
     ]
    ],
-   "text": "card_present:\n        in      a,(PORTC)\n        and     PC_OE|PC_DIR            ; /OE and DIR both 0\n        ret"
+   "text": "card_present:\n        in      a,(PORTC)\n        and     PC_OE|PC_DIR            ; PC1 and PC0 both 0\n        ret"
   }
  },
  "model.expired": {
@@ -3486,8 +3486,8 @@
    "where": [
     [
      "src/asm/inc/fujibus.inc",
-     349,
-     359
+     341,
+     351
     ]
    ],
    "text": "; carry once (TICKS - fn_t0) has reached fn_tlim. Uses HL, DE.\nfn_expired:\n        ld      hl,(TICKS)\n        ld      de,(fn_t0)\n        or      a\n        sbc     hl,de\n        ld      de,(fn_tlim)\n        or      a\n        sbc     hl,de\n        ccf\n        ret"
@@ -3498,8 +3498,8 @@
    "where": [
     [
      "src/asm/inc/fujibus.inc",
-     394,
-     415
+     386,
+     407
     ]
    ],
    "text": "; the next byte from the ESP32 into A. Keeps BC, DE, HL.\nfn_getc:\n        in      a,(PORTC)\n        and     PC_IBF\n        jr      nz,fn_take\n        push    hl\n        push    de\n        ld      hl,(TICKS)\n        ld      (fn_t0),hl\nfn_getc1:\n        in      a,(PORTC)\n        and     PC_IBF\n        jr      nz,fn_getc2\n        call    fn_expired\n        jr      nc,fn_getc1\n        jp      fn_abort\nfn_getc2:\n        pop     de\n        pop     hl\nfn_take:\n        in      a,(PORTA)\n        ret"
@@ -3510,8 +3510,8 @@
    "where": [
     [
      "src/asm/inc/fujibus.inc",
-     363,
-     390
+     355,
+     382
     ]
    ],
    "text": "; wait until the ESP32 has taken the last byte (/OBF high). Keeps BC DE HL.\nfn_txwait:\n        in      a,(PORTC)\n        and     PC_OBF\n        ret     nz\n        push    hl\n        push    de\n        ld      hl,(TICKS)\n        ld      (fn_t0),hl\nfn_txw1:\n        in      a,(PORTC)\n        and     PC_OBF\n        jr      nz,fn_txw2\n        call    fn_expired\n        jr      nc,fn_txw1\n        jp      fn_abort\nfn_txw2:\n        pop     de\n        pop     hl\n        ret\n\n; send A. Keeps BC, DE, HL.\nfn_putc:\n        push    af\n        call    fn_txwait\n        pop     af\n        out     (PORTA),a\n        ret"
@@ -3539,8 +3539,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     368,
-     370
+     359,
+     361
     ]
    ],
    "text": "        ld      hl,rq_mauto             ; field 0: we answer with ATA\n        call    fn_send\n...\nrq_mauto:                               ; the field must be there\n        FNREQ   DEV_SERIAL, MODEM_AUTOANSWER, F_A1, 0,0,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3566,8 +3566,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     353,
-     355
+     344,
+     346
     ]
    ],
    "text": "        ld      hl,rq_mlock             ; lock the rate at 2400: CONNECT\n        call    fn_send                 ;   says 2400 from now on\n...\nrq_mlock:                               ; lock on, 2400 baud (0960H)\n        FNREQ   DEV_SERIAL,MODEM_BAUDRATELOCK,F_B12_B34, 1,0,0x60,0x09\n        FNBUF   0, 0, 0, 0"
@@ -3593,8 +3593,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     348,
-     350
+     339,
+     341
     ]
    ],
    "text": "        ld      hl,rq_mconf             ; CONFIGURE: 9600 baud, whatever\n        call    fn_send                 ;   is asked; no reply at all\n...\nrq_mconf:\n        FNREQ   DEV_SERIAL, MODEM_CONFIGURE, F_NONE, 0,0,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3620,8 +3620,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     358,
-     360
+     349,
+     351
     ]
    ],
    "text": "        ld      hl,rq_mctl              ; CONTROL: does nothing on the\n        call    fn_send                 ;   H89, and says nothing\n...\nrq_mctl:\n        FNREQ   DEV_SERIAL, MODEM_CONTROL, F_NONE, 0,0,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3647,8 +3647,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     415,
-     417
+     406,
+     408
     ]
    ],
    "text": "        ld      hl,rq_mlstn             ; take calls on port 7803: the\n        call    fn_send                 ;   rig's helper calls, and the\n        ld      de,mbuf                 ;   modem says RING every 3 s\n        ld      bc,MBUFSZ\n        call    fn_raw\n        ld      hl,mbuf\n        call    ptext\n...\nrq_mlstn:                               ; port 7803 (1E7BH), a word\n        FNREQ   DEV_SERIAL, MODEM_LISTEN, F_B12, 0x7B,0x1E,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3674,8 +3674,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     447,
-     449
+     438,
+     440
     ]
    ],
    "text": "        ld      hl,rq_ml0               ; LISTEN on port 0: a NAK, then\n        call    fn_send                 ;   an ACK, and an assert fails\n...\nrq_ml0:\n        FNREQ   DEV_SERIAL, MODEM_LISTEN, F_B12, 0,0,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3701,8 +3701,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     363,
-     365
+     354,
+     356
     ]
    ],
    "text": "        ld      hl,rq_mdump             ; the traffic log off (field 0)\n        call    fn_send\n...\nrq_mdump:                               ; the field must be there\n        FNREQ   DEV_SERIAL, MODEM_SET_DUMP, F_A1, 0,0,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3728,8 +3728,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     338,
-     340
+     329,
+     331
     ]
    ],
    "text": "        ld      hl,rq_mstat             ; STATUS: two bare bytes come\n        call    fn_send                 ;   back, not a frame\n        ld      de,mstat\n        ld      bc,2\n        call    fn_raw                  ; BC = how many came\n        call    crlf\n        ld      hl,mstat                ; error bits (0), and C0H+0CH\n        call    phexs                   ;   when online, +01H with data\n...\nrq_mstat:                               ; the field must be there\n        FNREQ   DEV_SERIAL, MODEM_STATUS, F_A1, 0,0,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3799,8 +3799,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     343,
-     345
+     334,
+     336
     ]
    ],
    "text": "        ld      hl,rq_mstrm             ; STREAM: nine bare bytes, the\n        call    fn_send                 ;   Atari POKEY's divisors for\n        ld      de,mbuf                 ;   the modem's baud rate\n        ld      bc,9\n        call    fn_raw\n...\nrq_mstrm:\n        FNREQ   DEV_SERIAL, MODEM_STREAM, F_NONE, 0,0,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3848,8 +3848,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     434,
-     436
+     425,
+     427
     ]
    ],
    "text": "        ld      hl,rq_munl              ; no more calls on 7803\n        call    fn_send\n...\nrq_munl:\n        FNREQ   DEV_SERIAL, MODEM_UNLISTEN, F_NONE, 0,0,0,0\n        FNBUF   0, 0, 0, 0"
@@ -3880,8 +3880,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     380,
-     385
+     371,
+     376
     ]
    ],
    "text": "        ld      hl,rq_dial              ; dial the test board, and type\n        call    fn_send                 ;   what comes: its greeting,\n        call    mtype                   ;   and CONNECT a second later\n...\n; mtype: type the modem's bytes as they come, until 2 s pass with\n; none. BC = how many came in all.\nmtype:\n        ld      hl,0\n        ld      (mcount),hl\nmtype1:\n        ld      de,mbuf\n        ld      bc,MBUFSZ\n        call    fn_raw                  ; until 200 ms pass with none\n        ld      a,b\n        or      c\n        jr      z,mtype2                ; 2 s and nothing: that is all\n        ld      hl,(mcount)\n        add     hl,bc\n        ld      (mcount),hl\n        ld      hl,mbuf                 ; type them, the unprintable\n        call    ptext                   ;   ones as dots\n        jr      mtype1\nmtype2:\n        ld      bc,(mcount)\n        ret\nmcount: defw    0\n...\nrq_dial:                                ; one AT command a WRITE\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_dial, p_diale-p_dial, 0, 0\np_dial: defm    \"ATDT127.0.0.1:7801\"\n        defb    13\np_diale:"
@@ -3912,8 +3912,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     373,
-     377
+     364,
+     368
     ]
    ],
    "text": "        ld      hl,rq_mat               ; AT: the modem takes it, but\n        call    fn_send                 ;   its OK is never sent\n...\nrq_mat:\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_at, 3, 0, 0\np_at:   defm    \"AT\"\n        defb    13"
@@ -3939,8 +3939,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     420,
-     424
+     411,
+     415
     ]
    ],
    "text": "        ld      hl,rq_mata              ; ATA answers; what the caller\n        call    fn_send                 ;   sent (PING) comes through,\n        call    mtype                   ;   CONNECT a second later\n...\nrq_mata:                                ; just these 4 bytes: ATA, CR\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_ata, 4, 0, 0\np_ata:  defm    \"ATA\"\n        defb    13"
@@ -3966,8 +3966,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     440,
-     444
+     431,
+     435
     ]
    ],
    "text": "        ld      hl,rq_mcpm              ; ATCPM: this build has no CP/M\n        call    fn_send                 ;   device, and FujiNet crashes\n...\nrq_mcpm:\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_cpm, 6, 0, 0\np_cpm:  defm    \"ATCPM\"\n        defb    13"
@@ -3993,8 +3993,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     401,
-     405
+     392,
+     396
     ]
    ],
    "text": "        ld      hl,rq_math              ; so ATH is data too: the board\n        call    fn_send                 ;   gets it; the call stays up\n        call    mtype\n...\nrq_math:\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_ath, 4, 0, 0\np_ath:  defm    \"ATH\"\n        defb    13"
@@ -4020,8 +4020,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     408,
-     412
+     399,
+     403
     ]
    ],
    "text": "        ld      hl,rq_mbye              ; the far end must hang up: BYE\n        call    fn_send                 ;   to the board; NO CARRIER\n        call    mtype\n...\nrq_mbye:\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_bye, 4, 0, 0\np_bye:  defm    \"BYE\"\n        defb    13"
@@ -4047,8 +4047,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     388,
-     392
+     379,
+     383
     ]
    ],
    "text": "        ld      hl,rq_mline             ; online, a WRITE goes to the\n        call    fn_send                 ;   far end: the board echoes\n        call    mtype                   ;   it, then shouts it back\n...\nrq_mline:\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_line, 6, 0, 0\np_line: defm    \"hello\"\n        defb    13"
@@ -4074,8 +4074,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     395,
-     398
+     386,
+     389
     ]
    ],
    "text": "        ld      hl,rq_mplus             ; +++ and a second of quiet: no\n        call    fn_send                 ;   OK, it went to the board\n        call    mtype\n...\nrq_mplus:\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_plus, 3, 0, 0\np_plus: defm    \"+++\""
@@ -4101,8 +4101,8 @@
     ],
     [
      "src/asm/ex/exmodem.asm",
-     427,
-     431
+     418,
+     422
     ]
    ],
    "text": "        ld      hl,rq_mpong             ; answer; the caller hangs up:\n        call    fn_send                 ;   NO CARRIER\n        call    mtype\n...\nrq_mpong:\n        FNREQ   DEV_SERIAL, MODEM_WRITE, F_NONE, 0,0,0,0\n        FNBUF   p_pong, 6, 0, 0\np_pong: defm    \"PONG\"\n        defb    13, 10"
@@ -4151,10 +4151,10 @@
     [
      "src/asm/ex/exmodem.asm",
      312,
-     333
+     324
     ]
    ],
-   "text": "        ld      hl,p_dial               ; the same ATDT as bare bytes:\n        ld      bc,p_diale-p_dial       ;   whatever is not in a frame\n        call    rawput                  ;   goes to the modem as typed\n        call    mtype\n...\n; rawput: BC bytes from HL to the FujiNet, outside any frame\nrawput:\n        ld      a,OE_ON\n        out     (PCTRL),a\n        ld      a,DIR_TO_ESP            ; the 245 toward the ESP32\n        out     (PCTRL),a\nrawput1:\n        in      a,(PORTC)               ; wait till the last byte is\n        and     PC_OBF                  ;   taken (/OBF high)\n        jr      z,rawput1\n        ld      a,b\n        or      c\n        jr      z,rawput2\n        ld      a,(hl)\n        out     (PORTA),a\n        inc     hl\n        dec     bc\n        jr      rawput1\nrawput2:\n        ld      a,DIR_TO_H89            ; and back toward us\n        out     (PCTRL),a\n        ret"
+   "text": "        ld      hl,p_dial               ; the same ATDT as bare bytes:\n        ld      bc,p_diale-p_dial       ;   whatever is not in a frame\n        call    rawput                  ;   goes to the modem as typed\n        call    mtype\n...\n; rawput: BC bytes from HL to the FujiNet, outside any frame\nrawput:\n        in      a,(PORTC)               ; wait till the last byte is\n        and     PC_OBF                  ;   taken (/OBF high)\n        jr      z,rawput\n        ld      a,b\n        or      c\n        ret     z\n        ld      a,(hl)\n        out     (PORTA),a\n        inc     hl\n        dec     bc\n        jr      rawput"
   },
   "c": {
    "where": [

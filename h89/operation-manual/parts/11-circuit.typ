@@ -42,36 +42,36 @@ reads it. Port C carries the handshake:
   [PC4], [/STB], [From the ESP32 (IO4): here is a byte.],
   [PC3], [INTR], [Interrupt request, through Q1 to J3. Not used (J3 open).],
   [PC2], [--], [Not connected (see "The Rework").],
-  [PC1], [/OE], [Output: turns on U3, the data transceiver. The ESP32 reads it on IO21.],
-  [PC0], [DIR], [Output: U3’s direction, 1 toward the ESP32. The ESP32 reads it on IO22.],
+  [PC1], [--], [Output, no longer used. It turned on U3, the data transceiver the card no longer has.],
+  [PC0], [--], [Output, no longer used. It set U3’s direction.],
 )
 
-To send a byte, a program sets DIR to 1, writes the byte to port A, and waits for /OBF to go high
-again, which shows the ESP32 took it. To receive, it sets DIR to 0 and waits for IBF, then reads
-port A. The Communication Test (in the Appendix) is a complete example.
+To send a byte, a program writes it to port A and waits for /OBF to go high again, which shows the
+ESP32 took it. To receive, it waits for IBF, then reads port A. The Communication Test (in the
+Appendix) is a complete example.
 
 Port B drives the eight lamps, D3 through D10, through the resistor network RN1: a 0 bit lights its
 lamp. It is also brought out on J12. The FujiNet does not use it.
 ]
 
 #section("Level Shifting")[
-Port A’s eight data lines reach the ESP32 through U3, a 74LVC245 bus transceiver powered from 3.3
-volts. Its inputs tolerate five volts, so it passes the 82C55A’s five-volt outputs safely to the
-ESP32, and the ESP32’s 3.3-volt outputs are high enough for the 82C55A’s inputs. PC0 sets its
-direction and PC1 turns it on. R1 holds PC1 high, and so U3 off, while the 82C55A’s ports are
-inputs after a reset.
+Port A’s eight data lines run straight to the ESP32. U3, the 74LVC245 bus transceiver that stood
+between them on the V1.1 board, is gone, and so is R1, which held it off after a reset. In Mode 2 the
+82C55A drives port A only while the ESP32 holds /ACK low to take a byte, and the ESP32 drives it
+only to strobe a byte in, so the two never drive the lines at the same time, and the Computer never
+has to choose a direction.
 
-U5, a second 74LVC245, wired to pass one way only, brings DIR, /OE, IBF and /OBF down to 3.3 volts
-for the ESP32. /STB and /ACK go from the ESP32 to the 82C55A directly. J2 brings the handshake lines
+U5, a 74LVC245 wired to pass one way only, brings IBF and /OBF down to 3.3 volts for the ESP32. /STB
+and /ACK go from the ESP32 to the 82C55A directly. J2 brings the handshake lines
 out for a logic analyzer.
 ]
 
 #section("The Rework")[
 The card is a V1.1 board reworked for the present firmware. The ESP32’s EN, IO0 and IO2 are no
 longer connected to the card, and LED D1 and its resistor R7, on IO22, are removed. Two wires take
-/OE from U5 to IO21, and DIR to IO22. So nothing the Computer does can start, stop or restart the
-ESP32, or put it in its loading mode, and IO0 and IO2, which the ESP32 reads as it starts, are left
-to the module.
+/OE from U5 to IO21, and DIR to IO22; the firmware for the card without U3 no longer reads them. So
+nothing the Computer does can start, stop or restart the ESP32, or put it in its loading mode, and
+IO0 and IO2, which the ESP32 reads as it starts, are left to the module.
 ]
 
 #section("When the FujiNet Starts")[
@@ -80,7 +80,7 @@ firmware in its flash. When the Computer resets, the 82C55A’s ports all become
 leaves Mode 2, but the ESP32 is not touched.
 
 A program sets the card up with one mode word, 300, which puts port A in Mode 2 and makes port B and
-PC0 through PC2 outputs, all low: U3 on and facing the Computer, and every lamp lit. Then it reads
+PC0 through PC2 outputs, all low, and every lamp lit. Then it reads
 port A once, to drop any byte left from before. A mode word touches only the 82C55A, so a program may
 send one whenever it starts.
 ]
@@ -96,5 +96,5 @@ through R6).
 #section("Power")[
 The card takes its power from the accessory bus. The 82C55A and the 74LS02 run from the bus's five
 volts, which also reach the ESP32 module through the diode D2. The module's own regulator makes 3.3
-volts for the ESP32, U3, U5 and the microSD card. D2 keeps a USB cable's power off the bus.
+volts for the ESP32, U5 and the microSD card. D2 keeps a USB cable's power off the bus.
 ]

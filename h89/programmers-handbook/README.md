@@ -1,9 +1,10 @@
 # FujiNet Manual for the H89 FujiNet — Programming
 
 The programmer's companion to the H89 FujiNet Operation Manual
-(`../operation-manual/`). This is the second edition, for the card as reworked
-for fujinet-firmware #2042 (Oct 2026); the first was for the V1.0 card, where
-the H89 had to start the ESP32. It covers:
+(`../operation-manual/`). This is the third edition, for the card without its
+74LVC245 (fujinet-firmware #2232, Oct 2026), where port A runs straight to the
+ESP32; the second was for the card as reworked for #2042, the first for the
+V1.0 card, where the H89 had to start the ESP32. It covers:
 
 - how a program talks to the card: the 82C55A's ports, the handshake, and the
   FujiBus protocol, byte by byte;
@@ -77,10 +78,10 @@ port is fixed.
 
 | Piece | Version |
 |---|---|
-| Firmware | fn-h89 7ab84ae64 (reports v1.6); the card's pin map is master 7e8e647 (#2042), which fujinet-pc doesn't build |
-| fujinet-lib | `h89-setup-after-reset` d08f584 (Chapters 13-19 and the library tests: `h89-keep-esp32-running` 9e6d4dd) |
+| Firmware | fn-h89 7ab84ae64 (reports v1.6); the card's side is PR #2232 `h89-remove-245` (port A straight to the ESP32), which fujinet-pc doesn't build |
+| fujinet-lib | `h89-setup-after-reset` 7fc847b, with #249 (Chapters 13-19 and the library tests: `h89-keep-esp32-running` 9e6d4dd) |
 | z88dk | v2.4-1231 (3bd06cad56) |
-| FujiNet Go H89 | `card-rev11` 6ceac07, the reworked V1.1 card (Chapters 2, 4, 5 and the exercisers); before it `card-reset-bus-hold` 51f411d (Chapters 13-19 and the library tests: v0.1.0-3, 8dc059d) |
+| FujiNet Go H89 | v0.4.0, the card without its 74LVC245 (Chapters 2, 4, 5 and the exercisers); before it `card-rev11` 6ceac07, the reworked V1.1 card, and `card-reset-bus-hold` 51f411d (Chapters 13-19 and the library tests: v0.1.0-3, 8dc059d) |
 | Games | Texas Hold'em 6bad3aa; Battleship 0c86ed6; Fujitzee from its uncommitted `add-h89` working tree |
 
 ## Building
@@ -157,6 +158,20 @@ fujinet-lib and the game repositories:
     polled; the modem's unframed bytes matched too. Replies differed only in values that change on
     every run: the clock, file dates, uninitialised firmware memory. One connection fewer, since
     the card now dials FujiNet once, at power-on. The screens matched.
+  - The byte strips are still those of the earlier runs.
+  - Not run again: the programs of Chapters 13-19 and fujinet-lib's own tests.
+- **The card without its 74LVC245 (Oct 30, 2026, third edition).** fujinet-firmware #2232 wires
+  port A straight to the ESP32, so PC0 (DIR) and PC1 (/OE) steer nothing. FUJIBUS.INC, CARD.INC,
+  RAWBUS.C, EXMODEM.ASM's `rawput` and FNVER/FNVERH no longer set them; fujinet-lib is 7fc847b
+  (#249). FujiNet Go H89 v0.4.0 models the card without U3.
+  - Run again on it: every exerciser (Z80 and C, both systems; EXLIB with 7fc847b), FNHELLO, HELLO
+    and Chapter 5.
+  - The requests matched the second edition's byte for byte, with the network STATUS polls
+    dropped and repeats collapsed; so did the modem's unframed bytes both ways. Screens differed
+    only in values that change on every run: the clock, GUIDs, random numbers, and where a RAW
+    read cut the modem's output.
+  - Chapter 5: FNVER is now 416 bytes and FNVERH 381 bytes of code; both still match z80asm byte
+    for byte.
   - The byte strips are still those of the earlier runs.
   - Not run again: the programs of Chapters 13-19 and fujinet-lib's own tests.
 - **Not done:** nothing was run on a real H89 FujiNet card.

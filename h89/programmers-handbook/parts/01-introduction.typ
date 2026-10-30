@@ -146,18 +146,20 @@ versions, which are the ones its examples ran against:
 
 #stable((1.25in, 1fr),
   th[Program], th[Version],
-  [Firmware], [For the card: fujinet-firmware master from 7e8e647 (PR \#2042), which reads /OE and
-    DIR on IO21 and IO22. The examples ran on fujinet-pc built from branch h89-disk-fixes, 7ab84ae64,
-    which reports itself as v1.6; the PC build has no pin map.],
-  [fujinet-lib], [branch h89-setup-after-reset, d08f584 (the H89 is not yet in a release). The
-    programs of Chapters 13 to 19 and the library's own tests ran with 9e6d4dd, which differs only in
-    how it starts the card (L22).],
+  [Firmware], [For the card: fujinet-firmware PR \#2232 (branch h89-remove-245), which wires port A
+    straight to the ESP32 and no longer reads /OE or DIR. The examples ran on fujinet-pc built from
+    branch h89-disk-fixes, 7ab84ae64, which reports itself as v1.6; the PC build has no pin map, so
+    neither change reaches it.],
+  [fujinet-lib], [branch h89-setup-after-reset, 7fc847b, which carries PR \#249 (no DIR or /OE); the
+    H89 is not yet in a release. The library's examples ran with it. The programs of Chapters 13 to
+    19 and the library's own tests ran with 9e6d4dd, which still set DIR and /OE and started the card
+    the old way (L22 to L24).],
   [z88dk], [v2.4-1231 (3bd06cad56)],
-  [FujiNet Go H89], [branch card-rev11, 6ceac07, whose card is the reworked V1.1: the ESP32 runs
-    from power-on, and RESET reaches only the 82C55A. The programs of Chapters 2, 4 and 5 and the
-    exercisers ran on it; those of Chapters 13 to 19 and the library's tests ran on v0.1.0-3
-    (8dc059d).],
-  [FNDISK, FN.DVD], [fujinet-h89, branch card-setup-mark, 4cb0024],
+  [FujiNet Go H89], [v0.4.0, whose card has no 74LVC245: port A runs straight to the ESP32, and PC0
+    and PC1 steer nothing. The exercisers, FNHELLO, HELLO and the programs of Chapter 5 ran on it;
+    those of Chapters 13 to 19 and the library's tests ran on v0.1.0-3 (8dc059d), which modelled the
+    transceiver.],
+  [FNDISK, FN.DVD], [fujinet-h89 main, caccd04 (PR \#6: no DIR or /OE)],
 )
 
 Where the firmware or the library does something it should not, the entry says so in a WARNING,
@@ -166,22 +168,23 @@ place, with the line of source it comes from, so it can be checked against later
 ]
 
 #section("Changes in This Edition")[
-This second edition is for the card as reworked for fujinet-firmware \#2042 (October 2026). The
-rework takes the ESP32's EN, IO0 and IO2 off the card, and the FujiNet now runs from power-on.
-What changed for a program:
+This third edition is for the card without its 74LVC245 (fujinet-firmware \#2232, October 2026):
+port A of the 82C55A runs straight to the ESP32, which decides which way its lines go. What
+changed for a program:
 
-- _Port C._ PC2, once the ESP32's EN, is connected to nothing. PC1 (/OE) and PC0 (DIR) still steer
-  the bus transceiver, and the ESP32 reads them on IO21 and IO22 (Chapter 2).
-- _Setting the card up._ `card_on` is one mode word and a read of port A. It no longer looks for the
-  mark in port B, raises EN or waits 200 ms, and a mode word is safe at any time between
-  transactions. `card_present` checks /OE and DIR only. fujinet-lib, FN.DVD and FNDISK still do the
-  old start-up, which costs them only time (L23).
-- _Port B_ drives eight lamps on the card. It is no longer "wired to nothing."
-- _RESET_ resets the 82C55A only. A program that wants the FujiNet restarted sends FUJI_RESET
-  (Chapter 8).
-- _Chapter 5_ has FNVER and FNVERH only. FNON and FNONH, which existed to start the card, are gone.
-- _Versions._ The table above names the firmware with the new pin map and the FujiNet Go H89 that
-  models the reworked card.
+- _Port C._ PC0 and PC1, once the transceiver's DIR and /OE, are connected to nothing, like PC2. A
+  program never sets a direction (Chapter 2).
+- _The book's library._ FUJIBUS.INC, CARD.INC and RAWBUS.C no longer set DIR or /OE. `card_present`
+  still reads PC0 and PC1, which every mode word leaves at 0. Chapter 5's FNVER and FNVERH lost
+  their DIR writes too.
+- _The other software._ fujinet-lib (PR \#249), FN.DVD and FNDISK (fujinet-h89 PR \#6) dropped DIR
+  and /OE as well, so a program built with them needs this card, or FujiNet Go H89 v0.4.0 (L24).
+  They set the card up with mode word C2H, which leaves port B an input and the lamps dark (L23).
+- _Versions._ The table above names the firmware, library and FujiNet Go H89 for this card.
+
+The second edition was for the card as reworked for fujinet-firmware \#2042: the ESP32's EN, IO0 and
+IO2 came off the card, the FujiNet runs from power-on, RESET resets the 82C55A only, port B drives
+eight lamps, and FNON and FNONH, which existed to start the card, went.
 ]
 
 #section("How the Examples Were Checked")[

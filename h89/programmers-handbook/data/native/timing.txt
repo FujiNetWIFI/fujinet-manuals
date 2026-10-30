@@ -1,2 +1,2 @@
-FNVER   DRI ASM 2.0 (CP/M)      14768 ticks =  29.54 s   LOAD  3848 ticks =  7.70 s
-FNVERH  Heath ASM (HDOS)        40840 ticks =  81.68 s
+FNVER   DRI ASM 2.0 (CP/M)      14464 ticks =  28.93 s   LOAD  3648 ticks =  7.30 s
+FNVERH  Heath ASM (HDOS)        39592 ticks =  79.18 s

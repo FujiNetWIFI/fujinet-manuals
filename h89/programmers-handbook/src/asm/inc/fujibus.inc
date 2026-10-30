@@ -114,10 +114,6 @@ fn_call0:
         ld      (fn_out+4),a
 
         ; send: one END, the packet, one END
-        ld      a,OE_ON
-        out     (PCTRL),a
-        ld      a,DIR_TO_ESP
-        out     (PCTRL),a
         ld      hl,TX_TIMEOUT
         ld      (fn_tlim),hl
         ld      a,SLIP_END
@@ -133,8 +129,6 @@ fn_call0:
         ld      a,SLIP_END
         call    fn_putc
         call    fn_txwait
-        ld      a,DIR_TO_H89
-        out     (PCTRL),a
         ld      a,(fn_only)             ; fn_send: that is all
         or      a
         jr      z,fn_recv
@@ -292,8 +286,6 @@ fn_spay:
 fn_abort:
         ld      a,1
         ld      (fn_dirty),a
-        ld      a,DIR_TO_H89
-        out     (PCTRL),a
         ld      sp,(fn_sp)
         ld      bc,0
         ld      a,FN_TIMEOUT
@@ -420,8 +412,6 @@ fn_take:
 fn_drain:
         xor     a
         ld      (fn_dirty),a
-        ld      a,DIR_TO_H89
-        out     (PCTRL),a
         ld      hl,50
         ld      (fn_tlim),hl
         ld      bc,2048
@@ -449,10 +439,6 @@ fn_raw:
         ld      (fn_rmax),bc
         ld      hl,0
         ld      (fn_idx),hl
-        ld      a,OE_ON
-        out     (PCTRL),a
-        ld      a,DIR_TO_H89
-        out     (PCTRL),a
         ld      hl,RAW_FIRST
         ld      (fn_tlim),hl
 fn_raw1:

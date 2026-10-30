@@ -8,13 +8,13 @@ The printed edition, styled after Heath's 1979 *H88 Operation Manual*, is in the
 
 ### Changes in this edition
 
-This second edition covers the **V1.1 card, reworked for fujinet-firmware #2042** (October 2026). The first covered the V1.0 card.
+This third edition covers the **card without its 74LVC245** (fujinet-firmware #2232, October 2026): the 82C55A's port A runs straight to the ESP32.
 
-- **The card.** V1.1 has a second 74LVC245 (U5) in place of the divider resistors, the 82C55A as U2 (PLCC) or U6 (DIP), eight lamps on port B, and JP1 (BA2) beside PORT SEL. Every component number has changed.
-- **The rework.** The ESP32's EN, IO0 and IO2 are no longer connected to the card; /OE and DIR reach it on IO21 and IO22; LED D1 is gone.
-- **Starting.** The FujiNet runs from power-on. The Computer no longer starts it, and SHIFT + RESET no longer stops or restarts it: the FujiNet drives stay in service through a reset.
-- **Firmware updates** are over USB alone. The monitor commands and the program that put the FujiNet in loading mode are gone.
-- **Testing.** The port test writes a pattern to port B, and the Communication Test is 114 bytes instead of 129.
+- **The card.** U3, the data transceiver, is gone, and so is R1. The Computer no longer sets a direction for port A; PC0 and PC1 are no longer used.
+- **Testing.** The Communication Test is 106 bytes instead of 114.
+- **Software.** CONFIG, FN.DVD, FNDISK and the Communication Test no longer set DIR and /OE. They need this card, or FujiNet Go H89 v0.4.0; older copies still work on it.
+
+The second edition covered the V1.1 card reworked for fujinet-firmware #2042: U5 for the control lines, eight lamps on port B, the ESP32's EN, IO0 and IO2 off the card, a FujiNet that runs from power-on, and firmware updates over USB alone. The first covered the V1.0 card.
 
 ---
 
@@ -66,7 +66,7 @@ The H89 still starts HDOS or CP/M from its own floppy drive. The FujiNet drives 
 | Bus | H89/H88 accessory bus. One pair of sockets: P504+P510 or P505+P511 |
 | I/O ports | 320–323 octal (D0–D3 hex), PORT SEL (J1) at 320Q and JP1 on 0. Positions 330Q, 340Q and 170Q, and JP1 on 4, are not used by present software |
 | Interface | 82C55A; port A in Mode 2 for data, port C for control. No interrupts (J3 open) |
-| Level shifting | Two 74LVC245s: U3 for the data, U5 for the control lines |
+| Level shifting | A 74LVC245 (U5) for the control lines; port A's data lines run straight to the ESP32 |
 | Reset | RESET resets the 82C55A only; the FujiNet runs from power-on |
 | Lamps | Eight LEDs (D3–D10) on port B, for programs to use |
 | FujiNet | ESP32 on an ESP32-DevKitC-VE module (8 MB flash, 8 MB PSRAM). 802.11 b/g/n, 2.4 GHz. microSD (FAT32). USB for firmware updates |
@@ -129,7 +129,7 @@ Type `O` then `323,300` RETURN; then `I` then `322` RETURN. Expect `200` (`240` 
 
 #### Communication Test
 
-A 114-byte program you key in with the monitor's **Substitute** command. It sets up the card's 82C55A, asks the FujiNet for its adapter configuration, and prints the answer. It works on MTR-88, MTR-89 and MTR-90.
+A 106-byte program you key in with the monitor's **Substitute** command. It sets up the card's 82C55A, asks the FujiNet for its adapter configuration, and prints the answer. It works on MTR-88, MTR-89 and MTR-90.
 
 1. Push SHIFT + RESET. Type `S` (the monitor finishes "Substitute"), then `040100` RETURN.
 2. Enter each number below and push SPACE after each. Each line starts at the address shown at its left; check it as you go. After the last number, push RETURN.
@@ -137,20 +137,19 @@ A 114-byte program you key in with the monitor's **Substitute** command. It sets
 
 ```
 040100  076 300 323 323 333 322 346 007
-040110  302 251 040 076 001 323 322 076
-040120  061 315 302 003 041 252 040 006
-040130  010 176 323 320 333 322 346 200
-040140  312 134 040 043 005 302 131 040
-040150  076 000 323 322 076 062 315 302
-040160  003 001 000 005 315 237 040 376
-040170  300 312 161 040 005 302 164 040
-040200  315 237 040 376 300 312 251 040
-040210  376 041 332 222 040 376 177 332
-040220  230 040 076 040 271 312 200 040
-040230  117 315 302 003 303 200 040 333
-040240  322 346 040 312 237 040 333 320
-040250  311 166 300 160 350 006 000 137
-040260  000 300
+040110  302 241 040 076 061 315 302 003
+040120  041 242 040 006 010 176 323 320
+040130  333 322 346 200 312 130 040 043
+040140  005 302 125 040 076 062 315 302
+040150  003 001 000 005 315 227 040 376
+040160  300 312 151 040 005 302 154 040
+040170  315 227 040 376 300 312 241 040
+040200  376 041 332 212 040 376 177 332
+040210  220 040 076 040 271 312 170 040
+040220  117 315 302 003 303 170 040 333
+040230  322 346 040 312 227 040 333 320
+040240  311 166 300 160 350 006 000 137
+040250  000 300
 ```
 
 `-` backs up one address. Only the last three digits typed count.
@@ -169,7 +168,7 @@ The text after `12` is the FujiNet's answer: here, the WiFi network it has joine
 |---|---|
 | `12` and text, `H` | The card works |
 | only `H` (beep) | No 82C55A at 320: PORT SEL, seating, or another board at 320 |
-| `1` only | The FujiNet isn't taking the request: firmware, power, the 74LVC245s |
+| `1` only | The FujiNet isn't taking the request: firmware, power, U5 (the 74LVC245) |
 | `12` only | No answer came back: firmware, or the return path |
 | no beep / no `H` | The program was keyed in wrong |
 
@@ -414,7 +413,7 @@ Run the [Communication Test](#communication-test) first. Remember:
 |---|---|
 | No `H:` with the card in | Card not seated or offset; SW501 set to auto-boot or memory test |
 | Port test 377, or test shows only `H` | PORT SEL not at 320Q; JP1 not on 0; card not seated; HA-88-3 port at 320 |
-| Test shows `1` only | Firmware missing, or still in loading mode after an update (unplug USB, turn the Computer off and on); no power at the module (D2); U3, U5, the rework wires |
+| Test shows `1` only | Firmware missing, or still in loading mode after an update (unplug USB, turn the Computer off and on); no power at the module (D2); U5 |
 | Test shows `12` only | Wrong firmware; return path |
 | CONFIG: "Contacting FujiNet..." for a long time | FujiNet not answering: run the test |
 | NOT ENOUGH RAM FOR THIS PROGRAM (CONFIG.ABS) | 48K with FN.DVD loaded: restart HDOS and run CONFIG first |

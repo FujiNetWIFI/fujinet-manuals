@@ -88,7 +88,7 @@ file and a .PRN listing; LOAD turns the .HEX into a .COM file to run.
 
 #session("native-fnver-run", rows: (5, 23))
 
-The assembly took 30 seconds and the LOAD 8. DRI's language is the one most 8080 books use: labels as
+The assembly took 29 seconds and the LOAD 7. DRI's language is the one most 8080 books use: labels as
 long as you like, with a colon after an instruction label; `;` for comments, anywhere; `$` the
 location counter; operators with the usual precedence and parentheses; `IF` and `ENDIF`.
 
@@ -97,7 +97,7 @@ assembled.]
 ]
 
 #section("A FujiBus Exchange in 8080 Code", balance: false)[
-FNVER and FNVERH do the whole of `fn_call`'s work, for one request, in about 220 lines. In order:
+FNVER and FNVERH do the whole of `fn_call`'s work, for one request, in about 210 lines. In order:
 
 + Set the card up, as `card_on` does: the mode word C0H, then a read of port A.
 + Build the packet `70 E8 06 00 00 00` and work out its checksum (an 8-bit sum with end-around carry:

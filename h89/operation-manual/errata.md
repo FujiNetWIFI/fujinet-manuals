@@ -6,15 +6,15 @@ differs from what the book says is listed here, with file and line, so it can
 be fixed in the source or accepted in the book.
 
 Sources examined (Oct 12, 2026; for the second edition's card and start-up,
-Oct 18, 2026):
+Oct 18, 2026; for the third edition's card without its 74LVC245, Oct 30, 2026):
 
 | Repo | Branch / commit |
 |---|---|
-| fujinet-firmware | `master` 7e8e647 (PR #2042, merged Oct 18: the reworked card's pin map, /OE on IO21, DIR on IO22); first edition `master` 0bc531d3d with the disk fixes on `h89-disk-fixes` 7ab84ae64, merged Oct 14 as #1935 and #1972 |
-| fujinet-h89 | `hdos-fn-driver` dff02cc (FN.DVD is not on `main` cea13e8); the card's start-up from `card-setup-mark` 4cb0024 (item 13) |
+| fujinet-firmware | PR #2232 `h89-remove-245` 8ff4f7968 (Oct 30: port A straight to the ESP32, no DIR or /OE; items 37-39); second edition `master` 7e8e647 (PR #2042, merged Oct 18: the reworked card's pin map, /OE on IO21, DIR on IO22); first edition `master` 0bc531d3d with the disk fixes on `h89-disk-fixes` 7ab84ae64, merged Oct 14 as #1935 and #1972 |
+| fujinet-h89 | `hdos-fn-driver` dff02cc (FN.DVD is not on `main` cea13e8); the card's start-up from `card-setup-mark` 4cb0024 (item 13); `main` caccd04 (PR #6, no DIR or /OE; item 39) |
 | fujinet-config | `add-h89` 6f48e0f; 1823324 builds against the fujinet-lib below (item 13) |
-| fujinet-lib | `h89-keep-esp32-running` 9e6d4dd; `h89-setup-after-reset` d08f584 (item 13) |
-| fujinet-go-h89-desktop | 8dc059d (firmware pinned at master 6b8187701); `card-reset-bus-hold` 51f411d (item 13); `card-rev11` 6ceac07 (PR #2), the reworked V1.1 card (items 32-36) |
+| fujinet-lib | `h89-keep-esp32-running` 9e6d4dd; `h89-setup-after-reset` d08f584 (item 13), 7fc847b (PR #249, no DIR or /OE; item 39) |
+| fujinet-go-h89-desktop | 8dc059d (firmware pinned at master 6b8187701); `card-reset-bus-hold` 51f411d (item 13); `card-rev11` 6ceac07 (PR #2), the reworked V1.1 card (items 32-36); v0.4.0 (PR #3), the card without U3 (item 38) |
 | fujinet-hardware | `H89/H89-ESP32 Schematic v1.28.pdf`; Collado, *How to control the H89-FujiNet 82C55 in Mode 2* Rev 1.0 |
 | this repo | `h89/learn/H89-ESP32-FUJINET.pdf` (J. Travis, Rev 1.1 schematic, KiCad); `images/photo/board.jpg` (KiCad render of the V1.1 board) |
 
@@ -74,11 +74,14 @@ Oct 18, 2026):
     board.
 12. **3.3 V supply and USB.** Rev 1.1 settles the supply: the bus's +5 V reaches
     the DevKitC through D2 (1N5819), and the module's own regulator makes 3.3 V
-    for it, U3, U5 and the microSD card. D2 keeps USB power off the bus, so USB
-    with the H89 on is safe. **USB with the H89 off** is not settled: with VCC
-    down, R1 no longer holds U3's /OE high and DIR floats, so U3 may drive the
-    unpowered 82C55A's port A. The book says to flash with the Computer on
-    (Ch. 9) and to unplug USB when done (Ch. 10). Confirm with J. Travis.
+    for it, U5 and the microSD card. D2 keeps USB power off the bus, so USB
+    with the H89 on is safe. **USB with the H89 off** is not settled. On the
+    V1.1 card, with VCC down, R1 no longer held U3's /OE high and DIR floated,
+    so U3 might drive the unpowered 82C55A's port A. Without U3 (item 37) the
+    ESP32's own pins meet port A; the firmware drives them only to strobe a
+    byte in (`lib/hardware/PPIChannel.cpp:75-95`, #2232). The book still says
+    to flash with the Computer on (Ch. 9) and to unplug USB when done (Ch. 10).
+    Confirm with J. Travis.
 13. **Superseded by the rework (Oct 18, 2026): EN after reset.** PC2 no longer
     reaches the ESP32 (item 32), so there is nothing left to trust or not; the
     book's acceptance test writes the mode word every time. The first edition's
@@ -186,7 +189,11 @@ Oct 18, 2026):
     through a jumper); the render of the V1.1 board has neither, and wires /OE
     to IO0 and EN straight to U5. The book follows the board, and the rework
     makes both moot.
-35. **fujinet-lib, fujinet-h89 and CONFIG still start the card the old way.**
+35. **Resolved (fujinet-lib #228, fujinet-h89 #5, Oct 25-26, 2026): fujinet-lib,
+    fujinet-h89 and CONFIG started the card the old way.** They now write the
+    mode word C2H every time, with no mark, no EN and no wait; port B is then an
+    input and the lamps are dark. The second edition's item:
+    **fujinet-lib, fujinet-h89 and CONFIG still start the card the old way.**
     `port_init` (`bus/h89/portio.c:100-127`) and fujinet-h89's `card_on`
     (`common/card.inc:13-37`) write 06H to port C (PC2, once EN, now goes
     nowhere), wait 200 ms and leave A5H in port B, which lights four of the
@@ -197,6 +204,29 @@ Oct 18, 2026):
     mode word all eight light; fujinet-lib's mark leaves four. The book's Port
     Test uses them (O321,252), but they cannot be seen with the cabinet closed,
     so it checks the read-back instead.
+
+## The card without its 74LVC245 (third edition, Oct 30, 2026)
+
+37. **No schematic or render of this card yet.** fujinet-firmware #2232 says
+    only that the card drops its 74LVC245, so port A of the 82C55A now runs
+    straight to the ESP32 (`include/pinmap/heathkit_h89.h:4-6`). The book takes
+    U3 and R1 out of Chapter 11 and the parts list, and nothing more:
+    Pictorial 3-1 still shows U3 under the ESP32 module and the rework wires
+    to IO21 and IO22, the parts list keeps U5 and those wires, and how port A's
+    lines are now brought to 3.3 volts is not described. Check all of it
+    against the new board's schematic.
+38. **#2232 has not run on a card** ("Not flashed, and not run on a reworked
+    card"). FujiNet Go H89 v0.4.0 (PR #3) models the card without U3; the
+    Communication Test, now 106 numbers, was verified on it with every monitor
+    (`tools/run-acctest.sh`).
+39. **This edition's software needs the card without U3; older software works
+    on both.** The Communication Test no longer writes DIR and /OE to port C, and
+    neither do fujinet-lib with #249, FN.DVD, FNDISK and FNBOOT (fujinet-h89
+    #6), or CONFIG built against that library. On a card that still has U3
+    they never turn it toward the ESP32, so nothing they send arrives, and
+    FujiNet Go H89 before v0.4.0 drops their bytes the same way. Older
+    programs, which still set DIR and /OE, work on the new card: those writes
+    go nowhere.
 
 ## Book choices to confirm
 
