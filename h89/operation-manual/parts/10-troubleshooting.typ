@@ -4,7 +4,7 @@
 
 #notice("Important Notice")[
 The FujiNet card, its firmware and its programs were designed to work together, and with Heath's own
-H89, HDOS 2.0 and CP/M 2.2.04. Other monitors, operating systems and accessories may work, and many
+H89, HDOS 2.0 or 3.0 and CP/M 2.2.04. Other monitors, operating systems and accessories may work, and many
 owners will gladly help you find out, but the FujiNet project cannot promise it.
 
 There is no factory to send your card to. There is something better: the community of FujiNet

@@ -8,7 +8,7 @@ Before you begin, make sure you have:
 
 - Your Heathkit H89 (or H88, or Zenith Z-89), working, with its monitor ROM: MTR-88, MTR-89 or
   MTR-90. The Computer needs at least 48K of memory for HDOS (64K is better; see Page 4-1), and 64K for CP/M.
-- A system diskette that starts HDOS 2.0 or Heath/Zenith CP/M 2.2.04, and a blank diskette for the
+- A system diskette that starts HDOS 2.0 or 3.0 or Heath/Zenith CP/M 2.2.04, and a blank diskette for the
   FujiNet programs (see "FujiNet Software," Page 5-1).
 - The name and password of your WiFi network. The FujiNet uses the 2.4 GHz band only.
 - A microSD card, if you want a library of disk images on the board itself. It is not needed to

@@ -54,7 +54,7 @@ The FujiNet is a network adapter for the Heathkit H89. It is one accessory board
 - **Eight host slots.** The microSD card, TNFS servers, and web, FTP, SMB or NFS servers.
 - **WiFi.** 2.4 GHz only; the network's name and password are kept on the FujiNet.
 - **FujiNet CONFIG.** A full-screen program for the H19, in versions for HDOS and CP/M.
-- **FNDISK.** The drivers: FN.DVD for HDOS 2.0, and FNDISK.COM for Heath/Zenith CP/M 2.2.04.
+- **FNDISK.** The drivers: FN.DVD for HDOS 2.0 and 3.0, and FNDISK.COM for Heath/Zenith CP/M 2.2.04.
 - **A web page of its own.** It also carries a printer, a modem, eight network channels and a clock, for H89 programs to use.
 
 The H89 still starts HDOS or CP/M from its own floppy drive. The FujiNet drives join the system once it is running.
@@ -71,7 +71,7 @@ The H89 still starts HDOS or CP/M from its own floppy drive. The FujiNet drives 
 | Lamps | Eight LEDs (D3–D10) on port B, for programs to use |
 | FujiNet | ESP32 on an ESP32-DevKitC-VE module (8 MB flash, 8 MB PSRAM). 802.11 b/g/n, 2.4 GHz. microSD (FAT32). USB for firmware updates |
 | Disk image | .H8D: 102,400 bytes, 40 tracks × 10 sectors × 256 bytes (the H-17-1 diskette) |
-| Software | HDOS 2.0 (FN.DVD, CONFIG.ABS); Heath/Zenith CP/M 2.2.04, 62K system (FNDISK.COM, CONFIG.COM) |
+| Software | HDOS 2.0 or 3.0 (FN.DVD, CONFIG.ABS); Heath/Zenith CP/M 2.2.04, 62K system (FNDISK.COM, CONFIG.COM) |
 | Memory | HDOS 48K (64K to run CONFIG after FN.DVD is loaded); CP/M 64K |
 | Power | From the bus: +5 V, and through D2 to the module's own 3.3 V regulator |
 
@@ -197,7 +197,7 @@ Write the image for your system onto a blank hard-sectored diskette, however you
 
 ### Preparing HDOS
 
-Always work on a copy of your system disk. HDOS 2.0 takes no year after 99 at its date prompt.
+Always work on a copy of your system disk. HDOS 2.0 or 3.0 (unless you have applied Y2K patches) takes no year after 99 at its date prompt.
 
 ```
 >MOUNT SY1:

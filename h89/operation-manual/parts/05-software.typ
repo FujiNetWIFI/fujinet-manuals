@@ -44,9 +44,9 @@ take in the FujiNet drives, you copy FN.DVD onto your system diskette and start 
 
 CAUTION: Always work on a copy of your HDOS system diskette, never on the distribution diskette.
 
-#step[Make a working copy of your HDOS 2.0 system diskette, and start HDOS from it.]
+#step[Make a working copy of your HDOS 2.0 or 3.0 system diskette, and start HDOS from it.]
 
-NOTE: HDOS 2.0 cannot take a date after 1999. When it asks for the date, give it a year of 99 or
+NOTE: HDOS 2.0 or 3.0 (unless you have applied Y2K patches) cannot take a date ater 1999. When it asks for the date, give it a year of 99 or
 earlier, in the form DD-MMM-YY.
 
 #step[Put the FujiNet for HDOS diskette in drive 1, and type #typed("MOUNT SY1:")#ret.]
