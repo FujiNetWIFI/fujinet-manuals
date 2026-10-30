@@ -10,13 +10,13 @@ Everything in the book was built and run on FujiNet Go H89 under HDOS 2.0 and CP
 
 ### Changes in this edition
 
-This second edition is for the card as reworked for fujinet-firmware #2042 (October 2026): the ESP32's EN, IO0 and IO2 are off the card, and the FujiNet runs from power-on.
+This third edition is for the card without its 74LVC245 (fujinet-firmware #2232, October 2026): port A of the 82C55A runs straight to the ESP32, which decides which way its lines go.
 
-- **Port C.** PC2, once the ESP32's EN, is connected to nothing. PC1 (/OE) and PC0 (DIR) still steer the bus transceiver; the ESP32 reads them on IO21 and IO22.
-- **Setting the card up** is one mode word and a read of port A. No mark, no EN, no 200 ms wait; a mode word is safe between transactions. `card_present` checks /OE and DIR only. fujinet-lib, FN.DVD and FNDISK still do the old start-up, which costs them only time (L23).
-- **Port B** drives eight lamps on the card.
-- **RESET** resets the 82C55A only; FUJI_RESET restarts the FujiNet.
-- **FNON and FNONH are gone**; the 8080 chapter has FNVER and FNVERH.
+- **Port C.** PC0 and PC1, once the transceiver's DIR and /OE, are connected to nothing, like PC2. A program never sets a direction.
+- **The book's library** (FUJIBUS.INC, CARD.INC, RAWBUS.C) and Chapter 5's FNVER and FNVERH no longer set DIR or /OE. `card_present` still reads PC0 and PC1, which every mode word leaves at 0.
+- **fujinet-lib (#249), FN.DVD and FNDISK (fujinet-h89 #6)** dropped DIR and /OE too, so programs built with them need this card or FujiNet Go H89 v0.4.0 (L24). They set the card up with mode word C2H, which leaves port B an input (L23).
+
+The second edition was for the card as reworked for fujinet-firmware #2042: the ESP32's EN, IO0 and IO2 came off the card, the FujiNet runs from power-on, RESET resets only the 82C55A, port B drives eight lamps, and FNON and FNONH went.
 
 ---
 
@@ -39,10 +39,10 @@ This second edition is for the card as reworked for fujinet-firmware #2042 (Octo
 
 | Program | Version |
 |---|---|
-| Firmware | for the card: fujinet-firmware master from 7e8e647 (#2042: /OE and DIR on IO21 and IO22); the examples ran on fujinet-pc from `h89-disk-fixes`, 7ab84ae64 (v1.6) |
-| fujinet-lib | branch `h89-setup-after-reset`, d08f584 (the H89 is not yet in a release); Chapters 13-19 and the library's tests ran with 9e6d4dd |
+| Firmware | for the card: fujinet-firmware PR #2232 (`h89-remove-245`: port A straight to the ESP32, no DIR or /OE); the examples ran on fujinet-pc from `h89-disk-fixes`, 7ab84ae64 (v1.6) |
+| fujinet-lib | branch `h89-setup-after-reset`, 7fc847b, with PR #249 (the H89 is not yet in a release); Chapters 13-19 and the library's tests ran with 9e6d4dd |
 | z88dk | v2.4-1231 (3bd06cad56) |
-| FujiNet Go H89 | `card-rev11` 6ceac07, the reworked card (Chapters 2, 4 and 5 and the exercisers); Chapters 13-19 and the library's tests ran on v0.1.0-3 (8dc059d) |
+| FujiNet Go H89 | v0.4.0, whose card has no 74LVC245 (Chapters 2, 4 and 5 and the exercisers); Chapters 13-19 and the library's tests ran on v0.1.0-3 (8dc059d) |
 
 The FujiNet for the H89 is new and its software is still changing. Where the firmware or the library does something it should not, the book says so in a WARNING with what to do instead; the [errata](#10-errata) list every case, cited to its line of source.
 
@@ -63,13 +63,11 @@ Four ports, a handshake and a clock. No memory, no interrupt, no ROM.
 |---|---|---|
 | 80H | /OBF | 0 while a byte the H89 wrote waits for the ESP32 |
 | 20H | IBF | 1 while a byte from the ESP32 waits for the H89 |
-| 04H | -- | not connected (fujinet-lib still sets it) |
-| 02H | /OE | 0 = the bus transceiver is on; the ESP32 reads it on IO21 |
-| 01H | DIR | 1 = toward the ESP32, 0 = toward the H89; the ESP32 reads it on IO22 |
+| 04H, 02H, 01H | -- | not connected (PC2 was the ESP32's EN, PC1 and PC0 the transceiver's /OE and DIR) |
 
-- **Setting it up.** The FujiNet runs from power-on; the H89 only has to put its 82C55A in mode 2 after a reset. Write C0H to D3H and read D0H once. The mode word leaves /OE = 0 and DIR = 0: the transceiver on, facing the H89. It touches only the 82C55A, so it is safe whenever no request or reply is under way.
-- **Sending.** DIR = 1; for each byte wait for /OBF = 1, then write D0H. After the last, wait for /OBF = 1 and set DIR = 0.
-- **Receiving.** DIR = 0; wait for IBF = 1, read D0H.
+- **Setting it up.** The FujiNet runs from power-on; the H89 only has to put its 82C55A in mode 2 after a reset. Write C0H to D3H and read D0H once. It touches only the 82C55A, so it is safe whenever no request or reply is under way.
+- **Sending.** For each byte wait for /OBF = 1, then write D0H. Port A runs straight to the ESP32, which decides which way its lines go: there is no direction to set.
+- **Receiving.** Wait for IBF = 1, read D0H.
 - **Time.** The 2 ms tick word is at 201BH under HDOS, 000BH under Heath CP/M.
 - **Limits.** The firmware waits only **100 ms** between the bytes of a request; a program that pauses longer loses the request. It waits 1 s for each reply byte to be taken. fujinet-lib waits 15 s for a reply byte, and forever to send one.
 - **No interrupts.** A program asks; data arriving on a network channel waits until the program asks STATUS and reads it.
@@ -495,7 +493,7 @@ And the three network games, listed in full in the book: **Texas Hold'em**, **Ba
 
 ## 10. Errata
 
-The book found 218 things in the H89's FujiNet software that behave other than a programmer would expect; `errata.md` beside the book's source lists them all, each cited to its line of source. The ones that matter most:
+The book found 219 things in the H89's FujiNet software that behave other than a programmer would expect; `errata.md` beside the book's source lists them all, each cited to its line of source. The ones that matter most:
 
 - **A missing field stops the firmware.** Send every field a command takes, even unused ones.
 - **After a reset, port A is out of mode 2.** Write the mode word (C0H to D3H) before the first request.

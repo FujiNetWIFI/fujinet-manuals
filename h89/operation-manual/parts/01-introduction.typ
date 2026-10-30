@@ -86,20 +86,17 @@ Manual, believe your screen, and look for news on the FujiNet Wiki (see the insi
 
 #sub("Changes in This Edition")
 #metadata("Changes in This Edition") <toc2>
-This second edition covers the V1.1 card, reworked for the present firmware (fujinet-firmware
-7e8e647, October 2026). The first edition covered the V1.0 card. What changed:
+This third edition covers the card without its 74LVC245 (fujinet-firmware \#2232, October 2026):
+the 82C55A's port A now runs straight to the ESP32. What changed:
 
-- _The card._ The V1.1 board has a second 74LVC245 (U5) in place of the divider resistors, the
-  82C55A as U2 (a PLCC part) or U6 (a DIP), eight lamps on port B, and JP1 (BA2) beside PORT SEL.
-  Every component number has changed. Pictorial 3-1, the jumper steps, the circuit description and
-  the parts list are new.
-- _The rework._ The ESP32's EN, IO0 and IO2 are no longer connected to the card. /OE and DIR reach
-  it on IO21 and IO22, and LED D1 is gone (Chapter 11).
-- _Starting._ The FujiNet runs from the moment the Computer is turned on. The Computer no longer
-  starts it, and #key[SHIFT] and #key[RESET] no longer stop or restart it: the FujiNet drives stay
-  in service through a reset (Chapters 4 and 6).
-- _Firmware updates_ are done over USB alone (Chapter 9). The monitor commands and the program that
-  put the FujiNet in its loading mode are gone.
-- _Testing._ The Port Test writes a pattern to port B instead of starting the FujiNet, and the
-  Communication Test is 114 numbers long instead of 129 (Chapter 3).
+- _The card._ U3, the data transceiver, is gone, and so is R1, which held it off. The Computer no
+  longer sets a direction for port A, and PC0 and PC1 are no longer used (Chapter 11).
+- _Testing._ The Communication Test is 106 numbers long instead of 114 (Chapter 3).
+- _Software._ CONFIG, FN.DVD, FNDISK and the Communication Test no longer set DIR and /OE. They
+  need this card, or FujiNet Go H89 v0.4.0; older copies still work on it.
+
+The second edition covered the V1.1 card, reworked for fujinet-firmware 7e8e647: a second
+74LVC245 (U5) for the control lines, eight lamps on port B, the ESP32's EN, IO0 and IO2 off the
+card, a FujiNet that runs from power-on and through a reset, and firmware updates over USB alone.
+The first edition covered the V1.0 card.
 ]

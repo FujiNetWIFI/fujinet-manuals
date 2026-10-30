@@ -67,18 +67,16 @@
 }
 
 // sending a byte: the H89 writes port A; /OBF falls; the ESP32 takes it
-// with /ACK; /OBF rises again
+// with /ACK, the only time the 82C55A drives PA0-PA7; /OBF rises again
 #let send-timing() = wave(tmax: 20, (
-  ("DIR (PC0)", "bit", ((0, 1), (20, 1))),
   ("WR", "bit", ((0, 1), (2, 0), (4, 1))),
-  ("PA0-PA7", "bus", ((2, 13, [the byte]),)),
+  ("PA0-PA7", "bus", ((9, 12, [the byte]),)),
   ("/OBF (PC7)", "bit", ((0, 1), (4, 0), (12, 1))),
   ("/ACK (PC6)", "bit", ((0, 1), (9, 0), (12, 1))),
 ), marks: ((2, [1]), (4, [2]), (9, [3]), (12, [4])))
 
 // receiving a byte: the ESP32 strobes it in; IBF rises; the H89 reads it
 #let recv-timing() = wave(tmax: 20, (
-  ("DIR (PC0)", "bit", ((0, 0), (20, 0))),
   ("/STB (PC4)", "bit", ((0, 1), (3, 0), (6, 1))),
   ("PA0-PA7", "bus", ((2, 7, [the byte]),)),
   ("IBF (PC5)", "bit", ((0, 0), (5, 1), (14, 0))),

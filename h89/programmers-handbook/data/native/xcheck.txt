@@ -1,8 +1,8 @@
 z88dk-z80asm -m8080 cross-check (Z80 Macro Assembler 25085-3bd06cad56-20260712)
-compare FNVER.COM: HEX 0100H-02ABH (428 bytes), COM 512 bytes (4 records)
+compare FNVER.COM: HEX 0100H-029FH (416 bytes), COM 512 bytes (4 records)
   HEX vs z80asm -m8080: identical
   COM vs HEX:           identical
-  z80asm beyond 02ABH:  266 bytes, all zero (the DS areas)
-compare FNVERH.ABS: header FF 00, load 2280H, length 593, entry 2280H
-  code vs z80asm -m8080: identical (393 bytes compared, 200 in DS areas skipped)
-  z80asm length 593, ABS length 593: same
+  z80asm beyond 029FH:  266 bytes, all zero (the DS areas)
+compare FNVERH.ABS: header FF 00, load 2280H, length 581, entry 2280H
+  code vs z80asm -m8080: identical (381 bytes compared, 200 in DS areas skipped)
+  z80asm length 581, ABS length 581: same

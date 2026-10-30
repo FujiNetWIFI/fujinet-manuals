@@ -87,7 +87,7 @@ If you write programs, all of the FujiNet is open to you. The Computer talks to 
 sending small packets through the 82C55A at port 320, and the library that CONFIG and the FujiNet's
 test programs are built on, fujinet-lib, is free to use from C with the z88dk compiler, for HDOS and
 for CP/M. The Communication Test in Chapter 3, listed in the Appendix, shows the whole exchange in
-114 bytes of 8080 code.
+106 bytes of 8080 code.
 
 #sub("FujiNet Go H89")
 FujiNet Go H89 is a program for Windows, macOS and Linux that is an H89 with an H19 and a FujiNet
