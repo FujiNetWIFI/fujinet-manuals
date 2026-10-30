@@ -13,7 +13,6 @@ R7 and adds two wires.
   [U1], [74LS02 quad 2-input NOR gate, 14 pins],
   [U2\*], [82C55A programmable peripheral interface, 44-pin PLCC; or U6],
   [U6\*], [82C55A, 40-pin DIP, in U2’s place],
-  [U3], [74LVC245 octal bus transceiver, 20 pins (data; under the ESP32 module)],
   [U5], [74LVC245 octal bus transceiver, 20 pins (control lines)],
 )
 
@@ -27,7 +26,6 @@ R7 and adds two wires.
 #wide-head("Resistors")
 #stable((0.55in, 1fr),
   th[Comp. No.], th[Description],
-  [R1], [10K (U3’s /OE held high)],
   [R2], [10K (Q1’s base)],
   [R3--R6], [10K (microSD pull-ups)],
   [R7], [560 Ω (LED D1). Removed in the rework.],

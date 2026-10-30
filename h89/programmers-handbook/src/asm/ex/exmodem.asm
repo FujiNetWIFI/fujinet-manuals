@@ -311,26 +311,17 @@ mcount: defw    0
 ;@ex modem.write.raw_dial
 ; rawput: BC bytes from HL to the FujiNet, outside any frame
 rawput:
-        ld      a,OE_ON
-        out     (PCTRL),a
-        ld      a,DIR_TO_ESP            ; the 245 toward the ESP32
-        out     (PCTRL),a
-rawput1:
         in      a,(PORTC)               ; wait till the last byte is
         and     PC_OBF                  ;   taken (/OBF high)
-        jr      z,rawput1
+        jr      z,rawput
         ld      a,b
         or      c
-        jr      z,rawput2
+        ret     z
         ld      a,(hl)
         out     (PORTA),a
         inc     hl
         dec     bc
-        jr      rawput1
-rawput2:
-        ld      a,DIR_TO_H89            ; and back toward us
-        out     (PCTRL),a
-        ret
+        jr      rawput
 ;@end
 
 ; ---- requests --------------------------------------------------------

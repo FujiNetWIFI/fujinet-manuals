@@ -1446,8 +1446,15 @@
    "id": "L23",
    "area": "fujinet-lib",
    "subject": "the card's start-up, after the rework (and fujinet-h89's)",
-   "text": "port_init still raises PC2 with /OE (06H to port C), waits 200 ms and leaves A5H in port B, and fujinet-h89's card_on (FN.DVD, FNDISK) does the same. On the reworked card PC2 goes nowhere and the ESP32 is already running, so this costs only time; the A5H lights four of the lamps. The comments still speak of the ESP32's EN and its IO0 strap. A program that writes the mode word (card_on, Chapter 2) clears the mark, so the next fujinet-lib call sets the card up again. fujinet-h89's FNBOOT pulses PC2 to restart the ESP32, which no longer happens.",
-   "cite": "fujinet-lib/bus/h89/portio.c:95-127 (main f6e34b3); fujinet-h89/common/card.inc:13-37, boot/fnboot.asm:7-38 (main fbf9d68)"
+   "text": "In 9e6d4dd port_init raised PC2 with /OE (06H to port C), waited 200 ms and left A5H in port B, and fujinet-h89's card_on (FN.DVD, FNDISK) did the same. On the reworked card PC2 goes nowhere and the ESP32 is already running, so this cost only time. Resolved: fujinet-lib #228 and fujinet-h89 #5 write the mode word C2H every time, with no mark, no EN and no wait; port B is then an input and the lamps are dark. fujinet-h89's FNBOOT still pulses PC2 to restart the ESP32, which no longer happens.",
+   "cite": "fujinet-lib/bus/h89/portio.c:42-50 (7fc847b); fujinet-h89/common/card.inc:11-15, boot/fnboot.asm:27-35 (main caccd04)"
+  },
+  {
+   "id": "L24",
+   "area": "fujinet-lib",
+   "subject": "DIR and /OE, on a card with or without its 74LVC245",
+   "text": "fujinet-lib before #249 (9e6d4dd, d08f584), FN.DVD and FNDISK before fujinet-h89 #6, and the second edition's library set PC0 (DIR) and PC1 (/OE) around every request. On the card without its 74LVC245 (fujinet-firmware #2232) those writes go nowhere, so these programs still work. The other way round they don't: a program built with 7fc847b, or with this edition's library, never turns a 74LVC245 toward the ESP32, so on a card that still has one, and on FujiNet Go H89 before v0.4.0, its requests never arrive and every call times out.",
+   "cite": "fujinet-lib/bus/h89/portio.c:95-102 (7fc847b)"
   },
   {
    "id": "T1",

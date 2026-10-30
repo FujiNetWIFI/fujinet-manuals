@@ -1,9 +1,10 @@
 # FujiNet Manual for the H89 FujiNet — Operation
 
 The end-user manual for the **H89 FujiNet** card (H89-ESP32-FUJINET, V1.1,
-reworked for fujinet-firmware #2042; hardware by Joseph Travis, layout and
-schematics by Norberto Collado). This is the second edition; the first covered
-the V1.0 card. It covers:
+reworked for fujinet-firmware #2042, without its data 74LVC245 for #2232;
+hardware by Joseph Travis, layout and schematics by Norberto Collado). This is
+the third edition; the second covered the card with U3, the first the V1.0
+card. It covers:
 
 - installing the card;
 - checking it with a program keyed into the monitor;
@@ -87,13 +88,13 @@ These targets regenerate them:
 
 ## Sources of truth
 
-| What | Where | Branch / commit (Oct 12, 2026; card Oct 18) |
+| What | Where | Branch / commit (Oct 12, 2026; card Oct 18; no 245 Oct 30) |
 |---|---|---|
 | CONFIG for the H89 | `fujinet-config` `src/h89/` | `add-h89` 6f48e0f; 1823324 builds against fujinet-lib d08f584 |
-| FNDISK.COM, FN.DVD, hdosfs.py | `fujinet-h89` | `hdos-fn-driver` dff02cc; the card's start-up `card-setup-mark` 4cb0024 |
-| H89 bus library | `fujinet-lib` `bus/h89/` | `h89-setup-after-reset` d08f584 (was `h89-keep-esp32-running` 9e6d4dd) |
-| Firmware (RS232 over the 82C55) | `fujinet-firmware` | master 7e8e647 (#2042, the reworked card's pin map); first edition master 0bc531d3d and `h89-disk-fixes` 7ab84ae64 |
-| Emulator | `fujinet-go-h89-desktop` | 8dc059d; the card's reset `card-reset-bus-hold` 51f411d; the reworked V1.1 card `card-rev11` 6ceac07 |
+| FNDISK.COM, FN.DVD, hdosfs.py | `fujinet-h89` | `hdos-fn-driver` dff02cc; the card's start-up `card-setup-mark` 4cb0024; no DIR or /OE `main` caccd04 (#6) |
+| H89 bus library | `fujinet-lib` `bus/h89/` | `h89-setup-after-reset` 7fc847b, with #249 (was d08f584, and `h89-keep-esp32-running` 9e6d4dd) |
+| Firmware (RS232 over the 82C55) | `fujinet-firmware` | PR #2232 `h89-remove-245` 8ff4f7968 (port A straight to the ESP32); second edition master 7e8e647 (#2042, the reworked card's pin map); first edition master 0bc531d3d and `h89-disk-fixes` 7ab84ae64 |
+| Emulator | `fujinet-go-h89-desktop` | 8dc059d; the card's reset `card-reset-bus-hold` 51f411d; the reworked V1.1 card `card-rev11` 6ceac07; the card without U3 v0.4.0 |
 | Hardware | `../learn/H89-ESP32-FUJINET.pdf`, `images/photo/board.jpg`; `fujinet-hardware/H89/` | Rev 1.1 schematic and the V1.1 render; schematic v1.28; Collado's 82C55 note Rev 1.0 |
 
 Where the sources and the book differ, see `errata.md`. The photo shot list and
