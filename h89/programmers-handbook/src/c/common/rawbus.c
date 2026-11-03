@@ -2,9 +2,9 @@
  * rawbus.c -- FujiBus frames out, bare bytes in: see rawbus.h.
  *
  * The 82C55A at D0H is driven as fujinet-lib's bus/h89/portio.c does:
- * port A carries the bytes, port C's PC0 turns the 74LVC245 toward the
- * ESP32 (1) or toward us (0), PC1 = 0 turns it on; /OBF high says the
- * ESP32 has taken our last byte, IBF says a byte waits for us.
+ * port A carries the bytes, straight to the ESP32, which drives it through
+ * /ACK; /OBF high says the ESP32 has taken our last byte, IBF says a byte
+ * waits for us.
  *
  * Copyright (C) 2026 Thomas Cherryhomes
  * SPDX-License-Identifier: GPL-3.0-or-later
@@ -15,12 +15,8 @@
 
 #define PORTA   0xD0
 #define PORTC   0xD2
-#define PCTRL   0xD3
 #define OBF     0x80                    /* PC7 /OBF: 1 = byte taken */
 #define IBF     0x20                    /* PC5 IBF: 1 = a byte waits */
-#define OE_ON   0x02                    /* bit set/reset: PC1 = 0 */
-#define TO_ESP  0x01                    /* PC0 = 1 */
-#define TO_H89  0x00                    /* PC0 = 0 */
 
 #define END     0xC0                    /* SLIP */
 #define ESC     0xDB
@@ -30,14 +26,11 @@
 
 static const uint8_t nbytes[8] = { 0, 1, 2, 3, 4, 2, 4, 4 };
 
-/* drop what an earlier reply left, then face the ESP32 */
+/* drop what an earlier reply left */
 static void begin(void)
 {
-    z80_outp(PCTRL, OE_ON);
-    z80_outp(PCTRL, TO_H89);
     while (z80_inp(PORTC) & IBF)
         z80_inp(PORTA);
-    z80_outp(PCTRL, TO_ESP);
 }
 
 /* one byte out, once the last has been taken */
@@ -48,12 +41,11 @@ static void put(uint8_t c)
     z80_outp(PORTA, c);
 }
 
-/* wait for the last byte to be taken, then face us again */
+/* wait for the last byte to be taken */
 static void end(void)
 {
     while (!(z80_inp(PORTC) & OBF))
         ;
-    z80_outp(PCTRL, TO_H89);
 }
 
 /* n bytes, SLIP-escaped */

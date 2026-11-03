@@ -61,7 +61,7 @@ Nothing on screen differs.
 - [ ] Whether U2 (PLCC) or U6 (DIP) is fitted.
 - [ ] Which way the card faces in the socket pair (Pictorial 3-5 photo).
 - [ ] Whether the card fits P505/P511 beside an HA-88-3 at P504, etc. (clearance).
-- [ ] USB with the H89 off: does U3 drive the unpowered 82C55A (errata 12)?
+- [ ] USB with the H89 off: do the ESP32's pins drive the unpowered 82C55A's port A, now that U3 is gone (errata 12)?
 - [ ] The FujiNet-Flasher reaches the DevKitC's loading mode by itself (auto-reset), with the H89 on.
 - [ ] The ESP32 keeps running, and its drives stay mounted, through SHIFT+RESET.
 - [ ] The lamps: all lit after the Port Test's O323,300; PB0, PB2, PB4, PB6 after O321,252.

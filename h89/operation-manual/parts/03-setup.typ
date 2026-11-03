@@ -212,7 +212,7 @@ FujiNet has taken the request. Then it prints the text in the FujiNet's answer: 
 WiFi network and the FujiNet's own name, if it has joined a network, and the version of its
 firmware. Then the monitor beeps, prints an #scr("H"), and gives you the prompt.
 
-The program is 114 numbers long. Take your time; if you make a mistake, you can go back and fix it.
+The program is 106 numbers long. Take your time; if you make a mistake, you can go back and fix it.
 
 #step[Push #key[SHIFT] and #key[RESET] to make sure you have the #scr("H:") prompt.]
 
@@ -237,7 +237,7 @@ check it as you go.]
 #session("mtr-keying-mtr90", rows: (0, 7), cols: (0, 26), typed-rows: none,
   under: ((0, 5, 5), (0, 16, 21), (1, 11, 13), (2, 11, 13), (3, 11, 13), (4, 11, 13), (5, 11, 13), (6, 11, 13)))
 
-#step[After the last entry (#scr("300") at address 040261), push RETURN instead of the SPACE bar.
+#step[After the last entry (#scr("300") at address 040251), push RETURN instead of the SPACE bar.
 The Computer gives you the #scr("H:") prompt.]
 
 If you made a mistake: while you are still entering, push the minus sign (#typed("-")) to go back
@@ -266,7 +266,7 @@ The program stays in memory until you turn off the Computer. To run it again, pu
   th[You See], th[It Means],
   [#scr("12") and text, #scr("H")], [The card is working. Go on to "System Configuration."],
   [Only #scr("H") (and a beep)], [No 82C55A answered at port 320: the PORT SEL jumper, the card's seating, or another board at 320.],
-  [#scr("1"), and nothing more], [The 82C55A is there, but the FujiNet is not taking the request: its firmware, its power, or the 74LVC245s.],
+  [#scr("1"), and nothing more], [The 82C55A is there, but the FujiNet is not taking the request: its firmware, its power, or U5, the 74LVC245.],
   [#scr("12"), and nothing more], [The request went out but no answer came back: the FujiNet's firmware, or the return path through the 82C55A.],
   [No beep, no #scr("H"), or a garbled screen], [The program was keyed in wrong. Push #key[SHIFT] and #key[RESET] and check your entries.],
 )

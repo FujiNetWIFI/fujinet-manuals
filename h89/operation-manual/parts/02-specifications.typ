@@ -16,7 +16,7 @@
 #dl[Other PORT SEL positions][330, 340 and 170 octal. Not used by the present software.]
 #dl[Interface][82C55A programmable peripheral interface. Port A in Mode 2 (bidirectional, strobed) carries the data; port C carries control and status.]
 #dl[Interrupts][None. J3 is left open.]
-#dl[Level shifting][Two 74LVC245 bus transceivers: one for the data, one for the control lines.]
+#dl[Level shifting][A 74LVC245 for the control lines. Port A’s data lines run straight to the ESP32.]
 #dl[Reset][The H89’s RESET resets the 82C55A only. The FujiNet runs from power-on and keeps running through a reset.]
 #dl[Lamps][Eight LEDs (D3--D10) on the 82C55A’s port B, for programs to use.]
 

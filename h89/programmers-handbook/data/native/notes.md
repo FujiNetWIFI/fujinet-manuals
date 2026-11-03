@@ -9,8 +9,8 @@ it; `tools/native.sh check` redoes only the cross-check.
 
 | File | What |
 |---|---|
-| `src/native/FNVER.ASM` | DRI ASM, CP/M. FUJI_GET_ADAPTERCONFIG, prints SSID + firmware version. 220 lines. |
-| `src/native/FNVERH.ASM` | Heath ASM, HDOS. The same; `.PRINT`, `.EXIT`. 214 lines. |
+| `src/native/FNVER.ASM` | DRI ASM, CP/M. FUJI_GET_ADAPTERCONFIG, prints SSID + firmware version. 214 lines. |
+| `src/native/FNVERH.ASM` | Heath ASM, HDOS. The same; `.PRINT`, `.EXIT`. 208 lines. |
 | `data/native/*.LST, *.PRN` | The assemblers' listings, pulled off the work disks (NULs and ^Z removed; Heath's form feeds kept). |
 | `data/native/timing.txt` | Emulated time of each assembly. |
 | `data/native/xcheck.txt` | The z80asm cross-check. |
@@ -50,7 +50,7 @@ HDOS (FNVERH):
     >SY1:ASM SY1:FNVERH,SY1:FNVERH=SY1:FNVERH
 
 
-    00307 STATEMENTS ASSEMBLED
+    00301 STATEMENTS ASSEMBLED
     39949 BYTES FREE
      NO ERRORS DETECTED
     >SY1:FNVERH
@@ -59,27 +59,27 @@ HDOS (FNVERH):
 
 ASM prints nothing but two blank lines and the three totals; the statement
 count includes the XTEXT'd lines (HOSDEF 65, ASCII 28). The listing file
-has the same totals in mixed case ("00307 Statements Assembled").
+has the same totals in mixed case ("00301 Statements Assembled").
 
 CP/M (FNVER):
 
     A>ASM B:FNVER
     CP/M ASSEMBLER - VER 2.0
-    03B6
+    03AA
     002H USE FACTOR
     END OF ASSEMBLY
 
     A>LOAD B:FNVER
     FIRST ADDRESS 0100
-    LAST  ADDRESS 02AB
-    BYTES READ    01AC
+    LAST  ADDRESS 029F
+    BYTES READ    01A0
     RECORDS WRITTEN 04
 
     A>B:FNVER
     Network:  Dummy Cafe          (screen kept as Workshop)
     Firmware: v1.6-7d7a3ba
 
-`03B6` is the next free address after the program (here after its DS
+`03AA` is the next free address after the program (here after its DS
 areas, i.e. the top of FNVER's stack); USE FACTOR is how full ASM's symbol
 table got (hex).
 
@@ -92,28 +92,29 @@ interrupts off is included). It includes loading the assembler.
 
 | Program | Assembler | Assembly | LOAD |
 |---|---|---|---|
-| FNVER (220 lines) | DRI ASM 2.0, CP/M | 14768 ticks = 29.5 s | 3848 ticks = 7.7 s |
-| FNVERH (214 lines + 93 XTEXT'd) | Heath ASM, HDOS | 40840 ticks = 81.7 s | -- |
+| FNVER (214 lines) | DRI ASM 2.0, CP/M | 14464 ticks = 28.9 s | 3648 ticks = 7.3 s |
+| FNVERH (208 lines + 93 XTEXT'd) | Heath ASM, HDOS | 39592 ticks = 79.2 s | -- |
 
-(`data/native/timing.txt`, Oct 18, 2026. Repeat runs agree within a few
-ticks for CP/M. The first edition's longer programs, with the old start-up,
-took 32.5 s + 7.9 s and 88.7 s.)
+(`data/native/timing.txt`, Oct 30, 2026. Repeat runs agree within a few
+ticks for CP/M. The second edition's programs, which still set DIR, took
+29.5 s + 7.7 s and 81.7 s; the first edition's, with the old start-up,
+32.5 s + 7.9 s and 88.7 s.)
 
 Heath's ASM is much the slower: two passes, and HOSDEF.ACM and ASCII.ACM
-are read again on each, all on the H17. Sizes: FNVERH 393 bytes of code +
-200 of DS; FNVER 428 bytes (4 records).
+are read again on each, all on the H17. Sizes: FNVERH 381 bytes of code +
+200 of DS; FNVER 416 bytes (4 records).
 
 ## Cross-check (z88dk-z80asm -m8080)
 
 ```
 z88dk-z80asm -m8080 cross-check (Z80 Macro Assembler 25085-3bd06cad56-20260712)
-compare FNVER.COM: HEX 0100H-02ABH (428 bytes), COM 512 bytes (4 records)
+compare FNVER.COM: HEX 0100H-029FH (416 bytes), COM 512 bytes (4 records)
   HEX vs z80asm -m8080: identical
   COM vs HEX:           identical
-  z80asm beyond 02ABH:  266 bytes, all zero (the DS areas)
-compare FNVERH.ABS: header FF 00, load 2280H, length 593, entry 2280H
-  code vs z80asm -m8080: identical (393 bytes compared, 200 in DS areas skipped)
-  z80asm length 593, ABS length 593: same
+  z80asm beyond 029FH:  266 bytes, all zero (the DS areas)
+compare FNVERH.ABS: header FF 00, load 2280H, length 581, entry 2280H
+  code vs z80asm -m8080: identical (381 bytes compared, 200 in DS areas skipped)
+  z80asm length 581, ABS length 581: same
 ```
 
 Both: byte for byte identical.
