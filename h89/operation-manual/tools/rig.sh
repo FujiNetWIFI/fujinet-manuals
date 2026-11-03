@@ -2,7 +2,7 @@
 #
 # The book's screens and transcripts are taken from FujiNet Go H89's headless
 # machine (VirtualH89 + the 82C55 card + the FujiNet firmware in-process),
-# running the real HDOS 2.0 and Heath CP/M 2.2.04 with the real CONFIG and
+# running the real HDOS 2.0 or 3.0 and Heath CP/M 2.2.04 with the real CONFIG and
 # drivers. Nothing on a screen in the book is typed by hand.
 #
 # Copyright (C) 2026 Thomas Cherryhomes
@@ -44,7 +44,7 @@ screen_of() { sed -n '/---- screen ----/,/^\(\[fujinet\] \)\?----------------$/p
 
 # boot steps (printed one per line, for mapfile)
 hdos_boot_steps() {   # SY0: boot disk in drive 1, SY1: in drive 2
-    # HDOS 2.0 takes no year past 99; a disk booted before offers its last date
+    # HDOS 2.0 or 3.0 takes no year past 99; a disk booted before offers its last date
     printf '%s\n' --until 'H:' --type 'B\r' --wait 3000 --type ' ' --wait 500 --type ' ' \
         --prompt 'ACTION? <BOOT>' --type '\r' --until 'DATE (' --wait 500 --type '12-OCT-80\r' \
         --prompt '>'

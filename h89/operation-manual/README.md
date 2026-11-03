@@ -56,7 +56,7 @@ These targets regenerate them:
 |---|---|---|
 | `make acctest` | `data/acctest.json` from `test/acctest.asm` | z88dk's `z88dk-z80asm` |
 | `make verify` | keys the acceptance test into MTR-88, MTR-89 and MTR-90 (444-84 and 444-142) and checks the display, plus the failure cases and the MTR-90 port check | FujiNet Go H89 and its ROMs |
-| `make boot-disks` | an HDOS 2.0 disk with FN.DVD; a 62K CP/M 2.2.04 | fujinet-h89, FujiNet Go H89 |
+| `make boot-disks` | an HDOS 2.0 or 3.0 disk with FN.DVD; a 62K CP/M 2.2.04 | fujinet-h89, FujiNet Go H89 |
 | `make shots` | every screen in the book | the above, fujinet-config, z88dk |
 | `make cover` | `images/cover-board.png` | ImageMagick |
 | `make font` | `fonts/H19Screen.ttf` from the 444-29 ROM | fontforge, MAME's `heath_tlb.zip` |

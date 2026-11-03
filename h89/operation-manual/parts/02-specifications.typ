@@ -42,7 +42,7 @@
 #dl[Starting the system][From the H89’s own floppy drive. The FujiNet drives are added once HDOS or CP/M is running.]
 
 #sh[Software]
-#dl[Operating systems][HDOS 2.0. Heath/Zenith CP/M 2.2.04 (a 62K system).]
+#dl[Operating systems][HDOS 2.0 or 3.0. Heath/Zenith CP/M 2.2.04 (a 62K system).]
 #dl[FujiNet programs][CONFIG (CONFIG.ABS for HDOS, CONFIG.COM for CP/M), FN.DVD and FNDISK.COM.]
 #dl[Monitors][The acceptance test runs on MTR-88, MTR-89 and MTR-90.]
 

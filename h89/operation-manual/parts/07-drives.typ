@@ -8,7 +8,7 @@ them. Together, the two drivers are called FNDISK:
 
 #stable((0.95in, 0.55in, 1fr),
   th[Driver], th[For], th[The Drives Are],
-  [FN.DVD], [HDOS 2.0], [FN0: through FN7:, for drive slots 1 through 8.],
+  [FN.DVD], [HDOS 2.0 or 3.0], [FN0: through FN7:, for drive slots 1 through 8.],
   [FNDISK.COM], [CP/M 2.2.04], [D: through K: (or eight drives from a letter you choose), for slots 1 through 8.],
 )
 

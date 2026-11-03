@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Capture the FNDISK chapter's sessions from the real thing on FujiNet Go
-# H89's headless machine: putting FN.DVD on a stock HDOS 2.0 disk, using
+# H89's headless machine: putting FN.DVD on a stock HDOS 2.0/3.0 disk, using
 # FN0:-FN7:, FNDISK on a 64K and on a 62K CP/M, making the 62K system.
 # Writes build/shots/<name>.ppm and (through screenfix) screens/<name>.json.
 #
