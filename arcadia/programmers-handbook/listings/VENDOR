@@ -1,0 +1,30 @@
+# VENDOR -- every file this book copies from another repository, and where
+# from. tools/vendorcheck.py compares each with its source at the pin.
+# repo                 rev        source                                   destination
+fujinet-firmware       e3923e881  pico/arcadia/testrom/fujilib.inc         runtime/fujilib.inc
+fujinet-firmware       e3923e881  pico/arcadia/testrom/fujidisp.inc        runtime/fujidisp.inc
+fujinet-firmware       e3923e881  pico/arcadia/testrom/hello.asm           runtime/hello.asm
+fujinet-firmware       e3923e881  pico/arcadia/testrom/fujitest.asm        runtime/fujitest.asm
+fujinet-firmware       e3923e881  pico/arcadia/testrom/fujiboot.asm        runtime/fujiboot.asm
+fujinet-firmware       e3923e881  pico/arcadia/testrom/fujibank.asm        runtime/fujibank.asm
+fujinet-firmware       e3923e881  pico/arcadia/tools/checkrom.py           runtime/tools/checkrom.py
+fujinet-firmware       e3923e881  pico/arcadia/tools/mkimage.py            runtime/tools/mkimage.py
+fujinet-firmware       e3923e881  pico/arcadia/tools/checkdepth.py         runtime/tools/checkdepth.py
+fujinet-firmware       e3923e881  pico/arcadia/emu/drive.lua               runtime/emu/drive.lua
+fujinet-firmware       e3923e881  pico/arcadia/emu/bankprobe.lua           runtime/emu/bankprobe.lua
+fujinet-battleship     3f2a548    arcadia/battleship.asm                  battleship/battleship.asm
+fujinet-battleship     3f2a548    arcadia/input.inc                       battleship/input.inc
+fujinet-battleship     3f2a548    arcadia/net.inc                         battleship/net.inc
+fujinet-battleship     3f2a548    arcadia/place.inc                       battleship/place.inc
+fujinet-battleship     3f2a548    arcadia/disp.inc                        battleship/disp.inc
+fujinet-battleship     3f2a548    arcadia/mailbox.inc                     battleship/mailbox.inc
+fujinet-5cardstud      d5db857    arcadia/5card.asm                       5cardstud/5card.asm
+fujinet-5cardstud      d5db857    arcadia/net.inc                         5cardstud/net.inc
+fujinet-5cardstud      d5db857    arcadia/disp.inc                        5cardstud/disp.inc
+fujinet-config         6f0a60a    arcadia/config.asm                      config/config.asm
+fujinet-config         6f0a60a    arcadia/mailbox.inc                     config/mailbox.inc
+fujinet-config         6f0a60a    arcadia/boot.inc                        config/boot.inc
+fujinet-config         6f0a60a    arcadia/bar.inc                         config/bar.inc
+fujinet-config         6f0a60a    arcadia/input.inc                       config/input.inc
+fujinet-5cardstud      d5db857    arcadia/state.inc                       5cardstud/state.inc
+fujinet-5cardstud      d5db857    arcadia/mailbox.inc                     5cardstud/mailbox.inc
